@@ -1,0 +1,22 @@
+include 'experiments/configs/setup.gin'
+
+# ==============================================================================
+neptune.project_name = 'sandbox'
+optuna.storage = 'sqlite:///optuna_studies.db'
+optuna.root_path = './experiments_results'
+optuna.resume = True
+name.prefix = 'Tune'
+
+# ==============================================================================
+data.split_method = 'random'
+data.split_frac = [0.8, 0.1, 0.1]
+data.split_seed = 1234
+
+# ==============================================================================
+optuna.sampler_name = 'GridSampler'
+optuna.direction = 'minimize'
+optuna.metric = 'valid_loss'
+optuna.params = {
+    'optimizer.lr': [0.001, 0.0005, 0.0001, 5e-05, 1e-05, 5e-06, 1e-06],
+    'NoamLRScheduler.warmup_factor': [0, 0.1, 0.2, 0.3, 0.4, 0.5]
+}

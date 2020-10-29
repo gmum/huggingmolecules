@@ -1,0 +1,13 @@
+include 'experiments/configs/setup.gin'
+
+# ==============================================================================
+neptune.project_name = 'sandbox'
+train.root_path = './experiments_results'
+name.prefix = 'Train'
+
+# ==============================================================================
+data.split_method = 'random'
+data.split_frac = [0.8, 0.1, 0.1]
+
+# ==============================================================================
+train.resume = False

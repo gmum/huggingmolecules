@@ -1,0 +1,5 @@
+# ==============================================================================
+task.name = "regression"
+loss_fn.name = 'MSELoss'
+metric.name = 'RMSE'
+metric.direction = 'minimize'

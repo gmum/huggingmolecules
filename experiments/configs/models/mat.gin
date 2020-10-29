@@ -1,0 +1,16 @@
+# ==============================================================================
+model.cls_name = 'MatModel'
+model.pretrained_name = 'mat_masking_20M'
+
+# ==============================================================================
+optimizer.name = 'Adam'
+optimizer.lr = 0.00005
+
+# ==============================================================================
+train.custom_callbacks = ['NoamLRScheduler']
+NoamLRScheduler.warmup_factor = 0.2
+NoamLRScheduler.model_size = 1024
+
+# ==============================================================================
+train.batch_size = 32
+train.num_epochs = 100

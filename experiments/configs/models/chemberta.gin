@@ -1,0 +1,16 @@
+# ==============================================================================
+model.cls_name = 'ChembertaModelWrapper'
+model.pretrained_name = 'seyonec/ChemBERTa_zinc250k_v2_40k'
+
+# ==============================================================================
+optimizer.name = 'Adam'
+optimizer.lr = 0.0005
+
+# ==============================================================================
+train.custom_callbacks = ['NoamLRScheduler']
+NoamLRScheduler.warmup_factor = 0.2
+NoamLRScheduler.model_size = 1024
+
+# ==============================================================================
+train.batch_size = 32
+train.num_epochs = 100

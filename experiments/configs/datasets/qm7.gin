@@ -1,0 +1,12 @@
+include 'experiments/configs/tasks/regression.gin'
+
+# ==============================================================================
+data.task_name = 'QM'
+data.dataset_name = 'QM7'
+data.dataset_path = './data/qm7'
+metric.name = 'MeanAbsoluteError'
+
+# ==============================================================================
+# For benchmark only:
+# ==============================================================================
+seeds = [55493, 24768, 35708, 68716, 61470, 39459]

@@ -1,0 +1,12 @@
+include 'experiments/configs/tasks/classification.gin'
+
+# ==============================================================================
+data.task_name = 'ADME'
+data.dataset_name = 'bbbp'
+data.dataset_path = './data/bbbp'
+data.split_method = 'scaffold'
+
+# ==============================================================================
+# For benchmark only:
+# ==============================================================================
+seeds = [0, 1, 2, 3, 4, 5]
