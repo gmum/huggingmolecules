@@ -12,11 +12,14 @@ FloatTensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 BoolTensor = torch.cuda.BoolTensor if use_cuda else torch.BoolTensor
 
 
-class MatPreparer:
+class MatFeaturizer:
 
     def __init__(self, add_dummy_node=True, one_hot_formal_charge=True):
         self._add_dummy_node = add_dummy_node
         self._one_hot_formal_charge = one_hot_formal_charge
+
+    def __call__(self, *args, **kwargs):
+        return self.encode(*args, **kwargs)
 
     def encode(self, smiles_list, padding=False, return_tensors=None):
         adjacency_list, distance_list, features_list, mask_list = [], [], [], []

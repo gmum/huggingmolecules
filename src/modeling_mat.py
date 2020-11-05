@@ -5,51 +5,42 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
 
 from src.utils import xavier_normal_small_init_, xavier_uniform_small_init_
-
-
-### Model definition
-
-def make_model(d_atom, N=2, d_model=128, h=8, dropout=0.1,
-               lambda_attention=0.3, lambda_distance=0.3, trainable_lambda=False,
-               N_dense=2, leaky_relu_slope=0.0, aggregation_type='mean',
-               dense_output_nonlinearity='relu', distance_matrix_kernel='softmax',
-               use_edge_features=False, n_output=1,
-               control_edges=False, integrated_distances=False,
-               scale_norm=False, init_type='uniform', use_adapter=False, n_generator_layers=1):
-    "Helper: Construct a model from hyperparameters."
-    c = copy.deepcopy
-    attn = MultiHeadedAttention(h, d_model, dropout, lambda_attention, lambda_distance, trainable_lambda,
-                                distance_matrix_kernel, use_edge_features, control_edges, integrated_distances)
-    ff = PositionwiseFeedForward(d_model, N_dense, dropout, leaky_relu_slope, dense_output_nonlinearity)
-    model = GraphTransformer(
-        Encoder(EncoderLayer(d_model, c(attn), c(ff), dropout, scale_norm, use_adapter), N, scale_norm),
-        Embeddings(d_model, d_atom, dropout),
-        Generator(d_model, aggregation_type, n_output, n_generator_layers, leaky_relu_slope, dropout, scale_norm))
-
-    # This was important from their code.
-    # Initialize parameters with Glorot / fan_avg.
-    for p in model.parameters():
-        if p.dim() > 1:
-            if init_type == 'uniform':
-                nn.init.xavier_uniform_(p)
-            elif init_type == 'normal':
-                nn.init.xavier_normal_(p)
-            elif init_type == 'small_normal_init':
-                xavier_normal_small_init_(p)
-            elif init_type == 'small_uniform_init':
-                xavier_uniform_small_init_(p)
-    return model
+from src.configuring_mat import *
 
 
 class GraphTransformer(nn.Module):
-    def __init__(self, encoder, src_embed, generator):
+    def __init__(self, config):
         super(GraphTransformer, self).__init__()
-        self.encoder = encoder
-        self.src_embed = src_embed
-        self.generator = generator
+
+        self.encoder = Encoder(config)
+        self.src_embed = Embeddings(config)
+        self.generator = Generator(config)
+
+        self.init_weights(config.init_type)
+
+    def init_weights(self, init_type):
+        for p in self.parameters():
+            if p.dim() > 1:
+                if init_type == 'uniform':
+                    nn.init.xavier_uniform_(p)
+                elif init_type == 'normal':
+                    nn.init.xavier_normal_(p)
+                elif init_type == 'small_normal_init':
+                    xavier_normal_small_init_(p)
+                elif init_type == 'small_uniform_init':
+                    xavier_uniform_small_init_(p)
+
+    def load_pretrained(self, pretrained_name):
+        pretrained_state_dict = torch.load(pretrained_name)
+        model_state_dict = self.state_dict()
+        for name, param in pretrained_state_dict.items():
+            if 'generator' in name:
+                continue
+            if isinstance(param, torch.nn.Parameter):
+                param = param.data
+            model_state_dict[name].copy_(param)
 
     def forward(self, node_features, mask, adjacency_matrix, distance_matrix, edges_att=None):
         "Take in and process masked src and target sequences."
@@ -65,21 +56,20 @@ class GraphTransformer(nn.Module):
 class Generator(nn.Module):
     "Define standard linear + softmax generation step."
 
-    def __init__(self, d_model, aggregation_type='mean', n_output=1, n_layers=1,
-                 leaky_relu_slope=0.01, dropout=0.0, scale_norm=False):
+    def __init__(self, config):
         super(Generator, self).__init__()
-        if n_layers == 1:
-            self.proj = nn.Linear(d_model, n_output)
+        if config.n_generator_layers == 1:
+            self.proj = nn.Linear(config.d_model, config.n_output)
         else:
             self.proj = []
-            for i in range(n_layers - 1):
-                self.proj.append(nn.Linear(d_model, d_model))
-                self.proj.append(nn.LeakyReLU(leaky_relu_slope))
-                self.proj.append(ScaleNorm(d_model) if scale_norm else LayerNorm(d_model))
-                self.proj.append(nn.Dropout(dropout))
-            self.proj.append(nn.Linear(d_model, n_output))
+            for i in range(config.n_generator_layers - 1):
+                self.proj.append(nn.Linear(config.d_model, config.d_model))
+                self.proj.append(nn.LeakyReLU(config.leaky_relu_slope))
+                self.proj.append(ScaleNorm(config.d_model) if config.scale_norm else LayerNorm(config.d_model))
+                self.proj.append(nn.Dropout(config.dropout))
+            self.proj.append(nn.Linear(config.d_model, config.n_output))
             self.proj = torch.nn.Sequential(*self.proj)
-        self.aggregation_type = aggregation_type
+        self.aggregation_type = config.aggregation_type
 
     def forward(self, x, mask):
         mask = mask.unsqueeze(-1).float()
@@ -122,10 +112,11 @@ def clones(module, N):
 class Encoder(nn.Module):
     "Core encoder is a stack of N layers"
 
-    def __init__(self, layer, N, scale_norm):
+    def __init__(self, config):
         super(Encoder, self).__init__()
-        self.layers = clones(layer, N)
-        self.norm = ScaleNorm(layer.size) if scale_norm else LayerNorm(layer.size)
+        layer = EncoderLayer(config)
+        self.layers = clones(layer, config.N)
+        self.norm = ScaleNorm(layer.size) if config.scale_norm else LayerNorm(layer.size)
 
     def forward(self, x, mask, adj_matrix, distance_matrix, edges_att):
         "Pass the input (and mask) through each layer in turn."
@@ -186,12 +177,13 @@ class SublayerConnection(nn.Module):
 class EncoderLayer(nn.Module):
     "Encoder is made up of self-attn and feed forward (defined below)"
 
-    def __init__(self, size, self_attn, feed_forward, dropout, scale_norm, use_adapter):
+    def __init__(self, config):
         super(EncoderLayer, self).__init__()
-        self.self_attn = self_attn
-        self.feed_forward = feed_forward
-        self.sublayer = clones(SublayerConnection(size, dropout, scale_norm, use_adapter), 2)
-        self.size = size
+        self.self_attn = MultiHeadedAttention(config)
+        self.feed_forward = PositionwiseFeedForward(config)
+        self.sublayer = clones(
+            SublayerConnection(config.d_model, config.dropout, config.scale_norm, config.use_adapter), 2)
+        self.size = config.d_model
 
     def forward(self, x, mask, adj_matrix, distance_matrix, edges_att):
         "Follow Figure 1 (left) for connections."
@@ -254,37 +246,36 @@ def attention(query, key, value, adj_matrix, distance_matrix, edges_att,
 
 
 class MultiHeadedAttention(nn.Module):
-    def __init__(self, h, d_model, dropout=0.1, lambda_attention=0.3, lambda_distance=0.3, trainable_lambda=False,
-                 distance_matrix_kernel='softmax', use_edge_features=False, control_edges=False,
-                 integrated_distances=False):
+    def __init__(self, config):
         "Take in model size and number of heads."
         super(MultiHeadedAttention, self).__init__()
-        assert d_model % h == 0
+        assert config.d_model % config.h == 0
         # We assume d_v always equals d_k
-        self.d_k = d_model // h
-        self.h = h
-        self.trainable_lambda = trainable_lambda
-        if trainable_lambda:
-            lambda_adjacency = 1. - lambda_attention - lambda_distance
-            lambdas_tensor = torch.tensor([lambda_attention, lambda_distance, lambda_adjacency], requires_grad=True)
+        self.d_k = config.d_model // config.h
+        self.h = config.h
+        self.trainable_lambda = config.trainable_lambda
+        if config.trainable_lambda:
+            lambda_adjacency = 1. - config.lambda_attention - config.lambda_distance
+            lambdas_tensor = torch.tensor([config.lambda_attention, config.lambda_distance, lambda_adjacency],
+                                          requires_grad=True)
             self.lambdas = torch.nn.Parameter(lambdas_tensor)
         else:
-            lambda_adjacency = 1. - lambda_attention - lambda_distance
-            self.lambdas = (lambda_attention, lambda_distance, lambda_adjacency)
+            lambda_adjacency = 1. - config.lambda_attention - config.lambda_distance
+            self.lambdas = (config.lambda_attention, config.lambda_distance, lambda_adjacency)
 
-        self.linears = clones(nn.Linear(d_model, d_model), 4)
+        self.linears = clones(nn.Linear(config.d_model, config.d_model), 4)
         self.attn = None
-        self.dropout = nn.Dropout(p=dropout)
-        if distance_matrix_kernel == 'softmax':
+        self.dropout = nn.Dropout(p=config.dropout)
+        if config.distance_matrix_kernel == 'softmax':
             self.distance_matrix_kernel = lambda x: F.softmax(-x, dim=-1)
-        elif distance_matrix_kernel == 'exp':
+        elif config.distance_matrix_kernel == 'exp':
             self.distance_matrix_kernel = lambda x: torch.exp(-x)
-        self.integrated_distances = integrated_distances
-        self.use_edge_features = use_edge_features
-        self.control_edges = control_edges
-        if use_edge_features:
-            d_edge = 11 if not integrated_distances else 12
-            self.edges_feature_layer = EdgeFeaturesLayer(d_model, d_edge, h, dropout)
+        self.integrated_distances = config.integrated_distances
+        self.use_edge_features = config.use_edge_features
+        self.control_edges = config.control_edges
+        if config.use_edge_features:
+            d_edge = 11 if not config.integrated_distances else 12
+            self.edges_feature_layer = EdgeFeaturesLayer(config.d_model, d_edge, config.h, config.dropout)
 
     def forward(self, query, key, value, adj_matrix, distance_matrix, edges_att, mask=None):
         "Implements Figure 2"
@@ -329,18 +320,18 @@ class MultiHeadedAttention(nn.Module):
 class PositionwiseFeedForward(nn.Module):
     "Implements FFN equation."
 
-    def __init__(self, d_model, N_dense, dropout=0.1, leaky_relu_slope=0.0, dense_output_nonlinearity='relu'):
+    def __init__(self, config):
         super(PositionwiseFeedForward, self).__init__()
-        self.N_dense = N_dense
-        self.linears = clones(nn.Linear(d_model, d_model), N_dense)
-        self.dropout = clones(nn.Dropout(dropout), N_dense)
-        self.leaky_relu_slope = leaky_relu_slope
-        if dense_output_nonlinearity == 'relu':
+        self.N_dense = config.N_dense
+        self.linears = clones(nn.Linear(config.d_model, config.d_model), config.N_dense)
+        self.dropout = clones(nn.Dropout(config.dropout), config.N_dense)
+        self.leaky_relu_slope = config.leaky_relu_slope
+        if config.dense_output_nonlinearity == 'relu':
             self.dense_output_nonlinearity = lambda x: F.leaky_relu(x, negative_slope=self.leaky_relu_slope)
-        elif dense_output_nonlinearity == 'tanh':
+        elif config.dense_output_nonlinearity == 'tanh':
             self.tanh = torch.nn.Tanh()
             self.dense_output_nonlinearity = lambda x: self.tanh(x)
-        elif dense_output_nonlinearity == 'none':
+        elif config.dense_output_nonlinearity == 'none':
             self.dense_output_nonlinearity = lambda x: x
 
     def forward(self, x):
@@ -356,10 +347,10 @@ class PositionwiseFeedForward(nn.Module):
 ## Embeddings
 
 class Embeddings(nn.Module):
-    def __init__(self, d_model, d_atom, dropout):
+    def __init__(self, config):
         super(Embeddings, self).__init__()
-        self.lut = nn.Linear(d_atom, d_model)
-        self.dropout = nn.Dropout(dropout)
+        self.lut = nn.Linear(config.d_atom, config.d_model)
+        self.dropout = nn.Dropout(config.dropout)
 
     def forward(self, x):
         return self.dropout(self.lut(x))
