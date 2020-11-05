@@ -8,11 +8,24 @@ import torch.nn.functional as F
 
 from src.utils import xavier_normal_small_init_, xavier_uniform_small_init_
 from src.configuring_mat import *
+from src.modeling_utils import PretrainedModelMixin
+
+MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
+    'mat-base-freesolv': '../mat-base-freesolv'
+}
 
 
-class GraphTransformer(nn.Module):
+class MatModel(nn.Module, PretrainedModelMixin):
+    @classmethod
+    def _get_config_cls(cls):
+        return MatConfig
+
+    @classmethod
+    def _get_arch_from_pretrained_name(cls, pretrained_name):
+        return MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING.get(pretrained_name, None)
+
     def __init__(self, config):
-        super(GraphTransformer, self).__init__()
+        super(MatModel, self).__init__()
 
         self.encoder = Encoder(config)
         self.src_embed = Embeddings(config)
@@ -31,16 +44,6 @@ class GraphTransformer(nn.Module):
                     xavier_normal_small_init_(p)
                 elif init_type == 'small_uniform_init':
                     xavier_uniform_small_init_(p)
-
-    def load_pretrained(self, pretrained_name):
-        pretrained_state_dict = torch.load(pretrained_name)
-        model_state_dict = self.state_dict()
-        for name, param in pretrained_state_dict.items():
-            if 'generator' in name:
-                continue
-            if isinstance(param, torch.nn.Parameter):
-                param = param.data
-            model_state_dict[name].copy_(param)
 
     def forward(self, node_features, mask, adjacency_matrix, distance_matrix, edges_att=None):
         "Take in and process masked src and target sequences."

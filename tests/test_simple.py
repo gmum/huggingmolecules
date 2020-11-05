@@ -1,6 +1,6 @@
 import unittest
 from src import *
-
+from transformers import BertPreTrainedModel, BertConfig
 
 class MatPreparerTest(unittest.TestCase):
 
@@ -62,16 +62,34 @@ class MatPreparerTest(unittest.TestCase):
         assert np.allclose(exp_dist_matrix, dist_matrix)
         assert np.allclose(exp_mask, mask)
 
+class MatConfigTest(unittest.TestCase):
 
-class MatForRegressionTest(unittest.TestCase):
+    def test_from_pretrained(self):
+        config = MatConfig.from_pretrained('mat-base-freesolv')
+        print(config)
 
-    def test_single(self):
+
+class MatModelTest(unittest.TestCase):
+
+    def test_explicit(self):
         featurizer = MatFeaturizer()
         input = featurizer(["CC(C)Cl", "CCCBr"], padding=True, return_tensors='pt')
 
         config = MatConfig()
-        model = GraphTransformer(config)
-        model.load_pretrained('../pretrained_weights.pt')
+        model = MatModel(config)
+        model.load_weights('../mat-base-freesolv')
+
+        output = model(**input)
+        print(output)
+
+    def test_errors(self):
+        pass
+
+    def test_from_pretrained(self):
+        featurizer = MatFeaturizer()
+        input = featurizer(["CC(C)Cl", "CCCBr"], padding=True, return_tensors='pt')
+
+        model = MatModel.from_pretrained('mat-base-freesolv')
 
         output = model(**input)
         print(output)

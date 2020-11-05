@@ -1,4 +1,15 @@
-class MatConfig:
+from src.configuring_utils import PretrainedConfigMixin
+
+MAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING = {
+    'mat-base-freesolv': '../mat-base-freesolv-config'
+}
+
+
+class MatConfig(PretrainedConfigMixin):
+    @classmethod
+    def _get_arch_from_pretrained_name(cls, pretrained_name):
+        return MAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING.get(pretrained_name, None)
+
     def __init__(self,
                  d_atom=28,
                  d_model=1024,
