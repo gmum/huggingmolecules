@@ -1,18 +1,27 @@
 import torch
+import torch.nn as nn
+from typing import *
+from src.configuring_utils import PretrainedConfigMixin
 import inspect
 
+T_Config = TypeVar("T_Config", bound=PretrainedConfigMixin)
+T_Model = TypeVar("T_Model")
 
-class PretrainedModelMixin:
+
+class PretrainedModelMixin(nn.Module, Generic[T_Config, T_Model]):
+    def __init__(self, config: T_Config):
+        super().__init__()
+
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name):
+    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
         raise NotImplementedError
 
     @classmethod
-    def _get_config_cls(cls):
+    def _get_config_cls(cls) -> Type[T_Config]:
         raise NotImplementedError
 
     @classmethod
-    def from_pretrained(cls, pretrained_name: str):
+    def from_pretrained(cls, pretrained_name: str) -> T_Model:
         file_path = cls._get_arch_from_pretrained_name(pretrained_name)
         config_cls = cls._get_config_cls()
         config = config_cls.from_pretrained(pretrained_name)

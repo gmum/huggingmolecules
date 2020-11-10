@@ -1,5 +1,5 @@
 import math, copy
-
+from typing import *
 import numpy as np
 
 import torch
@@ -9,15 +9,16 @@ import torch.nn.functional as F
 from src.utils import xavier_normal_small_init_, xavier_uniform_small_init_
 from src.configuring_mat import *
 from src.modeling_utils import PretrainedModelMixin
+from src.featurizing_mat import MatBatchEncoding
 
 MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
     'mat-base-freesolv': '../mat-base-freesolv'
 }
 
 
-class MatModel(nn.Module, PretrainedModelMixin):
+class MatModel(PretrainedModelMixin[MatConfig, "MatModel"]):
     @classmethod
-    def _get_config_cls(cls):
+    def _get_config_cls(cls) -> Type[MatConfig]:
         return MatConfig
 
     @classmethod
@@ -25,7 +26,7 @@ class MatModel(nn.Module, PretrainedModelMixin):
         return MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING.get(pretrained_name, None)
 
     def __init__(self, config):
-        super(MatModel, self).__init__()
+        super(MatModel, self).__init__(config)
 
         self.encoder = Encoder(config)
         self.src_embed = Embeddings(config)
@@ -33,7 +34,7 @@ class MatModel(nn.Module, PretrainedModelMixin):
 
         self.init_weights(config.init_type)
 
-    def init_weights(self, init_type):
+    def init_weights(self, init_type: str):
         for p in self.parameters():
             if p.dim() > 1:
                 if init_type == 'uniform':
@@ -45,12 +46,12 @@ class MatModel(nn.Module, PretrainedModelMixin):
                 elif init_type == 'small_uniform_init':
                     xavier_uniform_small_init_(p)
 
-    def forward(self, node_features, mask, adjacency_matrix, distance_matrix, edges_att=None):
+    def forward(self, batch: MatBatchEncoding):
         "Take in and process masked src and target sequences."
-        return self.predict(self.encode(node_features, mask, adjacency_matrix, distance_matrix, edges_att), mask)
+        return self.predict(self.encode(batch), batch.batch_mask)
 
-    def encode(self, src, src_mask, adj_matrix, distance_matrix, edges_att):
-        return self.encoder(self.src_embed(src), src_mask, adj_matrix, distance_matrix, edges_att)
+    def encode(self, batch: MatBatchEncoding):
+        return self.encoder(self.src_embed(batch.node_features), batch.batch_mask, batch.adjacency_matrix, batch.distance_matrix, None)
 
     def predict(self, out, out_mask):
         return self.generator(out, out_mask)

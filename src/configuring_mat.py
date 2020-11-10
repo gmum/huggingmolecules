@@ -5,34 +5,17 @@ MAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING = {
 }
 
 
-class MatConfig(PretrainedConfigMixin):
+class MatConfig(PretrainedConfigMixin["MatConfig"]):
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name):
         return MAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING.get(pretrained_name, None)
 
-    def __init__(self,
-                 d_atom=28,
-                 d_model=1024,
-                 N=8,
-                 h=16,
-                 N_dense=1,
-                 lambda_attention=0.33,
-                 lambda_distance=0.33,
-                 leaky_relu_slope=0.1,
-                 dense_output_nonlinearity='relu',
-                 distance_matrix_kernel='exp',
-                 dropout=0.0,
-                 aggregation_type='mean',
-                 n_generator_layers=1,
-                 n_output=1,
-                 trainable_lambda=False,
-                 integrated_distances=False,
-                 use_edge_features=False,
-                 control_edges=False,
-                 scale_norm=False,
-                 use_adapter=False,
-                 init_type='uniform'
-                 ):
+    def __init__(self, d_atom=28, d_model=1024, N=8, h=16, N_dense=1, lambda_attention=0.33, lambda_distance=0.33,
+                 leaky_relu_slope=0.1, dense_output_nonlinearity='relu', distance_matrix_kernel='exp', dropout=0.0,
+                 aggregation_type='mean', n_generator_layers=1, n_output=1, trainable_lambda=False,
+                 integrated_distances=False, use_edge_features=False, control_edges=False, scale_norm=False,
+                 use_adapter=False, init_type='uniform'):
+        super().__init__()
         self.d_atom = d_atom
         self.d_model = d_model
         self.N = N

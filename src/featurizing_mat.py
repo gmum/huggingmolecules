@@ -1,31 +1,42 @@
 import logging
+from dataclasses import dataclass
+from typing import *
 import numpy as np
 import torch
-from rdkit.Chem import MolFromSmiles
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from sklearn.metrics import pairwise_distances
 
-use_cuda = torch.cuda.is_available()
-FloatTensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-BoolTensor = torch.cuda.BoolTensor if use_cuda else torch.BoolTensor
+from src.featurizing_utils import PretrainedFeaturizerBase, pad_array
 
 
-class MatFeaturizer:
+@dataclass
+class MatMoleculeEncoding:
+    node_features: np.ndarray
+    adjacency_matrix: np.ndarray
+    distance_matrix: np.ndarray
 
-    def __init__(self, add_dummy_node=True, one_hot_formal_charge=True):
+
+@dataclass
+class MatBatchEncoding:
+    node_features: torch.FloatTensor
+    adjacency_matrix: torch.FloatTensor
+    distance_matrix: torch.FloatTensor
+    batch_mask: torch.BoolTensor
+
+
+class MatFeaturizer(PretrainedFeaturizerBase[MatMoleculeEncoding, MatBatchEncoding]):
+
+    def __init__(self, add_dummy_node: bool = True, one_hot_formal_charge: bool = True):
         self._add_dummy_node = add_dummy_node
         self._one_hot_formal_charge = one_hot_formal_charge
 
-    def __call__(self, *args, **kwargs):
-        return self.encode(*args, **kwargs)
-
-    def encode(self, smiles_list, padding=False, return_tensors=None):
-        adjacency_list, distance_list, features_list, mask_list = [], [], [], []
+    def _encode(self, smiles_list: List[str]) -> List[MatMoleculeEncoding]:
+        encodings = []
         for smiles in smiles_list:
             try:
-                mol = MolFromSmiles(smiles)
+                mol = Chem.MolFromSmiles(smiles)
                 try:
                     mol = Chem.AddHs(mol)
                     AllChem.EmbedMolecule(mol, maxAttempts=5000)
@@ -35,34 +46,30 @@ class MatFeaturizer:
                     AllChem.Compute2DCoords(mol)
 
                 afm, adj, dist = featurize_mol(mol, self._add_dummy_node, self._one_hot_formal_charge)
-                mask = np.sum(np.abs(dist), axis=-1) != 0
-                features_list.append(afm)
-                adjacency_list.append(adj)
-                distance_list.append(dist)
-                mask_list.append(mask)
+                encodings.append(MatMoleculeEncoding(node_features=afm, adjacency_matrix=adj, distance_matrix=dist))
             except ValueError as e:
                 logging.warning('the SMILES ({}) can not be converted to a graph.\nREASON: {}'.format(smiles, e))
 
-        if padding:
-            max_size = max(m.shape[0] for m in adjacency_list)
-            adjacency_list = [pad_array(adj, shape=(max_size, max_size)) for adj in adjacency_list]
-            distance_list = [pad_array(dist, shape=(max_size, max_size)) for dist in distance_list]
-            features_list = [pad_array(afm, shape=(max_size, afm.shape[1])) for afm in features_list]
-            mask_list = [pad_array(mask, shape=max_size, dtype=np.bool) for mask in mask_list]
+        return encodings
 
-        if return_tensors == 'pt':
-            adjacency_list = FloatTensor(adjacency_list)
-            distance_list = FloatTensor(distance_list)
-            features_list = FloatTensor(features_list)
-            mask_list = BoolTensor(mask_list)
+    def _get_batch_from_encodings(self, encodings: List[MatMoleculeEncoding]) -> MatBatchEncoding:
+        adjacency_list, distance_list, features_list, batch_mask_list = [], [], [], []
+        max_size = max(e.adjacency_matrix.shape[0] for e in encodings)
+        for e in encodings:
+            adjacency_list.append(pad_array(e.adjacency_matrix, shape=(max_size, max_size)))
+            distance_list.append(pad_array(e.distance_matrix, shape=(max_size, max_size)))
+            features_list.append(pad_array(e.node_features, shape=(max_size, e.node_features.shape[1])))
+            batch_mask = np.sum(np.abs(e.node_features), axis=-1) != 0
+            batch_mask_list.append(pad_array(batch_mask, shape=max_size, dtype=np.bool))
 
-        return {'node_features': features_list,
-                'adjacency_matrix': adjacency_list,
-                'distance_matrix': distance_list,
-                'mask': mask_list}
+        return MatBatchEncoding(node_features=torch.FloatTensor(features_list),
+                                adjacency_matrix=torch.FloatTensor(adjacency_list),
+                                distance_matrix=torch.FloatTensor(distance_list),
+                                batch_mask=torch.BoolTensor(batch_mask_list))
 
 
-def featurize_mol(mol, add_dummy_node, one_hot_formal_charge):
+def featurize_mol(mol: Chem.rdchem.Mol, add_dummy_node: bool, one_hot_formal_charge: bool) \
+        -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Featurize molecule.
 
     Args:
@@ -104,7 +111,7 @@ def featurize_mol(mol, add_dummy_node, one_hot_formal_charge):
     return node_features, adj_matrix, dist_matrix
 
 
-def get_atom_features(atom, one_hot_formal_charge=True):
+def get_atom_features(atom: Chem.rdchem.Atom, one_hot_formal_charge: bool = True) -> np.ndarray:
     """Calculate atom features.
 
     Args:
@@ -145,25 +152,8 @@ def get_atom_features(atom, one_hot_formal_charge=True):
     return np.array(attributes, dtype=np.float32)
 
 
-def one_hot_vector(val, lst):
+def one_hot_vector(val: int, lst: List[int]) -> Iterable:
     """Converts a value to a one-hot vector based on options in lst"""
     if val not in lst:
         val = lst[-1]
     return map(lambda x: x == val, lst)
-
-
-def pad_array(array, *, shape, dtype=np.float32):
-    """Pad an array with zeros.
-
-    Args:
-        array (ndarray): An array to be padded.
-        shape (tuple[int]): The desired shape of the padded array.
-        dtype (data-type): The desired data-type for the array.
-
-    Returns:
-        An array of the given shape padded with zeros.
-    """
-    result = np.zeros(shape, dtype=dtype)
-    slices = tuple(slice(s) for s in array.shape)
-    result[slices] = array
-    return result

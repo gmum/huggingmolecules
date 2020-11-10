@@ -1,16 +1,14 @@
 import unittest
-from src import *
-from transformers import BertPreTrainedModel, BertConfig
+import numpy as np
+from src import MatFeaturizer, MatConfig, MatModel
 
-class MatPreparerTest(unittest.TestCase):
+
+class MatFeaturizerTest(unittest.TestCase):
 
     def test_single(self):
         featurizer = MatFeaturizer()
-        input = featurizer(["CO", "CSC"], padding=False)
-        node_features = input['node_features'][0]
-        adj_matrix = input['adjacency_matrix'][0]
-        dist_matrix = input['distance_matrix'][0]
-        mask = input['mask'][0]
+        batch = featurizer.__call__(["CO"])
+        # batch = featurizer(["CO"])  # it doesn't type well for some reason
 
         exp_node_features = np.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -26,18 +24,15 @@ class MatPreparerTest(unittest.TestCase):
                                     [1000000.0, 1.3984568119049072, 0.0]])
         exp_mask = np.array([True, True, True])
 
-        assert np.allclose(exp_node_features, node_features)
-        assert np.allclose(exp_adj_matrix, adj_matrix)
-        assert np.allclose(exp_dist_matrix, dist_matrix)
-        assert np.allclose(exp_mask, mask)
+        assert np.allclose(exp_node_features, batch.node_features)
+        assert np.allclose(exp_adj_matrix, batch.adjacency_matrix)
+        assert np.allclose(exp_dist_matrix, batch.distance_matrix)
+        assert np.allclose(exp_mask, batch.batch_mask)
+
 
     def test_padded(self):
         featurizer = MatFeaturizer()
-        input = featurizer(["CO", "CSC"], padding=True)
-        node_features = input['node_features'][0]
-        adj_matrix = input['adjacency_matrix'][0]
-        dist_matrix = input['distance_matrix'][0]
-        mask = input['mask'][0]
+        batch = featurizer.__call__(["CO", "CSC"])
 
         exp_node_features = np.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -57,10 +52,11 @@ class MatPreparerTest(unittest.TestCase):
                                     [0.0, 0.0, 0.0, 0.0]])
         exp_mask = np.array([True, True, True, False])
 
-        assert np.allclose(exp_node_features, node_features)
-        assert np.allclose(exp_adj_matrix, adj_matrix)
-        assert np.allclose(exp_dist_matrix, dist_matrix)
-        assert np.allclose(exp_mask, mask)
+        assert np.allclose(exp_node_features, batch.node_features[0])
+        assert np.allclose(exp_adj_matrix, batch.adjacency_matrix[0])
+        assert np.allclose(exp_dist_matrix, batch.distance_matrix[0])
+        assert np.allclose(exp_mask, batch.batch_mask[0])
+
 
 class MatConfigTest(unittest.TestCase):
 
@@ -71,25 +67,13 @@ class MatConfigTest(unittest.TestCase):
 
 class MatModelTest(unittest.TestCase):
 
-    def test_explicit(self):
-        featurizer = MatFeaturizer()
-        input = featurizer(["CC(C)Cl", "CCCBr"], padding=True, return_tensors='pt')
-
-        config = MatConfig()
-        model = MatModel(config)
-        model.load_weights('../mat-base-freesolv')
-
-        output = model(**input)
-        print(output)
-
     def test_errors(self):
         pass
 
     def test_from_pretrained(self):
         featurizer = MatFeaturizer()
-        input = featurizer(["CC(C)Cl", "CCCBr"], padding=True, return_tensors='pt')
+        batch = featurizer.__call__(["CC(C)Cl", "CCCBr"])
 
         model = MatModel.from_pretrained('mat-base-freesolv')
-
-        output = model(**input)
+        output = model(batch)
         print(output)
