@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from src import MatFeaturizer, MatConfig, MatModel
+from src.chemformers import MatFeaturizer, MatConfig, MatModel
 
 
 class MatFeaturizerTest(unittest.TestCase):
@@ -28,7 +28,6 @@ class MatFeaturizerTest(unittest.TestCase):
         assert np.allclose(exp_adj_matrix, batch.adjacency_matrix)
         assert np.allclose(exp_dist_matrix, batch.distance_matrix)
         assert np.allclose(exp_mask, batch.batch_mask)
-
 
     def test_padded(self):
         featurizer = MatFeaturizer()

@@ -1,18 +1,19 @@
-import math, copy
+import copy
+import math
 from typing import *
-import numpy as np
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.utils import xavier_normal_small_init_, xavier_uniform_small_init_
-from src.configuring_mat import *
-from src.modeling_utils import PretrainedModelMixin
-from src.featurizing_mat import MatBatchEncoding
+from src.chemformers.configuration.configuration_mat import MatConfig
+from src.chemformers.featurization.featurization_mat import MatBatchEncoding
+from .models_api import PretrainedModelMixin
+from .models_utils import xavier_normal_small_init_, xavier_uniform_small_init_
 
 MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
-    'mat-base-freesolv': '../mat-base-freesolv'
+    'mat-base-freesolv': '/home/panjan/Desktop/GMUM/chemformers/saved/mat-base-freesolv'
 }
 
 

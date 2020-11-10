@@ -1,6 +1,5 @@
 import json
 from typing import *
-from abc import abstractmethod
 
 T_Config = TypeVar("T_Config")
 

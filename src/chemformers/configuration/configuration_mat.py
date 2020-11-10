@@ -1,7 +1,7 @@
-from src.configuring_utils import PretrainedConfigMixin
+from .configuration_api import PretrainedConfigMixin
 
 MAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING = {
-    'mat-base-freesolv': '../mat-base-freesolv-config'
+    'mat-base-freesolv': '/home/panjan/Desktop/GMUM/chemformers/saved/mat-base-freesolv-config'
 }
 
 

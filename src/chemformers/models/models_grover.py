@@ -1,11 +1,9 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch_geometric.data import Batch
 from torch_geometric.nn import NNConv, MessagePassing
 from torch_geometric.utils import add_self_loops
-import torch_geometric
-from torch_geometric.data import Batch
-import torch.nn.functional as F
-
 
 
 class Grover(nn.Module):

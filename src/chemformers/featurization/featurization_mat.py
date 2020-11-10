@@ -1,14 +1,15 @@
 import logging
 from dataclasses import dataclass
 from typing import *
+
 import numpy as np
 import torch
-
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from sklearn.metrics import pairwise_distances
 
-from src.featurizing_utils import PretrainedFeaturizerBase, pad_array
+from .featurization_api import PretrainedFeaturizerBase
+from .featurization_utils import pad_array
 
 
 @dataclass

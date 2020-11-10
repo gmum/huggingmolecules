@@ -1,5 +1,5 @@
 # weights
-*.pt
+saved
 
 # IDEs
 .idea

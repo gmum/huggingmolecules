@@ -1,8 +1,9 @@
+from typing import *
+
 import torch
 import torch.nn as nn
-from typing import *
-from src.configuring_utils import PretrainedConfigMixin
-import inspect
+
+from src.chemformers.configuration.configuration_api import PretrainedConfigMixin
 
 T_Config = TypeVar("T_Config", bound=PretrainedConfigMixin)
 T_Model = TypeVar("T_Model")

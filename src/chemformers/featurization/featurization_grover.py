@@ -1,11 +1,11 @@
-import numpy as np
 from typing import *
+
+import numpy as np
 import torch
-import torch_geometric
+from rdkit import Chem
 from torch_geometric.data import Data
 
-from rdkit import Chem
-from src.featurizing_utils import PretrainedFeaturizerBase
+from src.chemformers.featurization.featurization_api import PretrainedFeaturizerBase
 
 
 class GroverFeaturizer(PretrainedFeaturizerBase):
