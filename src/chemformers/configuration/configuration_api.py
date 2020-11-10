@@ -1,10 +1,14 @@
 import json
 from typing import *
 
+T = TypeVar('T')
 T_Config = TypeVar("T_Config")
+# should be f-bounded
+# meh. Typing in python sucks...
+# https://github.com/AlexandreDecan/portion/issues/27
 
 
-class PretrainedConfigMixin(Generic[T_Config]):
+class PretrainedConfigMixin:
     def __init__(self, **kwargs):
         pass
 
@@ -13,7 +17,7 @@ class PretrainedConfigMixin(Generic[T_Config]):
         raise NotImplementedError
 
     @classmethod
-    def from_pretrained(cls, pretrained_name: str) -> T_Config:
+    def from_pretrained(cls, pretrained_name: str):
         file_path = cls._get_arch_from_pretrained_name(pretrained_name)
         with open(file_path, 'r') as fp:
             param_dict: dict = json.load(fp)

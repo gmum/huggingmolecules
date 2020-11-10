@@ -5,24 +5,21 @@ import torch.nn as nn
 
 from src.chemformers.configuration.configuration_api import PretrainedConfigMixin
 
-T_Config = TypeVar("T_Config", bound=PretrainedConfigMixin)
-T_Model = TypeVar("T_Model")
+# T_Config_Cls = TypeVar("T_Config_Cls", bound=Type[PretrainedConfigMixin])
+# T_Model = TypeVar("T_Model")
 
 
-class PretrainedModelMixin(nn.Module, Generic[T_Config, T_Model]):
-    def __init__(self, config: T_Config):
-        super().__init__()
-
+class PretrainedModelMixin(nn.Module):
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
         raise NotImplementedError
 
     @classmethod
-    def _get_config_cls(cls) -> Type[T_Config]:
+    def _get_config_cls(cls):
         raise NotImplementedError
 
     @classmethod
-    def from_pretrained(cls, pretrained_name: str) -> T_Model:
+    def from_pretrained(cls, pretrained_name: str):
         file_path = cls._get_arch_from_pretrained_name(pretrained_name)
         config_cls = cls._get_config_cls()
         config = config_cls.from_pretrained(pretrained_name)

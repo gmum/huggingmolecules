@@ -5,7 +5,7 @@ MAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING = {
 }
 
 
-class MatConfig(PretrainedConfigMixin["MatConfig"]):
+class MatConfig(PretrainedConfigMixin):
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name):
         return MAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING.get(pretrained_name, None)

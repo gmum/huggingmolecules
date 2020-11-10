@@ -17,7 +17,7 @@ MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
 }
 
 
-class MatModel(PretrainedModelMixin[MatConfig, "MatModel"]):
+class MatModel(PretrainedModelMixin):
     @classmethod
     def _get_config_cls(cls) -> Type[MatConfig]:
         return MatConfig
@@ -27,7 +27,7 @@ class MatModel(PretrainedModelMixin[MatConfig, "MatModel"]):
         return MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING.get(pretrained_name, None)
 
     def __init__(self, config):
-        super(MatModel, self).__init__(config)
+        super(MatModel, self).__init__()
 
         self.encoder = Encoder(config)
         self.src_embed = Embeddings(config)
