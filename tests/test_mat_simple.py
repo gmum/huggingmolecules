@@ -1,5 +1,7 @@
 import unittest
+
 import numpy as np
+
 from src.chemformers import MatFeaturizer, MatConfig, MatModel
 
 
