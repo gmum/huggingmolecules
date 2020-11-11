@@ -12,30 +12,25 @@ GroverBatchEncoding = torch_geometric.data.Batch
 
 
 class GroverFeaturizer(PretrainedFeaturizerBase[GroverMoleculeEncoding, GroverBatchEncoding]):
-    def _encode(self, smiles_list: List[str]) -> List[GroverMoleculeEncoding]:
-        encodings = []
-        for smiles in smiles_list:
-            graph = MolGraph(smiles)
+    def _encode_smiles(self, smiles: str, y: Optional[float]) -> T_MoleculeEncoding:
+        graph = MolGraph(smiles)
 
-            atom_features = torch.tensor(graph.f_atoms)
+        atom_features = torch.tensor(graph.f_atoms)
 
-            bonds = np.zeros((2, graph.n_bonds), dtype=np.long)
-            for i in range(graph.n_bonds):
-                atom_from = graph.b2a[i]
-                atom_to = graph.b2a[graph.b2revb[i]]
-                bonds[:, i] = atom_from, atom_to
-            bonds = torch.tensor(bonds).long()
+        bonds = np.zeros((2, graph.n_bonds), dtype=np.long)
+        for i in range(graph.n_bonds):
+            atom_from = graph.b2a[i]
+            atom_to = graph.b2a[graph.b2revb[i]]
+            bonds[:, i] = atom_from, atom_to
+        bonds = torch.tensor(bonds).long()
 
-            bonds_features = []
-            n_atom_features = len(graph.f_atoms[0])
-            for i in range(graph.n_bonds):
-                bonds_features.append(graph.f_bonds[i][n_atom_features:])
-            bonds_features = torch.tensor(bonds_features).float()
+        bonds_features = []
+        n_atom_features = len(graph.f_atoms[0])
+        for i in range(graph.n_bonds):
+            bonds_features.append(graph.f_bonds[i][n_atom_features:])
+        bonds_features = torch.tensor(bonds_features).float()
 
-            enc = GroverMoleculeEncoding(x=atom_features, edge_index=bonds, edge_attr=bonds_features)
-            encodings.append(enc)
-
-        return encodings
+        return GroverMoleculeEncoding(x=atom_features, edge_index=bonds, edge_attr=bonds_features)
 
     def _get_batch_from_encodings(self, encodings: List[GroverMoleculeEncoding]) -> GroverBatchEncoding:
         return GroverBatchEncoding.from_data_list(encodings)

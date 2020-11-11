@@ -9,7 +9,7 @@ class MatFeaturizerTest(unittest.TestCase):
 
     def test_single(self):
         featurizer = MatFeaturizer()
-        batch = featurizer.__call__(["CO"])
+        batch = featurizer.__call__(["CO"], [8])
         # batch = featurizer(["CO"])  # it doesn't type well for some reason
 
         exp_node_features = np.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -25,11 +25,13 @@ class MatFeaturizerTest(unittest.TestCase):
                                     [1000000.0, 0.0, 1.3984568119049072],
                                     [1000000.0, 1.3984568119049072, 0.0]])
         exp_mask = np.array([True, True, True])
+        exp_y = np.array([8])
 
         assert np.allclose(exp_node_features, batch.node_features)
         assert np.allclose(exp_adj_matrix, batch.adjacency_matrix)
         assert np.allclose(exp_dist_matrix, batch.distance_matrix)
         assert np.allclose(exp_mask, batch.batch_mask)
+        assert np.allclose(exp_y, batch.y)
 
     def test_padded(self):
         featurizer = MatFeaturizer()

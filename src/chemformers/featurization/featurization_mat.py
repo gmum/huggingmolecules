@@ -17,6 +17,7 @@ class MatMoleculeEncoding:
     node_features: np.ndarray
     adjacency_matrix: np.ndarray
     distance_matrix: np.ndarray
+    y: Optional[np.ndarray]
 
 
 @dataclass
@@ -25,6 +26,7 @@ class MatBatchEncoding:
     adjacency_matrix: torch.FloatTensor
     distance_matrix: torch.FloatTensor
     batch_mask: torch.BoolTensor
+    y: Optional[torch.FloatTensor]
 
 
 class MatFeaturizer(PretrainedFeaturizerBase[MatMoleculeEncoding, MatBatchEncoding]):
@@ -33,29 +35,24 @@ class MatFeaturizer(PretrainedFeaturizerBase[MatMoleculeEncoding, MatBatchEncodi
         self._add_dummy_node = add_dummy_node
         self._one_hot_formal_charge = one_hot_formal_charge
 
-    def _encode(self, smiles_list: List[str]) -> List[MatMoleculeEncoding]:
-        encodings = []
-        for smiles in smiles_list:
+    def _encode_smiles(self, smiles: str, y: Optional[float]) -> MatMoleculeEncoding:
+        try:
+            mol = Chem.MolFromSmiles(smiles)
             try:
-                mol = Chem.MolFromSmiles(smiles)
-                try:
-                    mol = Chem.AddHs(mol)
-                    AllChem.EmbedMolecule(mol, maxAttempts=5000)
-                    AllChem.UFFOptimizeMolecule(mol)
-                    mol = Chem.RemoveHs(mol)
-                except:
-                    AllChem.Compute2DCoords(mol)
+                mol = Chem.AddHs(mol)
+                AllChem.EmbedMolecule(mol, maxAttempts=5000)
+                AllChem.UFFOptimizeMolecule(mol)
+                mol = Chem.RemoveHs(mol)
+            except:
+                AllChem.Compute2DCoords(mol)
 
-                afm, adj, dist = featurize_mol(mol, self._add_dummy_node, self._one_hot_formal_charge)
-                enc = MatMoleculeEncoding(node_features=afm, adjacency_matrix=adj, distance_matrix=dist)
-                encodings.append(enc)
-            except ValueError as e:
-                logging.warning('the SMILES ({}) can not be converted to a graph.\nREASON: {}'.format(smiles, e))
-
-        return encodings
+            afm, adj, dist = featurize_mol(mol, self._add_dummy_node, self._one_hot_formal_charge)
+            return MatMoleculeEncoding(node_features=afm, adjacency_matrix=adj, distance_matrix=dist, y=y)
+        except ValueError as e:
+            logging.warning('the SMILES ({}) can not be converted to a graph.\nREASON: {}'.format(smiles, e))
 
     def _get_batch_from_encodings(self, encodings: List[MatMoleculeEncoding]) -> MatBatchEncoding:
-        adjacency_list, distance_list, features_list, batch_mask_list = [], [], [], []
+        adjacency_list, distance_list, features_list, batch_mask_list, y_list = [], [], [], [], []
         max_size = max(e.adjacency_matrix.shape[0] for e in encodings)
         for e in encodings:
             adjacency_list.append(pad_array(e.adjacency_matrix, shape=(max_size, max_size)))
@@ -63,11 +60,13 @@ class MatFeaturizer(PretrainedFeaturizerBase[MatMoleculeEncoding, MatBatchEncodi
             features_list.append(pad_array(e.node_features, shape=(max_size, e.node_features.shape[1])))
             batch_mask = np.sum(np.abs(e.node_features), axis=-1) != 0
             batch_mask_list.append(pad_array(batch_mask, shape=max_size, dtype=np.bool))
+            y_list.append(e.y)
 
         return MatBatchEncoding(node_features=torch.FloatTensor(features_list),
                                 adjacency_matrix=torch.FloatTensor(adjacency_list),
                                 distance_matrix=torch.FloatTensor(distance_list),
-                                batch_mask=torch.BoolTensor(batch_mask_list))
+                                batch_mask=torch.BoolTensor(batch_mask_list),
+                                y=None if None in y_list else torch.FloatTensor(y_list))
 
 
 def featurize_mol(mol: Chem.rdchem.Mol, add_dummy_node: bool, one_hot_formal_charge: bool) \
