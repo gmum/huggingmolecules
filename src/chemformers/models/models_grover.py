@@ -4,24 +4,29 @@ import torch.nn.functional as F
 from torch_geometric.data import Batch
 from torch_geometric.nn import NNConv, MessagePassing
 from torch_geometric.utils import add_self_loops
+from .models_api import PretrainedModelBase
+from src.chemformers.configuration import GroverConfig
+
+GROVER_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
+    'grover-base-whatever': '/home/panjan/Desktop/GMUM/chemformers/saved/grover-base-whatever'
+}
 
 
-class Grover(nn.Module):
-    def __init__(self,
-                 model_dim: int, num_layers: int, num_heads: int, dropout: float,
-                 num_layers_dympnn: int, num_hops_dympnn: int,
-                 n_f_atom: int, n_f_bond: int,
-                 readout_hidden_dim: int, readout_num_heads: int,
-                 head_hidden_dim: int, output_dim: int, head_num_layers: int):
-        super(Grover, self).__init__()
+class GroverModel(PretrainedModelBase):
+    @classmethod
+    def _get_config_cls(cls):
+        return GroverConfig
 
-        self.enc = Encoder(model_dim=model_dim, num_layers=num_layers, num_heads=num_heads, dropout=dropout,
-                           num_layers_dympnn=num_layers_dympnn, num_hops_dympnn=num_hops_dympnn,
-                           n_f_atom=n_f_atom, n_f_bond=n_f_bond)
-        self.readout = ReadoutNetwork(model_dim=model_dim + n_f_atom, hidden_dim=readout_hidden_dim,
-                                      num_heads=readout_num_heads, dropout=dropout)
-        self.output_net = OutputNetwork(input_dim=readout_num_heads, hidden_dim=head_hidden_dim,
-                                        output_dim=output_dim, num_layers=head_num_layers, dropout=dropout)
+    @classmethod
+    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
+        return GROVER_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING.get(pretrained_name, None)
+
+    def __init__(self, config: GroverConfig):
+        super(GroverModel, self).__init__()
+
+        self.enc = Encoder(config)
+        self.readout = ReadoutNetwork(config)
+        self.output_net = OutputNetwork(config)
 
     def forward(self, batch):
         batch = self.enc(batch)
@@ -31,14 +36,16 @@ class Grover(nn.Module):
 
 
 class OutputNetwork(nn.Module):
-    def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, num_layers: int, dropout: float):
+    def __init__(self, config: GroverConfig):
         super(OutputNetwork, self).__init__()
-
-        layers = [nn.Linear(input_dim, hidden_dim), nn.PReLU(), nn.Dropout(p=dropout)] + \
-                 [v for t in list(zip([nn.Linear(hidden_dim, hidden_dim) for _ in range(num_layers - 2)],
-                                      [nn.PReLU() for _ in range(num_layers - 2)],
-                                      [nn.Dropout(dropout) for _ in range(num_layers - 2)])) for v in t] + \
-                 [nn.Linear(hidden_dim, output_dim)]
+        input_dim = config.readout_num_heads
+        hidden_dim = config.head_hidden_dim
+        layers = [nn.Linear(input_dim, hidden_dim), nn.PReLU(), nn.Dropout(p=config.dropout)] + \
+                 [v for t in list(zip([nn.Linear(hidden_dim, hidden_dim) for _ in range(config.head_num_layers - 2)],
+                                      [nn.PReLU() for _ in range(config.head_num_layers - 2)],
+                                      [nn.Dropout(config.dropout) for _ in range(config.head_num_layers - 2)])) for v in
+                  t] + \
+                 [nn.Linear(hidden_dim, config.output_dim)]
         self.nn = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -188,33 +195,33 @@ class MultiHeadAttention(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, model_dim: int, num_layers: int, num_heads: int, dropout: float,
-                 num_layers_dympnn: int, num_hops_dympnn: int,
-                 n_f_atom: int, n_f_bond: int):
+    def __init__(self, config: GroverConfig):
         super(Encoder, self).__init__()
 
-        self.num_layers = num_layers
-        self.num_hops_dympnn = num_hops_dympnn
+        self.num_layers = config.num_layers
+        self.num_hops_dympnn = config.num_hops_dympnn
 
-        self.embedding = nn.Linear(n_f_atom, model_dim)
+        self.embedding = nn.Linear(config.n_f_atom, config.model_dim)
 
-        dympnn_layers = [dyMPNN(model_dim, num_layers_dympnn, n_f_bond, dropout) for _ in range(num_layers)]
+        dympnn_layers = [dyMPNN(config.model_dim, config.num_layers_dympnn, config.n_f_bond, config.dropout) for _ in
+                         range(config.num_layers)]
         self.dympnn_layers = nn.ModuleList(dympnn_layers)
 
         #         sa_layers = [nn.MultiheadAttention(model_dim, num_heads) for _ in range(num_layers)]
-        sa_layers = [MultiHeadAttention(model_dim, num_heads, dropout) for _ in range(num_layers)]
+        sa_layers = [MultiHeadAttention(config.model_dim, config.num_heads, config.dropout) for _ in
+                     range(config.num_layers)]
         self.sa_layers = nn.ModuleList(sa_layers)
 
-        ln_layers = [LayerNorm(model_dim) for _ in range(num_layers)]
+        ln_layers = [LayerNorm(config.model_dim) for _ in range(config.num_layers)]
         self.ln_layers = nn.ModuleList(ln_layers)
 
         self.a2n = Aggregate2Node()
-        self.a2n_linear = nn.Linear(model_dim + n_f_atom, model_dim + n_f_atom)
-        self.a2n_ln = LayerNorm(model_dim + n_f_atom)
+        self.a2n_linear = nn.Linear(config.model_dim + config.n_f_atom, config.model_dim + config.n_f_atom)
+        self.a2n_ln = LayerNorm(config.model_dim + config.n_f_atom)
 
         self.a2b = Aggregate2Batch()
-        self.a2b_linear = nn.Linear(model_dim + n_f_bond, model_dim + n_f_bond)
-        self.a2b_ln = LayerNorm(model_dim + n_f_bond)
+        self.a2b_linear = nn.Linear(config.model_dim + config.n_f_bond, config.model_dim + config.n_f_bond)
+        self.a2b_ln = LayerNorm(config.model_dim + config.n_f_bond)
 
     def forward(self, input_batch):
         batch = input_batch.clone()
@@ -260,16 +267,16 @@ class Encoder(nn.Module):
 
 
 class ReadoutNetwork(nn.Module):
-    def __init__(self, model_dim: int, hidden_dim: int, num_heads: int, dropout: float):
+    def __init__(self, config: GroverConfig):
         super(ReadoutNetwork, self).__init__()
-
-        self.W1 = nn.Linear(model_dim, hidden_dim)
-        self.W2 = nn.Linear(hidden_dim, num_heads)
+        model_dim = config.model_dim + config.n_f_atom
+        self.W1 = nn.Linear(model_dim, config.readout_hidden_dim)
+        self.W2 = nn.Linear(config.readout_hidden_dim, config.num_heads)
 
         self.softmax = nn.Softmax(dim=1)
 
-        self.weights_dropout = nn.Dropout(dropout)
-        self.tensor_dropout = nn.Dropout(dropout)
+        self.weights_dropout = nn.Dropout(config.dropout)
+        self.tensor_dropout = nn.Dropout(config.dropout)
 
     def forward(self, batch):
         input_batch = batch.clone()

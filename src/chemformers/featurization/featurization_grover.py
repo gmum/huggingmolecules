@@ -3,20 +3,21 @@ from typing import *
 import numpy as np
 import torch
 from rdkit import Chem
-from torch_geometric.data import Data
+import torch_geometric.data
 
-from src.chemformers.featurization.featurization_api import PretrainedFeaturizerBase
+from .featurization_api import PretrainedFeaturizerBase, T_MoleculeEncoding, T_BatchEncoding
+
+GroverMoleculeEncoding = torch_geometric.data.Data
+GroverBatchEncoding = torch_geometric.data.Batch
 
 
-class GroverFeaturizer(PretrainedFeaturizerBase):
-    def _encode(self, smiles_list, padding=False, return_tensors=None):
-        geom_dataset = []
-
-        for smi in smiles_list:
-            graph = MolGraph(smi)
+class GroverFeaturizer(PretrainedFeaturizerBase[GroverMoleculeEncoding, GroverBatchEncoding]):
+    def _encode(self, smiles_list: List[str]) -> List[GroverMoleculeEncoding]:
+        encodings = []
+        for smiles in smiles_list:
+            graph = MolGraph(smiles)
 
             atom_features = torch.tensor(graph.f_atoms)
-            #         rev_bond = torch.tensor(graph.b2revb)
 
             bonds = np.zeros((2, graph.n_bonds), dtype=np.long)
             for i in range(graph.n_bonds):
@@ -31,15 +32,13 @@ class GroverFeaturizer(PretrainedFeaturizerBase):
                 bonds_features.append(graph.f_bonds[i][n_atom_features:])
             bonds_features = torch.tensor(bonds_features).float()
 
-            mol = Data(x=atom_features,
-                       edge_index=bonds,
-                       edge_attr=bonds_features)
-            geom_dataset.append(mol)
+            enc = GroverMoleculeEncoding(x=atom_features, edge_index=bonds, edge_attr=bonds_features)
+            encodings.append(enc)
 
-        return geom_dataset
+        return encodings
 
-    def pad(self, encoding: Dict[str, List[np.ndarray]]) -> Dict[str, torch.Tensor]:
-        raise NotImplementedError
+    def _get_batch_from_encodings(self, encodings: List[GroverMoleculeEncoding]) -> GroverBatchEncoding:
+        return GroverBatchEncoding.from_data_list(encodings)
 
 
 # Atom feature sizes

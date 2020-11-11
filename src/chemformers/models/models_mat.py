@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 from src.chemformers.configuration.configuration_mat import MatConfig
 from src.chemformers.featurization.featurization_mat import MatBatchEncoding
-from .models_api import PretrainedModelMixin
+from .models_api import PretrainedModelBase
 from .models_utils import xavier_normal_small_init_, xavier_uniform_small_init_
 
 MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
@@ -17,14 +17,7 @@ MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
 }
 
 
-class MatModel(PretrainedModelMixin):
-    @classmethod
-    def _get_config_cls(cls) -> Type[MatConfig]:
-        return MatConfig
-
-    @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name):
-        return MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING.get(pretrained_name, None)
+class MatModel(PretrainedModelBase):
 
     def __init__(self, config):
         super(MatModel, self).__init__()
@@ -34,6 +27,14 @@ class MatModel(PretrainedModelMixin):
         self.generator = Generator(config)
 
         self.init_weights(config.init_type)
+
+    @classmethod
+    def _get_config_cls(cls) -> Type[MatConfig]:
+        return MatConfig
+
+    @classmethod
+    def _get_arch_from_pretrained_name(cls, pretrained_name):
+        return MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING.get(pretrained_name, None)
 
     def init_weights(self, init_type: str):
         for p in self.parameters():
@@ -52,7 +53,8 @@ class MatModel(PretrainedModelMixin):
         return self.predict(self.encode(batch), batch.batch_mask)
 
     def encode(self, batch: MatBatchEncoding):
-        return self.encoder(self.src_embed(batch.node_features), batch.batch_mask, batch.adjacency_matrix, batch.distance_matrix, None)
+        return self.encoder(self.src_embed(batch.node_features), batch.batch_mask, batch.adjacency_matrix,
+                            batch.distance_matrix, None)
 
     def predict(self, out, out_mask):
         return self.generator(out, out_mask)

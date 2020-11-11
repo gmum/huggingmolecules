@@ -1,15 +1,12 @@
-from typing import *
-
 import torch
 import torch.nn as nn
 
-from src.chemformers.configuration.configuration_api import PretrainedConfigMixin
 
 # T_Config_Cls = TypeVar("T_Config_Cls", bound=Type[PretrainedConfigMixin])
 # T_Model = TypeVar("T_Model")
 
 
-class PretrainedModelMixin(nn.Module):
+class PretrainedModelBase(nn.Module):
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
         raise NotImplementedError
@@ -29,6 +26,8 @@ class PretrainedModelMixin(nn.Module):
 
     def load_weights(self, file_path: str):
         pretrained_state_dict = torch.load(file_path)
+        if 'model' in pretrained_state_dict:
+            pretrained_state_dict = pretrained_state_dict['model']
         model_state_dict = self.state_dict()
         for name, param in pretrained_state_dict.items():
             if 'generator' in name:

@@ -47,7 +47,8 @@ class MatFeaturizer(PretrainedFeaturizerBase[MatMoleculeEncoding, MatBatchEncodi
                     AllChem.Compute2DCoords(mol)
 
                 afm, adj, dist = featurize_mol(mol, self._add_dummy_node, self._one_hot_formal_charge)
-                encodings.append(MatMoleculeEncoding(node_features=afm, adjacency_matrix=adj, distance_matrix=dist))
+                enc = MatMoleculeEncoding(node_features=afm, adjacency_matrix=adj, distance_matrix=dist)
+                encodings.append(enc)
             except ValueError as e:
                 logging.warning('the SMILES ({}) can not be converted to a graph.\nREASON: {}'.format(smiles, e))
 

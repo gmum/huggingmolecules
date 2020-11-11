@@ -68,9 +68,6 @@ class MatConfigTest(unittest.TestCase):
 
 class MatModelTest(unittest.TestCase):
 
-    def test_errors(self):
-        pass
-
     def test_from_pretrained(self):
         featurizer = MatFeaturizer()
         batch = featurizer.__call__(["CC(C)Cl", "CCCBr"])
