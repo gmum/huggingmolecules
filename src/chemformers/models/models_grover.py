@@ -6,13 +6,14 @@ from torch_geometric.nn import NNConv, MessagePassing
 from torch_geometric.utils import add_self_loops
 from .models_api import PretrainedModelBase
 from src.chemformers.configuration import GroverConfig
+from ..featurization.featurization_grover import GroverBatchEncoding
 
 GROVER_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
     'grover-base-whatever': '/home/panjan/Desktop/GMUM/chemformers/saved/grover-base-whatever'
 }
 
 
-class GroverModel(PretrainedModelBase):
+class GroverModel(PretrainedModelBase[GroverConfig]):
     @classmethod
     def _get_config_cls(cls):
         return GroverConfig
@@ -28,7 +29,7 @@ class GroverModel(PretrainedModelBase):
         self.readout = ReadoutNetwork(config)
         self.output_net = OutputNetwork(config)
 
-    def forward(self, batch):
+    def forward(self, batch: GroverBatchEncoding):
         batch = self.enc(batch)
         batch = self.readout(batch)
         batch = self.output_net(batch)

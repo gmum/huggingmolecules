@@ -30,9 +30,10 @@ class GroverFeaturizer(PretrainedFeaturizerBase[GroverMoleculeEncoding, GroverBa
             bonds_features.append(graph.f_bonds[i][n_atom_features:])
         bonds_features = torch.tensor(bonds_features).float()
 
-        return GroverMoleculeEncoding(x=atom_features, edge_index=bonds, edge_attr=bonds_features)
+        y = None if y is None else torch.tensor(y).float().view(-1, 1)
+        return GroverMoleculeEncoding(x=atom_features, edge_index=bonds, edge_attr=bonds_features, y=y)
 
-    def _get_batch_from_encodings(self, encodings: List[GroverMoleculeEncoding]) -> GroverBatchEncoding:
+    def _collate_encodings(self, encodings: List[GroverMoleculeEncoding]) -> GroverBatchEncoding:
         return GroverBatchEncoding.from_data_list(encodings)
 
 

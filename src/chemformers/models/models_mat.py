@@ -17,7 +17,7 @@ MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
 }
 
 
-class MatModel(PretrainedModelBase):
+class MatModel(PretrainedModelBase[MatBatchEncoding]):
 
     def __init__(self, config):
         super(MatModel, self).__init__()
@@ -49,15 +49,10 @@ class MatModel(PretrainedModelBase):
                     xavier_uniform_small_init_(p)
 
     def forward(self, batch: MatBatchEncoding):
-        "Take in and process masked src and target sequences."
-        return self.predict(self.encode(batch), batch.batch_mask)
-
-    def encode(self, batch: MatBatchEncoding):
-        return self.encoder(self.src_embed(batch.node_features), batch.batch_mask, batch.adjacency_matrix,
-                            batch.distance_matrix, None)
-
-    def predict(self, out, out_mask):
-        return self.generator(out, out_mask)
+        embedded = self.src_embed(batch.node_features)
+        encoded = self.encoder(embedded, batch.batch_mask, batch.adjacency_matrix, batch.distance_matrix, None)
+        output = self.generator(encoded, batch.batch_mask)
+        return output
 
 
 class Generator(nn.Module):

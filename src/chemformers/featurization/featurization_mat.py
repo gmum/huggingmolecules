@@ -27,6 +27,10 @@ class MatBatchEncoding:
     distance_matrix: torch.FloatTensor
     batch_mask: torch.BoolTensor
     y: Optional[torch.FloatTensor]
+    batch_size: int
+
+    def __len__(self):
+        return self.batch_size
 
 
 class MatFeaturizer(PretrainedFeaturizerBase[MatMoleculeEncoding, MatBatchEncoding]):
@@ -51,7 +55,7 @@ class MatFeaturizer(PretrainedFeaturizerBase[MatMoleculeEncoding, MatBatchEncodi
         except ValueError as e:
             logging.warning('the SMILES ({}) can not be converted to a graph.\nREASON: {}'.format(smiles, e))
 
-    def _get_batch_from_encodings(self, encodings: List[MatMoleculeEncoding]) -> MatBatchEncoding:
+    def _collate_encodings(self, encodings: List[MatMoleculeEncoding]) -> MatBatchEncoding:
         adjacency_list, distance_list, features_list, batch_mask_list, y_list = [], [], [], [], []
         max_size = max(e.adjacency_matrix.shape[0] for e in encodings)
         for e in encodings:
@@ -66,7 +70,8 @@ class MatFeaturizer(PretrainedFeaturizerBase[MatMoleculeEncoding, MatBatchEncodi
                                 adjacency_matrix=torch.FloatTensor(adjacency_list),
                                 distance_matrix=torch.FloatTensor(distance_list),
                                 batch_mask=torch.BoolTensor(batch_mask_list),
-                                y=None if None in y_list else torch.FloatTensor(y_list))
+                                y=None if None in y_list else torch.FloatTensor(y_list).view(-1, 1),
+                                batch_size=len(features_list))
 
 
 def featurize_mol(mol: Chem.rdchem.Mol, add_dummy_node: bool, one_hot_formal_charge: bool) \
