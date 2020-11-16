@@ -31,6 +31,7 @@ class MatFeaturizerTest(unittest.TestCase):
         assert np.allclose(exp_adj_matrix, batch.adjacency_matrix)
         assert np.allclose(exp_dist_matrix, batch.distance_matrix)
         assert np.allclose(exp_mask, batch.batch_mask)
+        print(exp_y, batch.y)
         assert np.allclose(exp_y, batch.y)
 
     def test_padded(self):

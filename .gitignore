@@ -4,6 +4,9 @@ saved
 # datasets
 data
 
+# experiments
+experiments
+
 # IDEs
 .idea
 
@@ -111,6 +114,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
+environment.yml
 .env
 .venv
 env/

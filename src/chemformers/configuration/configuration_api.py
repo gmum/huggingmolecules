@@ -3,6 +3,8 @@ from typing import *
 
 T = TypeVar('T')
 T_Config = TypeVar("T_Config")
+
+
 # should be f-bounded
 # meh. Typing in python sucks...
 # https://github.com/AlexandreDecan/portion/issues/27

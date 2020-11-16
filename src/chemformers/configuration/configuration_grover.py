@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from .configuration_api import PretrainedConfigMixin
 
 GROVER_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING = {
-    'grover-base-whatever': '/home/panjan/Desktop/GMUM/chemformers/saved/grover-base-whatever-config'
+    'grover-base-whatever': './saved/grover-base-whatever-config'
 }
 
 
@@ -24,5 +24,5 @@ class GroverConfig(PretrainedConfigMixin):
     output_dim: int = 1
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name):
+    def _get_arch_from_pretrained_name(cls, pretrained_name: str):
         return GROVER_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING.get(pretrained_name, None)

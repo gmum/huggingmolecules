@@ -4,16 +4,23 @@ import torch.nn.functional as F
 from torch_geometric.data import Batch
 from torch_geometric.nn import NNConv, MessagePassing
 from torch_geometric.utils import add_self_loops
-from .models_api import PretrainedModelBase
+from .models_api import PretrainedModelMixin, LightningModuleMixin
 from src.chemformers.configuration import GroverConfig
 from ..featurization.featurization_grover import GroverBatchEncoding
 
 GROVER_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
-    'grover-base-whatever': '/home/panjan/Desktop/GMUM/chemformers/saved/grover-base-whatever'
+    'grover-base-whatever': './saved/grover-base-whatever'
 }
 
 
-class GroverModel(PretrainedModelBase[GroverConfig]):
+class GroverModel(PretrainedModelMixin, LightningModuleMixin[GroverBatchEncoding]):
+    def __init__(self, config: GroverConfig):
+        super().__init__()
+
+        self.enc = Encoder(config)
+        self.readout = ReadoutNetwork(config)
+        self.output_net = OutputNetwork(config)
+
     @classmethod
     def _get_config_cls(cls):
         return GroverConfig
@@ -21,13 +28,6 @@ class GroverModel(PretrainedModelBase[GroverConfig]):
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
         return GROVER_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING.get(pretrained_name, None)
-
-    def __init__(self, config: GroverConfig):
-        super(GroverModel, self).__init__()
-
-        self.enc = Encoder(config)
-        self.readout = ReadoutNetwork(config)
-        self.output_net = OutputNetwork(config)
 
     def forward(self, batch: GroverBatchEncoding):
         batch = self.enc(batch)

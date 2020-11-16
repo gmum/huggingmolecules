@@ -5,13 +5,13 @@ import torch
 from rdkit import Chem
 import torch_geometric.data
 
-from .featurization_api import PretrainedFeaturizerBase, T_MoleculeEncoding, T_BatchEncoding
+from .featurization_api import PretrainedFeaturizerMixin, T_MoleculeEncoding, T_BatchEncoding, BatchEncodingProtocol
 
 GroverMoleculeEncoding = torch_geometric.data.Data
 GroverBatchEncoding = torch_geometric.data.Batch
 
 
-class GroverFeaturizer(PretrainedFeaturizerBase[GroverMoleculeEncoding, GroverBatchEncoding]):
+class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverBatchEncoding]):
     def _encode_smiles(self, smiles: str, y: Optional[float]) -> T_MoleculeEncoding:
         graph = MolGraph(smiles)
 

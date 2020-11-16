@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from .configuration_api import PretrainedConfigMixin
 
 MAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING = {
-    'mat-base-freesolv': '/home/panjan/Desktop/GMUM/chemformers/saved/mat-base-freesolv-config'
+    'mat-base-freesolv': './saved/mat-base-freesolv-config',
+    'mat-base-freesolv-tests': '../saved/mat-base-freesolv-config'
 }
 
 
@@ -32,5 +33,5 @@ class MatConfig(PretrainedConfigMixin):
     init_type: str = 'uniform'
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name):
+    def _get_arch_from_pretrained_name(cls, pretrained_name: str):
         return MAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING.get(pretrained_name, None)

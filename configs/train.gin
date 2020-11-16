@@ -1,0 +1,7 @@
+train.save_path='./experiments/test_training'
+train.data_path='./data/freesolv/freesolv.csv'
+train.batch_size=1
+train.num_epochs=2
+train.gpus=0
+train.resume=True
+train.seed=None

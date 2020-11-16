@@ -9,17 +9,18 @@ import torch.nn.functional as F
 
 from src.chemformers.configuration.configuration_mat import MatConfig
 from src.chemformers.featurization.featurization_mat import MatBatchEncoding
-from .models_api import PretrainedModelBase
+from .models_api import PretrainedModelMixin, LightningModuleMixin
 from .models_utils import xavier_normal_small_init_, xavier_uniform_small_init_
 
 MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
-    'mat-base-freesolv': '/home/panjan/Desktop/GMUM/chemformers/saved/mat-base-freesolv'
+    'mat-base-freesolv': './saved/mat-base-freesolv',
+    'mat-base-freesolv-tests': '../saved/mat-base-freesolv'
 }
 
 
-class MatModel(PretrainedModelBase[MatBatchEncoding]):
+class MatModel(PretrainedModelMixin, LightningModuleMixin[MatBatchEncoding]):
 
-    def __init__(self, config):
+    def __init__(self, config: MatConfig):
         super(MatModel, self).__init__()
 
         self.encoder = Encoder(config)
@@ -29,12 +30,18 @@ class MatModel(PretrainedModelBase[MatBatchEncoding]):
         self.init_weights(config.init_type)
 
     @classmethod
-    def _get_config_cls(cls) -> Type[MatConfig]:
+    def _get_config_cls(cls):
         return MatConfig
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name):
+    def _get_arch_from_pretrained_name(cls, pretrained_name: str):
         return MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING.get(pretrained_name, None)
+
+    def forward(self, batch: MatBatchEncoding):
+        embedded = self.src_embed(batch.node_features)
+        encoded = self.encoder(embedded, batch.batch_mask, batch.adjacency_matrix, batch.distance_matrix, None)
+        output = self.generator(encoded, batch.batch_mask)
+        return output
 
     def init_weights(self, init_type: str):
         for p in self.parameters():
@@ -47,12 +54,6 @@ class MatModel(PretrainedModelBase[MatBatchEncoding]):
                     xavier_normal_small_init_(p)
                 elif init_type == 'small_uniform_init':
                     xavier_uniform_small_init_(p)
-
-    def forward(self, batch: MatBatchEncoding):
-        embedded = self.src_embed(batch.node_features)
-        encoded = self.encoder(embedded, batch.batch_mask, batch.adjacency_matrix, batch.distance_matrix, None)
-        output = self.generator(encoded, batch.batch_mask)
-        return output
 
 
 class Generator(nn.Module):
