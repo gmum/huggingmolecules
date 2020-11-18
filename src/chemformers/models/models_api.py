@@ -15,19 +15,20 @@ class LightningModuleMixin(pl.LightningModule, Generic[T_BatchEncoding]):
     def training_step(self, batch: T_BatchEncoding, batch_idx: int):
         output = self.forward(batch)
         loss = F.mse_loss(output, batch.y)
-        self.log('train_loss', loss)
+        self.log('train_loss', loss, on_epoch=True, on_step=True)
+        self.log('train_loss_step', loss, on_epoch=False, on_step=True)
         return loss
 
     def validation_step(self, batch: T_BatchEncoding, batch_idx: int):
         output = self.forward(batch)
         loss = F.mse_loss(output, batch.y)
-        self.log('val_loss', loss)
+        self.log('valid_loss', loss, on_epoch=True)
         return loss
 
     def test_step(self, batch: T_BatchEncoding, batch_idx: int):
         output = self.forward(batch)
         loss = F.mse_loss(output, batch.y)
-        self.log('test_loss', loss)
+        self.log('test_loss', loss, on_epoch=True)
         return loss
 
     def configure_optimizers(self):
