@@ -1,15 +1,20 @@
 train.save_path = './experiments/test_training'
-train.gpus = 0
-train.num_epochs = 2
+train.gpus = [1]
+train.num_epochs = 4
 train.batch_size = 1
-train.resume = True
+train.resume = False
 train.use_neptune = True
 
 data.data_path = './data/freesolv/freesolv.csv'
 data.seed = None
-data.num_workers = 4
+data.num_workers = 1
 data.train_size = 0.9
 
 neptune.project_name = 'sandbox'
 neptune.user_name = 'panpiotr8'
 neptune.experiment_name = 'whatever'    # TODO: somehow replace with os.path.basename(train.save_path)
+
+optimizer.name = 'Adam'
+optimizer.lr = 0.001
+
+loss_fn.name = 'mse_loss'

@@ -1,1 +1,2 @@
 from .training_train_model import train_model
+from .training_lightning_module import TrainingModule

@@ -9,7 +9,8 @@ import torch.nn.functional as F
 
 from src.chemformers.configuration.configuration_mat import MatConfig
 from src.chemformers.featurization.featurization_mat import MatBatchEncoding
-from .models_api import PretrainedModelMixin, LightningModuleMixin
+from .models_api import PretrainedModelBase
+from ..training.training_lightning_module import TrainingModule
 from .models_utils import xavier_normal_small_init_, xavier_uniform_small_init_
 
 MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
@@ -18,8 +19,7 @@ MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
 }
 
 
-class MatModel(PretrainedModelMixin, LightningModuleMixin[MatBatchEncoding]):
-
+class MatModel(PretrainedModelBase[MatBatchEncoding]):
     def __init__(self, config: MatConfig):
         super(MatModel, self).__init__()
 
