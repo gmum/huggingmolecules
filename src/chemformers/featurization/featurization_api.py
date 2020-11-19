@@ -55,10 +55,8 @@ class PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding]):
                                                                              shuffle=False, num_workers=num_workers)
         return train_loader, valid_loader, test_loader
 
+    def _encode_smiles(self, smiles: str, y: Optional[float]) -> T_MoleculeEncoding:
+        raise NotImplementedError
 
-def _encode_smiles(self, smiles: str, y: Optional[float]) -> T_MoleculeEncoding:
-    raise NotImplementedError
-
-
-def _collate_encodings(self, encodings: List[T_MoleculeEncoding]) -> T_BatchEncoding:
-    raise NotImplementedError
+    def _collate_encodings(self, encodings: List[T_MoleculeEncoding]) -> T_BatchEncoding:
+        raise NotImplementedError

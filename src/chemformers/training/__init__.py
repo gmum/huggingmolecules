@@ -1,2 +1,3 @@
 from .training_train_model import train_model
 from .training_lightning_module import TrainingModule
+from .training_tune_hyperparams import tune_hyperparams

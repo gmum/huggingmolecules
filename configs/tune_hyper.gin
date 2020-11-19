@@ -1,0 +1,27 @@
+
+# Some overrides
+optimizer.name = 'Adam'
+loss_fn.name = 'mse_loss'
+neptune.experiment_name = None  # for auto-complete
+
+
+optuna.save_path = 'experiments/tune_hyper'
+
+optuna.direction = 'minimize'
+optuna.metrics = 'valid_loss'
+
+# uncomment for tpe search
+# optuna.sampler_name = 'TPESampler'
+# optuna.n_trials = 10
+# optuna.timeout = 10
+# optuna.optimizer_params = {
+#     'lr': ('suggest_loguniform', 0.1, 1)
+# }
+
+
+optuna.sampler_name = 'GridSampler'
+optuna.optimizer_params = {
+  'lr': [0.01, 0.001, 0.0002]
+}
+
+
