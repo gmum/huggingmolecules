@@ -23,5 +23,3 @@ optuna.sampler_name = 'GridSampler'
 optuna.optimizer_params = {
   'lr': [0.01, 0.001, 0.0002]
 }
-
-

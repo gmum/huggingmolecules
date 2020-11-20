@@ -14,9 +14,9 @@ GROVER_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
 }
 
 
-class GroverModel(PretrainedModelBase[GroverBatchEncoding]):
+class GroverModel(PretrainedModelBase[GroverBatchEncoding, GroverConfig]):
     def __init__(self, config: GroverConfig):
-        super().__init__()
+        super().__init__(config)
 
         self.enc = Encoder(config)
         self.readout = ReadoutNetwork(config)

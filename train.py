@@ -1,5 +1,5 @@
 from src.chemformers import MatModel, MatFeaturizer
-from src.chemformers.training import train_model, TrainingModule
+from src.chemformers.training import train_model
 from src.chemformers.utils import *
 
 apply_gin_config()

@@ -1,20 +1,26 @@
-train.save_path = './experiments/test_training'
-train.gpus = [1]
-train.num_epochs = 1
-train.batch_size = 1
-train.resume = False
-train.use_neptune = True
-
-data.data_path = './data/freesolv/freesolv.csv'
-data.seed = None
-data.num_workers = 4
-data.train_size = 0.9
-
-neptune.project_name = 'sandbox'
-neptune.user_name = 'panpiotr8'
-neptune.experiment_name = None  # experiment_name = experiment_name if experiment_name else os.path.basename(train.save_path)
-
+# ==============================================================================
 optimizer.name = 'Adam'
 optimizer.lr = 0.001
 
+# ==============================================================================
 loss_fn.name = 'mse_loss'
+
+# ==============================================================================
+train.gpus = 0
+train.num_epochs = 13
+train.batch_size = 9
+train.save_path = './experiments/test_training'
+train.use_neptune = True
+train.resume = True
+
+# ==============================================================================
+data.data_path = './data/freesolv/freesolv.csv'
+data.num_workers = 4
+data.train_size = 0.9
+data.seed = None
+
+# ==============================================================================
+neptune.user_name = 'panpiotr8'
+neptune.project_name = 'sandbox'
+neptune.experiment_name = None
+

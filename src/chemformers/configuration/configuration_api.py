@@ -1,13 +1,4 @@
 import json
-from typing import *
-
-T = TypeVar('T')
-T_Config = TypeVar("T_Config")
-
-
-# should be f-bounded
-# meh. Typing in python sucks...
-# https://github.com/AlexandreDecan/portion/issues/27
 
 
 class PretrainedConfigMixin:
@@ -27,4 +18,4 @@ class PretrainedConfigMixin:
 
     def save(self, file_path: str):
         with open(file_path, 'w') as fp:
-            json.dump(self.__dict__, fp)
+            json.dump(self.__dict__, fp, indent=2)

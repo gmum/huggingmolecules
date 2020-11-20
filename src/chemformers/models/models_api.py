@@ -2,12 +2,21 @@ from typing import TypeVar, Generic
 
 import torch
 import torch.nn as nn
+
+from ..configuration.configuration_api import PretrainedConfigMixin
 from ..featurization.featurization_api import T_BatchEncoding
 
-T_Config = TypeVar("T_Config")
+T_Config = TypeVar("T_Config", bound=PretrainedConfigMixin)
 
 
-class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding]):
+class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):
+    def __init__(self, config: T_Config):
+        super().__init__()
+        self._config = config
+
+    def get_config(self) -> T_Config:
+        return self._config
+
     def forward(self, batch: T_BatchEncoding):
         raise NotImplementedError
 

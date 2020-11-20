@@ -19,9 +19,9 @@ MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
 }
 
 
-class MatModel(PretrainedModelBase[MatBatchEncoding]):
+class MatModel(PretrainedModelBase[MatBatchEncoding, MatConfig]):
     def __init__(self, config: MatConfig):
-        super(MatModel, self).__init__()
+        super(MatModel, self).__init__(config)
 
         self.encoder = Encoder(config)
         self.src_embed = Embeddings(config)
