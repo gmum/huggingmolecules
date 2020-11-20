@@ -1,4 +1,6 @@
 import argparse
+import copy
+from typing import List, Optional
 
 import gin
 
@@ -12,6 +14,13 @@ def apply_gin_config():
     configs = args.config_files.split("#")
     bindings = args.bindings.split("#") if args.bindings else None
     gin.parse_config_files_and_bindings(configs, bindings)
+
+
+def get_formatted_config_str(excluded: Optional[List[str]] = None):
+    config_map = gin.config._CONFIG
+    if excluded:
+        config_map = {k: v for k, v in config_map.items() if all(x not in k[1] for x in excluded)}
+    return gin.config._config_str(config_map)
 
 
 def parse_gin_str(gin_str):

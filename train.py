@@ -1,4 +1,4 @@
-from src.huggingmolecules import MatModel, MatFeaturizer
+from src.huggingmolecules import MatModel, MatFeaturizer, MatConfig
 from src.huggingmolecules.training import train_model
 from src.huggingmolecules.utils import *
 

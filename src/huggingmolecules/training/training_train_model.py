@@ -2,11 +2,12 @@ import json
 import logging
 
 from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import LearningRateMonitor
 
 from .training_lightning_module import TrainingModule
 from .training_utils import *
 from ..models.models_api import PretrainedModelBase
-from ..utils import parse_gin_str
+from ..utils import parse_gin_str, get_formatted_config_str
 
 logger = logging.getLogger(__name__)
 
@@ -24,12 +25,13 @@ def train_model(model: PretrainedModelBase, featurizer, *, save_path, num_epochs
     model.get_config().save(model_config_path)
 
     gin_config_path = os.path.join(save_path, "gin_config.txt")
-    gin_str = gin.config_str()
+    gin_str = get_formatted_config_str(excluded=['neptune'])
     with open(gin_config_path, "w") as f:
         f.write(gin_str)
 
-    loggers = default_loggers(save_path)
     callbacks = default_callbacks(save_path)
+    loggers = default_loggers(save_path)
+
     if use_neptune:
         neptune = get_neptune(save_path)
         neptune.log_artifact(model_config_path)
@@ -47,15 +49,19 @@ def train_model(model: PretrainedModelBase, featurizer, *, save_path, num_epochs
         resume_from_checkpoint=resume_path if resume else None,
         gpus=gpus if torch.cuda.is_available() else 0)  # TODO remove if
 
+    optimizer = get_optimizer(model)
+    scheduler = get_lr_scheduler(optimizer)
+    loss_fn = get_loss_fn()
     pl_module = TrainingModule(model,
-                               optimizer=get_optimizer(model),
-                               loss_fn=get_loss_fn())
+                               optimizer=optimizer,
+                               loss_fn=loss_fn,
+                               scheduler=scheduler)
 
     train_loader, val_loader, test_loader = get_data_loaders(featurizer, batch_size=batch_size)
     trainer.fit(pl_module, train_dataloader=train_loader, val_dataloaders=val_loader)
 
     if evaluate:
-        results, = trainer.test(test_dataloaders=test_loader)
+        results = trainer.test(test_dataloaders=test_loader)
         logger.info(results)
         with open(os.path.join(save_path, "eval_results.json"), "w") as f:
             json.dump(results, f)

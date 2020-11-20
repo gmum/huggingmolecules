@@ -4,12 +4,13 @@ from typing import Tuple
 import gin
 import torch
 from pytorch_lightning import loggers as pl_loggers
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
 from src.huggingmolecules import split_data_random
 from src.huggingmolecules.callbacks import Heartbeat, MetaSaver
+import src.huggingmolecules.callbacks.callbacks_schedulers as custom_schedulers
 
 
 def default_loggers(save_path):
@@ -23,7 +24,17 @@ def default_callbacks(save_path):
         save_last=True,
         monitor='valid_loss',
         mode='min')
-    return [checkpoint_callback, Heartbeat(), MetaSaver()]
+    return [checkpoint_callback, Heartbeat(), MetaSaver(), LearningRateMonitor(logging_interval='step')]
+
+
+@gin.configurable('lr_scheduler', blacklist=['optimizer'])
+def get_lr_scheduler(optimizer, name='IdentityScheduler', **kwargs):
+    try:
+        scheduler_cls = getattr(custom_schedulers, name)
+    except AttributeError:
+        scheduler_cls = getattr(torch.optim.lr_scheduler, name)
+    scheduler = scheduler_cls(optimizer, **kwargs)
+    return scheduler
 
 
 @gin.configurable('loss_fn')

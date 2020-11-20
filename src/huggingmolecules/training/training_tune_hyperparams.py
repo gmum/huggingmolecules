@@ -4,7 +4,6 @@ import shutil
 from typing import Optional
 
 import gin
-import optuna
 
 from . import TrainingModule
 from .training_train_model import train_model, get_optimizer, get_loss_fn
@@ -32,6 +31,7 @@ def get_objective(model: PretrainedModelBase, featurizer: PretrainedFeaturizerMi
 def tune_hyperparams(model: PretrainedModelBase, featurizer: PretrainedFeaturizerMixin, save_path: str,
                      optimizer_params: dict, direction: str, metrics: str, n_trials: Optional[int] = None,
                      timeout: Optional[float] = None, sampler_name: str = 'TPESampler'):
+    import optuna
     sampler_cls = getattr(optuna.samplers, sampler_name)
     if sampler_cls is optuna.samplers.GridSampler:
         search_grid = copy.deepcopy(optimizer_params)

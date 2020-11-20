@@ -20,7 +20,7 @@ class MatConfig(PretrainedConfigMixin):
     leaky_relu_slope: float = 0.1
     dense_output_nonlinearity: str = 'relu'
     distance_matrix_kernel: str = 'exp'
-    dropout: float = 0.0,
+    dropout: float = 0.0
     aggregation_type: str = 'mean'
     n_generator_layers: int = 1
     n_output: int = 1
