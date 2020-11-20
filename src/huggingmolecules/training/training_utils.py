@@ -8,8 +8,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
-from src.chemformers import split_data_random
-from src.chemformers.callbacks import Heartbeat, MetaSaver
+from src.huggingmolecules import split_data_random
+from src.huggingmolecules.callbacks import Heartbeat, MetaSaver
 
 
 def default_loggers(save_path):

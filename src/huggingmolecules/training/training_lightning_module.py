@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 
-from src.chemformers.featurization.featurization_api import BatchEncodingProtocol
-from src.chemformers.models.models_api import PretrainedModelBase
+from src.huggingmolecules.featurization.featurization_api import BatchEncodingProtocol
+from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 class TrainingModule(pl.LightningModule):

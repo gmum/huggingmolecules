@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from src.chemformers import GroverFeaturizer, GroverModel
+from src.huggingmolecules import GroverFeaturizer, GroverModel
 
 
 class GroverModelTest(unittest.TestCase):

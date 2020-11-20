@@ -1,6 +1,6 @@
-from src.chemformers import MatModel, MatFeaturizer
-from src.chemformers.training import train_model, tune_hyperparams
-from src.chemformers.utils import *
+from src.huggingmolecules import MatModel, MatFeaturizer
+from src.huggingmolecules.training import train_model, tune_hyperparams
+from src.huggingmolecules.utils import *
 
 apply_gin_config()
 model = MatModel.from_pretrained('mat-base-freesolv')

@@ -6,7 +6,7 @@ from torch_geometric.nn import NNConv, MessagePassing
 from torch_geometric.utils import add_self_loops
 from .models_api import PretrainedModelBase
 from ..training.training_lightning_module import TrainingModule
-from src.chemformers.configuration import GroverConfig
+from src.huggingmolecules.configuration import GroverConfig
 from ..featurization.featurization_grover import GroverBatchEncoding
 
 GROVER_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {

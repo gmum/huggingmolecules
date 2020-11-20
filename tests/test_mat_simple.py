@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from src.chemformers import MatFeaturizer, MatConfig, MatModel
+from src.huggingmolecules import MatFeaturizer, MatConfig, MatModel
 
 
 class MatFeaturizerTest(unittest.TestCase):
