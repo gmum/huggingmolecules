@@ -82,8 +82,9 @@ def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
                      test_size: float = 0.0,
                      num_workers: int = 1,
                      split_path: Optional[str] = None,
-                     seed: Optional[int] = None) -> Tuple[DataLoader, DataLoader, DataLoader]:
-    dataset = featurizer.load_dataset_from_csv(data_path)
+                     seed: Optional[int] = None,
+                     cache: bool = False) -> Tuple[DataLoader, DataLoader, DataLoader]:
+    dataset = featurizer.load_dataset_from_csv(data_path, cache=cache)
     if split_path:
         train_data, val_data, test_data = split_data_from_file(dataset, split_path)
     else:

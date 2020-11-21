@@ -1,3 +1,6 @@
+import logging
+import os
+import pickle
 from abc import abstractmethod
 from typing import *
 import pandas as pd
@@ -32,11 +35,26 @@ class PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding]):
             encodings.append(self._encode_smiles(smiles, y))
         return encodings
 
-    def load_dataset_from_csv(self, dataset_path: str) -> List[T_MoleculeEncoding]:
+    def _load_dataset_from_cache(self, cache_path: str) -> List[T_MoleculeEncoding]:
+        logging.info(f"Loading encodings stored at '{cache_path}'")
+        encodings = pickle.load(open(cache_path, "rb"))
+        return encodings
+
+    def _save_dataset_to_cache(self, dataset: List[T_MoleculeEncoding], cache_path: str):
+        logging.info(f"Saving encodings to '{cache_path}'")
+        pickle.dump(dataset, open(cache_path, "wb"))
+
+    def load_dataset_from_csv(self, dataset_path: str, *, cache: bool = False) -> List[T_MoleculeEncoding]:
+        cache_path = f'{dataset_path}-{type(self).__name__}-cached'
+        if cache and os.path.exists(cache_path):
+            return self._load_dataset_from_cache(cache_path)
         data = pd.read_csv(dataset_path)
         smiles_list = data.iloc[:, 0].values
         y_list = data.iloc[:, 1].values
-        return self._encode_smiles_list(smiles_list, y_list)
+        dataset = self._encode_smiles_list(smiles_list, y_list)
+        if cache:
+            self._save_dataset_to_cache(dataset, cache_path)
+        return dataset
 
     def get_data_loader(self, dataset: List[T_MoleculeEncoding], *, batch_size: int, shuffle: bool = False,
                         num_workers: int = 0) -> DataLoader:

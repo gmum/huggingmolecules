@@ -23,6 +23,7 @@ NoamLRScheduler.warmup_factor = 0.1
 data.data_path = './data/freesolv/freesolv.csv'
 data.split_path = './data/freesolv/split-random-0.npy'
 data.num_workers = 4
+data.cache = True
 
 # ==============================================================================
 neptune.user_name = 'panpiotr8'
