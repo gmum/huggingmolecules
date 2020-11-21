@@ -10,7 +10,6 @@ import torch.nn.functional as F
 from src.huggingmolecules.configuration.configuration_mat import MatConfig
 from src.huggingmolecules.featurization.featurization_mat import MatBatchEncoding
 from .models_api import PretrainedModelBase
-from ..training.training_lightning_module import TrainingModule
 from .models_utils import xavier_normal_small_init_, xavier_uniform_small_init_
 
 MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
@@ -21,7 +20,7 @@ MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
 
 class MatModel(PretrainedModelBase[MatBatchEncoding, MatConfig]):
     def __init__(self, config: MatConfig):
-        super(MatModel, self).__init__(config)
+        super().__init__(config)
 
         self.encoder = Encoder(config)
         self.src_embed = Embeddings(config)
@@ -94,7 +93,7 @@ class PositionGenerator(nn.Module):
     "Define standard linear + softmax generation step."
 
     def __init__(self, d_model):
-        super(PositionGenerator, self).__init__()
+        super().__init__()
         self.norm = LayerNorm(d_model)
         self.proj = nn.Linear(d_model, 3)
 

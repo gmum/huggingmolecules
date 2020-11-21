@@ -4,9 +4,9 @@ import torch.nn.functional as F
 from torch_geometric.data import Batch
 from torch_geometric.nn import NNConv, MessagePassing
 from torch_geometric.utils import add_self_loops
-from .models_api import PretrainedModelBase
-from ..training.training_lightning_module import TrainingModule
+
 from src.huggingmolecules.configuration import GroverConfig
+from .models_api import PretrainedModelBase
 from ..featurization.featurization_grover import GroverBatchEncoding
 
 GROVER_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
@@ -39,7 +39,7 @@ class GroverModel(PretrainedModelBase[GroverBatchEncoding, GroverConfig]):
 
 class OutputNetwork(nn.Module):
     def __init__(self, config: GroverConfig):
-        super(OutputNetwork, self).__init__()
+        super().__init__()
         input_dim = config.readout_num_heads
         hidden_dim = config.head_hidden_dim
         layers = [nn.Linear(input_dim, hidden_dim), nn.PReLU(), nn.Dropout(p=config.dropout)] + \
@@ -58,7 +58,7 @@ class LayerNorm(nn.Module):
     "Construct a layernorm module (See citation for details)."
 
     def __init__(self, features, eps=1e-6):
-        super(LayerNorm, self).__init__()
+        super().__init__()
         self.a_2 = nn.Parameter(torch.ones(features))
         self.b_2 = nn.Parameter(torch.zeros(features))
         self.eps = eps
@@ -71,7 +71,7 @@ class LayerNorm(nn.Module):
 
 class dyMPNN(nn.Module):
     def __init__(self, model_dim: int, num_layers: int, n_f_bond: int, dropout: float):
-        super(dyMPNN, self).__init__()
+        super().__init__()
 
         self.layers = [NNConv(in_channels=model_dim,
                               out_channels=model_dim,

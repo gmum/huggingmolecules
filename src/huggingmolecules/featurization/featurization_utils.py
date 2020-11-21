@@ -1,10 +1,10 @@
-import os
-from typing import Tuple
+from typing import Tuple, Optional
 
 import numpy as np
 import torch
+from torch.utils.data import Subset
 from torch.utils.data import random_split
-from torch.utils.data import Subset, Dataset
+
 
 def pad_array(array: torch.Tensor, *, size: Tuple[int, ...], dtype: torch.dtype = torch.float) -> torch.Tensor:
     result = torch.zeros(size=size, dtype=dtype)
@@ -13,7 +13,7 @@ def pad_array(array: torch.Tensor, *, size: Tuple[int, ...], dtype: torch.dtype 
     return result
 
 
-def split_data_random(dataset, train_size, test_size=0.0, seed=None):
+def split_data_random(dataset, train_size: float, test_size: float = 0.0, seed: Optional[int] = None):
     train_len = int(train_size * len(dataset))
     test_len = int(test_size * len(dataset))
     val_len = len(dataset) - train_len - test_len
@@ -22,7 +22,7 @@ def split_data_random(dataset, train_size, test_size=0.0, seed=None):
     return train_data, val_data, test_data
 
 
-def split_data_from_file(dataset: Dataset, split_path):
+def split_data_from_file(dataset, split_path: str):
     split = np.load(split_path, allow_pickle=True)
     train_split, val_split, test_split = split.tolist()
     train_data = Subset(dataset, train_split)
