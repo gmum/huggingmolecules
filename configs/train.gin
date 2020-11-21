@@ -3,29 +3,28 @@ optimizer.name = 'Adam'
 optimizer.lr = 0.001
 
 # ==============================================================================
-lr_scheduler.name = 'FancyScheduler'
-lr_scheduler.model_dim = 1024
-lr_scheduler.warmup = 10
-
-# ==============================================================================
 loss_fn.name = 'mse_loss'
 
 # ==============================================================================
 train.gpus = [1]
-train.num_epochs = 13
-train.batch_size = 9
-train.save_path = './experiments/test_training'
+train.num_epochs = 100
+train.batch_size = 1
+train.save_path = './experiments/MAT_freesolv'
 train.use_neptune = True
 train.resume = False
+train.custom_callbacks = ['LRScheduler']
+
+# ==============================================================================
+LRScheduler.model_size_name = 'd_model'
+LRScheduler.warmup_factor = 0.1
 
 # ==============================================================================
 data.data_path = './data/freesolv/freesolv.csv'
+data.split_path = './data/freesolv/split-random-0.npy'
 data.num_workers = 4
-data.train_size = 0.9
-data.seed = None
 
 # ==============================================================================
 neptune.user_name = 'panpiotr8'
 neptune.project_name = 'sandbox'
-neptune.experiment_name = 'first gpu experiment'
+neptune.experiment_name = 'MAT freesolv'
 

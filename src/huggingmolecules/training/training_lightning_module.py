@@ -6,12 +6,11 @@ from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 class TrainingModule(pl.LightningModule):
-    def __init__(self, model: PretrainedModelBase, *, loss_fn, optimizer, scheduler):
+    def __init__(self, model: PretrainedModelBase, *, loss_fn, optimizer):
         super().__init__()
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
-        self.scheduler = scheduler
 
     def forward(self, batch: BatchEncodingProtocol):
         return self.model.forward(batch)
@@ -36,4 +35,4 @@ class TrainingModule(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        return [self.optimizer], [self.scheduler]
+        return self.optimizer

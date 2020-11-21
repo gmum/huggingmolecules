@@ -7,9 +7,7 @@ optuna.save_path = 'experiments/tune_hyper'
 # ==============================================================================
 optuna.direction = 'minimize'
 optuna.metrics = 'valid_loss'
-optuna.sampler_name = 'TPESampler'
-optuna.n_trials = 10
-optuna.timeout = 10
-optuna.optimizer_params = {
-    'lr': ('suggest_loguniform', 0.1, 1)
+optuna.sampler_name = 'GridSampler'
+optuna.params = {
+  'optimizer.lr': [1e−3, 5e−4, 1e−4, 5e−5, 1e−5, 5e−6, 1e−6]
 }
