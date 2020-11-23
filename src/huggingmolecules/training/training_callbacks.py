@@ -67,14 +67,14 @@ class HyperparamsNeptuneSaver(NeptuneCompatibleCallback):
         self.neptune.log_hyperparams(parsed_gin_str)
 
 
-@gin.configurable
 class GinConfigSaver(NeptuneCompatibleCallback):
-    def __init__(self, target_name: str = "gin_config.txt"):
+    def __init__(self, target_name: str = "gin-config-all.txt", excluded_namespaces: List[str] = None):
         super().__init__()
         self.target_name = target_name
+        self.excluded_namespaces = excluded_namespaces
 
     def on_train_start(self, trainer, pl_module):
-        gin_str = get_formatted_config_str(excluded=['neptune', 'optuna', 'macro'])
+        gin_str = get_formatted_config_str(excluded=self.excluded_namespaces)
         target_path = os.path.join(trainer.default_root_dir, self.target_name)
         with open(target_path, "w") as f:
             f.write(gin_str)

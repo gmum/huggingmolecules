@@ -28,7 +28,9 @@ def get_default_callbacks(save_path: str) -> List[Callback]:
                                           save_last=True,
                                           monitor='valid_loss',
                                           mode='min')
-    return [checkpoint_callback, GinConfigSaver(), ModelConfigSaver()]
+    gin_config_essential = GinConfigSaver(target_name="gin-config-essential.txt",
+                                          excluded_namespaces=['neptune', 'optuna', 'macro'])
+    return [checkpoint_callback, gin_config_essential, ModelConfigSaver(), GinConfigSaver()]
 
 
 def get_custom_callbacks(callbacks_names: List[str] = None) -> List[Callback]:

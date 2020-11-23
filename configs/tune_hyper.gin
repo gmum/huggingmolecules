@@ -6,7 +6,7 @@ optuna.save_path = 'experiments/tune_hyper'
 
 # ==============================================================================
 optuna.direction = 'minimize'
-optuna.metrics = 'valid_loss'
+optuna.metric = 'valid_loss'
 optuna.sampler_name = 'TPESampler'
 optuna.n_trials = 10
 optuna.timeout = 10

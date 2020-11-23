@@ -1,13 +1,19 @@
 # ==============================================================================
-study_name = 'tune_mat_lr_2'
+study_name = 'tune lr and warmup_factor 2nd trial'
 optuna.study_name = %study_name
 neptune.experiment_name = %study_name
-optuna.save_path = 'experiments/tune_hyper'
+optuna.storage = 'sqlite:///optuna_studies.db'
+optuna.save_path = 'experiments/tune_hyper_2'
+optuna.keep_best_weights_only = True
 
 # ==============================================================================
 optuna.direction = 'minimize'
-optuna.metrics = 'valid_loss'
+optuna.metric = 'valid_loss'
 optuna.sampler_name = 'GridSampler'
 optuna.params = {
-  'optimizer.lr': [1e−3, 5e−4, 1e−4, 5e−5, 1e−5, 5e−6, 1e−6]
+  'optimizer.lr': (0.001, 0.0005, 0.0001, 0.00005, 0.00001, 0.000005, 0.000001),
+  'NoamLRScheduler.warmup_factor': (0, .1, .2, .3, .4, .5)
 }
+
+# ==============================================================================
+optuna.resume = False
