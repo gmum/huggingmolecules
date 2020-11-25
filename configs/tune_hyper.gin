@@ -1,8 +1,12 @@
 # ==============================================================================
-study_name = 'tune_mat_lr_2'
+study_name = 'tune lr and warmup_factor split 0 once again'
 optuna.study_name = %study_name
 neptune.experiment_name = %study_name
-optuna.save_path = 'experiments/tune_hyper'
+
+# ==============================================================================
+optuna.storage = 'sqlite:///optuna_studies.db'
+optuna.save_path = 'experiments/tune_hyper_0'
+optuna.keep_best_only.enabled = True
 
 # ==============================================================================
 optuna.direction = 'minimize'
@@ -13,3 +17,8 @@ optuna.timeout = 10
 optuna.optimizer_params = {
     'lr': ('suggest_loguniform', 0.1, 1)
 }
+
+# ==============================================================================
+optuna.resume = False
+
+

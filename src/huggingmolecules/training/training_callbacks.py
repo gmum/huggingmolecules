@@ -46,20 +46,6 @@ class NoamLRScheduler(NeptuneCompatibleCallback):
                 self.neptune.log_metric(f'group-{i}-lr', group['lr'])
 
 
-@gin.configurable
-class ClearRootDir(Callback):
-    def __init__(self, to_remove: List[str]):
-        super().__init__()
-        self.to_remove = to_remove
-
-    def on_fit_end(self, trainer, pl_module):
-        for file in self.to_remove:
-            os.remove(os.path.join(trainer.default_root_dir, file))
-
-    def on_keyboard_interrupt(self, trainer, pl_module):
-        self.to_remove = []
-
-
 class HyperparamsNeptuneSaver(NeptuneCompatibleCallback):
     def on_train_start(self, trainer, pl_module):
         gin_str = get_formatted_config_str(excluded=['neptune', 'optuna', 'macro'])
@@ -82,7 +68,6 @@ class GinConfigSaver(NeptuneCompatibleCallback):
             self.neptune.log_artifact(target_path)
 
 
-@gin.configurable
 class ModelConfigSaver(NeptuneCompatibleCallback):
     def __init__(self, target_name: str = "model_config.json"):
         super().__init__()

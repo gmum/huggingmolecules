@@ -1,8 +1,10 @@
+import json
 import logging
 import os
 from typing import Tuple, List, Optional
 
 import gin
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from pytorch_lightning import loggers as pl_loggers, Callback
@@ -11,6 +13,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
 import src.huggingmolecules.training.training_callbacks as custom_callbacks_module
+import src.huggingmolecules.training.training_loss_fn as custom_loss_fn_module
 from src.huggingmolecules import split_data_random
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.featurization.featurization_utils import split_data_from_file
@@ -55,7 +58,10 @@ def get_custom_callbacks(callbacks_names: List[str] = None) -> List[Callback]:
 
 @gin.configurable('loss_fn')
 def get_loss_fn(*, name='mse_loss', **kwargs):
-    return getattr(F, name)
+    try:
+        return getattr(custom_loss_fn_module, name)
+    except AttributeError:
+        return getattr(F, name)
 
 
 @gin.configurable('optimizer', blacklist=['model'])
@@ -111,3 +117,12 @@ def apply_neptune(callbacks: List[Callback], loggers: List[pl_loggers.LightningL
     for clb in callbacks:
         if isinstance(clb, NeptuneCompatibleCallback):
             clb.neptune = neptune
+
+
+def evaluate_and_save_results(trainer: pl.Trainer, test_loader: DataLoader, save_path: str, evaluation: str):
+    logging.info(f'Running test evaluation for {evaluation} weights')
+    ckpt_path = 'best' if evaluation == 'best' else None
+    results = trainer.test(test_dataloaders=test_loader, ckpt_path=ckpt_path)
+    logging.info(results)
+    with open(os.path.join(save_path, "test_results.json"), "w") as f:
+        json.dump(results, f)

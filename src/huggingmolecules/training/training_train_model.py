@@ -1,10 +1,8 @@
-import json
-
 from pytorch_lightning import Trainer
 
 from .training_lightning_module import TrainingModule
 from .training_utils import *
-from .training_utils import get_custom_callbacks, apply_neptune
+from .training_utils import get_custom_callbacks, apply_neptune, evaluate_and_save_results
 from ..featurization.featurization_api import PretrainedFeaturizerMixin
 from ..models.models_api import PretrainedModelBase
 
@@ -18,7 +16,7 @@ def train_model(model: PretrainedModelBase,
                 gpus: List[int],
                 resume: bool = False,
                 use_neptune: bool = False,
-                evaluate: bool = False,
+                evaluation: Optional[str] = None,
                 custom_callbacks: Optional[List[str]] = None):
     resume_path = os.path.join(save_path, 'last.ckpt')
     if not resume and os.path.exists(resume_path):
@@ -45,15 +43,11 @@ def train_model(model: PretrainedModelBase,
     pl_module = TrainingModule(model, optimizer=optimizer, loss_fn=loss_fn)
 
     train_loader, val_loader, test_loader = get_data_loaders(featurizer, batch_size=batch_size)
-
     trainer.fit(pl_module,
                 train_dataloader=train_loader,
                 val_dataloaders=val_loader)
 
-    if evaluate:
-        results = trainer.test(test_dataloaders=test_loader)
-        logging.info(results)
-        with open(os.path.join(save_path, "test_results.json"), "w") as f:
-            json.dump(results, f)
+    if evaluation:
+        evaluate_and_save_results(trainer, test_loader, save_path, evaluation)
 
     return trainer

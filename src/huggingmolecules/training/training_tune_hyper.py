@@ -3,7 +3,7 @@ from typing import Optional
 import gin
 
 from .training_tune_hyper_utils import print_and_save_info, get_sampler, get_objective, \
-    get_remove_all_weights_except_best
+    get_remove_all_weights_except_best, enqueue_failed_trials
 from ..featurization.featurization_api import PretrainedFeaturizerMixin
 from ..models.models_api import PretrainedModelBase
 
@@ -20,8 +20,7 @@ def tune_hyper(model: PretrainedModelBase,
                sampler_name: str = 'TPESampler',
                study_name: str = None,
                storage: Optional[str] = None,
-               resume: bool = False,
-               keep_best_weights_only: bool = False):
+               resume: bool = False):
     import optuna
 
     sampler = get_sampler(sampler_name, params)
@@ -39,14 +38,12 @@ def tune_hyper(model: PretrainedModelBase,
                                 direction=direction)
 
     if resume:
-        added_params = set()
-        for trial in study.get_trials():
-            if trial.state == optuna.trial.TrialState.FAIL and tuple(trial.params) not in added_params:
-                added_params.add(tuple(trial.params))
-                study.enqueue_trial(trial.params)
+        enqueue_failed_trials(study)
 
-    callbacks = [get_remove_all_weights_except_best(save_path)] if keep_best_weights_only else None
-
-    study.optimize(objective, n_trials=n_trials, timeout=timeout, callbacks=callbacks)
+    remove_callback = get_remove_all_weights_except_best(save_path, direction)
+    study.optimize(objective,
+                   n_trials=n_trials,
+                   timeout=timeout,
+                   callbacks=[remove_callback] if remove_callback else [])
 
     print_and_save_info(study, save_path, metric)
