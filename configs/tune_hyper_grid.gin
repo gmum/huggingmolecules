@@ -1,21 +1,21 @@
 # ==============================================================================
-study_name = 'tune lr and warmup_factor split 0 once again'
+study_name = 'check multigpu part 2'
 optuna.study_name = %study_name
 neptune.experiment_name = %study_name
 
 # ==============================================================================
 optuna.storage = 'sqlite:///optuna_studies.db'
-optuna.save_path = 'experiments/tune_hyper_0'
-optuna.keep_best_only.enabled = True
+optuna.save_path = 'experiments/tune_hyper_multi_2'
+optuna.keep_best_only = True
 
 # ==============================================================================
 optuna.direction = 'minimize'
 optuna.metric = 'valid_loss'
 optuna.sampler_name = 'GridSampler'
 optuna.params = {
-    'optimizer.lr': (0.001, 0.0005, 0.0001, 5e-05, 1e-05, 5e-06, 1e-06),
-    'NoamLRScheduler.warmup_factor': (0, 0.1, 0.2, 0.3, 0.4, 0.5)
+    'optimizer.lr': [0.001, 0.0005, 0.0001, 5e-05, 1e-05, 5e-06, 1e-06],
+    'NoamLRScheduler.warmup_factor': [0, 0.1, 0.2, 0.3, 0.4, 0.5]
 }
 
 # ==============================================================================
-optuna.resume = False
+optuna.resume = True

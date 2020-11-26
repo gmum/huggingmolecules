@@ -1,5 +1,4 @@
 import argparse
-import copy
 from typing import List, Optional
 
 import gin
@@ -8,8 +7,7 @@ import gin
 def apply_gin_config():
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config-files', type=str, required=True)
-    parser.add_argument('-b', '--bindings', type=str, required=False, default=None,
-                        help='List of bindings separated by \'#\', eg.: --bindings "name.param1 = 10# name.param2 = \'path\'"')
+    parser.add_argument('-b', '--bindings', type=str, required=False, default=None)
     args = parser.parse_args()
     configs = args.config_files.split("#")
     bindings = args.bindings.split("#") if args.bindings else None

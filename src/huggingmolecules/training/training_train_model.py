@@ -43,6 +43,7 @@ def train_model(model: PretrainedModelBase,
     pl_module = TrainingModule(model, optimizer=optimizer, loss_fn=loss_fn)
 
     train_loader, val_loader, test_loader = get_data_loaders(featurizer, batch_size=batch_size)
+
     trainer.fit(pl_module,
                 train_dataloader=train_loader,
                 val_dataloaders=val_loader)
