@@ -4,6 +4,7 @@ from typing import List
 
 import gin
 from pytorch_lightning import Callback
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 from src.huggingmolecules.utils import get_formatted_config_str, parse_gin_str
 
@@ -79,3 +80,19 @@ class ModelConfigSaver(NeptuneCompatibleCallback):
         config.save(target_path)
         if self.neptune:
             self.neptune.log_artifact(target_path)
+
+
+@gin.configurable('ModelCheckpoint', blacklist=['filepath'])
+class ConfigurableModelCheckpoint(ModelCheckpoint):
+    def __init__(self, *,
+                 filepath,
+                 verbose=True,
+                 save_last=True,
+                 monitor='valid_loss',
+                 mode='min', **kwargs):
+        super().__init__(filepath=filepath,
+                         verbose=verbose,
+                         save_last=save_last,
+                         monitor=monitor,
+                         mode=mode,
+                         **kwargs)

@@ -18,7 +18,7 @@ from src.huggingmolecules import split_data_random
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.featurization.featurization_utils import split_data_from_file
 from src.huggingmolecules.training.training_callbacks import NeptuneCompatibleCallback, HyperparamsNeptuneSaver, \
-    GinConfigSaver, ModelConfigSaver
+    GinConfigSaver, ModelConfigSaver, ConfigurableModelCheckpoint
 
 
 def get_default_loggers(save_path: str) -> List[pl_loggers.LightningLoggerBase]:
@@ -26,11 +26,7 @@ def get_default_loggers(save_path: str) -> List[pl_loggers.LightningLoggerBase]:
 
 
 def get_default_callbacks(save_path: str) -> List[Callback]:
-    checkpoint_callback = ModelCheckpoint(filepath=os.path.join(save_path, "weights"),
-                                          verbose=True,
-                                          save_last=True,
-                                          monitor='valid_loss',
-                                          mode='min')
+    checkpoint_callback = ConfigurableModelCheckpoint(filepath=os.path.join(save_path, "weights"))
     gin_config_essential = GinConfigSaver(target_name="gin-config-essential.txt",
                                           excluded_namespaces=['neptune', 'optuna', 'macro'])
     return [checkpoint_callback, gin_config_essential, ModelConfigSaver(), GinConfigSaver()]
