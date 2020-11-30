@@ -22,11 +22,11 @@ T_BatchEncoding = TypeVar('T_BatchEncoding', bound=BatchEncodingProtocol)
 
 class PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding]):
     def __call__(self, smiles_list: List[str], y_list: Optional[List[float]] = None) -> T_BatchEncoding:
-        encodings = self._encode_smiles_list(smiles_list, y_list)
+        encodings = self.encode_smiles_list(smiles_list, y_list)
         batch = self._collate_encodings(encodings)
         return batch
 
-    def _encode_smiles_list(self, smiles_list: List[str], y_list: Optional[List[float]]) -> List[T_MoleculeEncoding]:
+    def encode_smiles_list(self, smiles_list: List[str], y_list: Optional[List[float]]) -> List[T_MoleculeEncoding]:
         encodings = []
         if y_list is not None:
             assert len(smiles_list) == len(y_list)
@@ -51,7 +51,7 @@ class PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding]):
         data = pd.read_csv(dataset_path)
         smiles_list = data.iloc[:, 0].values
         y_list = data.iloc[:, 1].values
-        dataset = self._encode_smiles_list(smiles_list, y_list)
+        dataset = self.encode_smiles_list(smiles_list, y_list)
         if cache:
             self._save_dataset_to_cache(dataset, cache_path)
         return dataset

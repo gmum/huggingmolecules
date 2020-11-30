@@ -12,7 +12,6 @@ def train_model(model: PretrainedModelBase,
                 featurizer: PretrainedFeaturizerMixin, *,
                 save_path: str,
                 num_epochs: int,
-                batch_size: int,
                 gpus: List[int],
                 resume: bool = False,
                 use_neptune: bool = False,
@@ -42,7 +41,7 @@ def train_model(model: PretrainedModelBase,
     loss_fn = get_loss_fn()
     pl_module = TrainingModule(model, optimizer=optimizer, loss_fn=loss_fn)
 
-    train_loader, val_loader, test_loader = get_data_loaders(featurizer, batch_size=batch_size)
+    train_loader, val_loader, test_loader = get_data_loaders(featurizer)
 
     trainer.fit(pl_module,
                 train_dataloader=train_loader,

@@ -1,20 +1,21 @@
 # ==============================================================================
 neptune.user_name = 'panpiotr8'
-neptune.project_name = 'MAT'
-neptune.experiment_name = 'Split 0 again'
-
-# ==============================================================================
-data.data_path = './data/freesolv/freesolv.csv'
-data.split_path = './data/freesolv/split-random-0.npy'
-data.num_workers = 4
-data.cache = True
-
-# ==============================================================================
-train.save_path = './experiments/MAT_freesolv_split0_again'
+neptune.project_name = 'sandbox'
+neptune.experiment_name = 'Benchmark test train'
 train.use_neptune = True
+
+# ==============================================================================
+data.task_name = 'ADME'
+data.dataset_name = 'hydrationfreeenergy_freesolv'
+data.split_method = 'random'
+data.split_frac = [0.9, 0.1, 0.1]
+data.split_seed = 'benchmark'
+data.batch_size = 32
+
+# ==============================================================================
+train.save_path = './experiments/MAT_benchamrk_test'
 train.gpus = [1]
 train.num_epochs = 100
-train.batch_size = 32
 train.evaluation = 'last'
 train.custom_callbacks = ['NoamLRScheduler']
 

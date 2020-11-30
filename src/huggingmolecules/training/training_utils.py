@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Union
 
 import gin
 import pytorch_lightning as pl
@@ -78,34 +78,6 @@ def get_neptune(save_path: str, project_name: str, user_name: str, experiment_na
     return neptune
 
 
-@gin.configurable('data', blacklist=['featurizer', 'batch_size'])
-def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
-                     data_path: str,
-                     batch_size: int,
-                     train_size: float = 0.9,
-                     test_size: float = 0.0,
-                     num_workers: int = 1,
-                     split_path: Optional[str] = None,
-                     seed: Optional[int] = None,
-                     cache: bool = False) -> Tuple[DataLoader, DataLoader, DataLoader]:
-    dataset = featurizer.load_dataset_from_csv(data_path, cache=cache)
-    if split_path:
-        train_data, val_data, test_data = split_data_from_file(dataset, split_path)
-    else:
-        train_data, val_data, test_data = split_data_random(dataset, train_size, test_size, seed)
-
-    logging.info(f'Train samples: {len(train_data)}')
-    logging.info(f'Validation samples: {len(val_data)}')
-    logging.info(f'Test samples: {len(test_data)}')
-
-    train_loader, val_loader, test_loader = featurizer.get_data_loaders(train_data,
-                                                                        val_data,
-                                                                        test_data,
-                                                                        batch_size=batch_size,
-                                                                        num_workers=num_workers)
-    return train_loader, val_loader, test_loader
-
-
 def apply_neptune(callbacks: List[Callback], loggers: List[pl_loggers.LightningLoggerBase], *, save_path):
     neptune = get_neptune(save_path)
     loggers += [neptune]
@@ -113,6 +85,37 @@ def apply_neptune(callbacks: List[Callback], loggers: List[pl_loggers.LightningL
     for clb in callbacks:
         if isinstance(clb, NeptuneCompatibleCallback):
             clb.neptune = neptune
+
+
+@gin.configurable('data', blacklist=['featurizer'])
+def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
+                     batch_size: int,
+                     task_name: str,
+                     dataset_name: str,
+                     split_method: str = "random",
+                     split_frac: List[float],
+                     split_seed: Union[int, str] = "benchmark",
+                     num_workers: int = 4) -> Tuple[DataLoader, DataLoader, DataLoader]:
+    import tdc.single_pred
+
+    task = getattr(tdc.single_pred, task_name)
+    data = task(name=dataset_name)
+    split = data.get_split(method=split_method, seed=split_seed, frac=split_frac)
+
+    train_data = featurizer.encode_smiles_list(split['train']['Drug'], split['train']['Y'])
+    valid_data = featurizer.encode_smiles_list(split['valid']['Drug'], split['valid']['Y'])
+    test_data = featurizer.encode_smiles_list(split['test']['Drug'], split['test']['Y'])
+
+    logging.info(f'Train samples: {len(train_data)}')
+    logging.info(f'Validation samples: {len(valid_data)}')
+    logging.info(f'Test samples: {len(test_data)}')
+
+    train_loader, val_loader, test_loader = featurizer.get_data_loaders(train_data,
+                                                                        valid_data,
+                                                                        test_data,
+                                                                        batch_size=batch_size,
+                                                                        num_workers=num_workers)
+    return train_loader, val_loader, test_loader
 
 
 def evaluate_and_save_results(trainer: pl.Trainer, test_loader: DataLoader, save_path: str, evaluation: str):
