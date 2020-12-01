@@ -8,16 +8,13 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from pytorch_lightning import loggers as pl_loggers, Callback
-from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
-import src.huggingmolecules.training.training_callbacks as custom_callbacks_module
-import src.huggingmolecules.training.training_loss_fn as custom_loss_fn_module
-from src.huggingmolecules import split_data_random
+import experiments.training.training_callbacks as custom_callbacks_module
+import experiments.training.training_loss_fn as custom_loss_fn_module
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
-from src.huggingmolecules.featurization.featurization_utils import split_data_from_file
-from src.huggingmolecules.training.training_callbacks import NeptuneCompatibleCallback, HyperparamsNeptuneSaver, \
+from .training_callbacks import NeptuneCompatibleCallback, HyperparamsNeptuneSaver, \
     GinConfigSaver, ModelConfigSaver, ConfigurableModelCheckpoint
 
 
@@ -25,11 +22,15 @@ def get_default_loggers(save_path: str) -> List[pl_loggers.LightningLoggerBase]:
     return [pl_loggers.CSVLogger(save_path)]
 
 
-def get_default_callbacks(save_path: str) -> List[Callback]:
+@gin.configurable('callbacks', blacklist=['save_path'])
+def get_default_callbacks(save_path: str, excluded: List[str] = None) -> List[Callback]:
     checkpoint_callback = ConfigurableModelCheckpoint(filepath=os.path.join(save_path, "weights"))
     gin_config_essential = GinConfigSaver(target_name="gin-config-essential.txt",
                                           excluded_namespaces=['neptune', 'optuna', 'macro'])
-    return [checkpoint_callback, gin_config_essential, ModelConfigSaver(), GinConfigSaver()]
+    callbacks = [checkpoint_callback, gin_config_essential, ModelConfigSaver(), GinConfigSaver()]
+    excluded = excluded if excluded else []
+    callbacks = [clb for clb in callbacks if type(clb).__name__ not in excluded]
+    return callbacks
 
 
 def get_custom_callbacks(callbacks_names: List[str] = None) -> List[Callback]:
@@ -95,7 +96,7 @@ def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
                      split_method: str = "random",
                      split_frac: List[float],
                      split_seed: Union[int, str] = "benchmark",
-                     num_workers: int = 4) -> Tuple[DataLoader, DataLoader, DataLoader]:
+                     num_workers: int = 0) -> Tuple[DataLoader, DataLoader, DataLoader]:
     import tdc.single_pred
 
     task = getattr(tdc.single_pred, task_name)

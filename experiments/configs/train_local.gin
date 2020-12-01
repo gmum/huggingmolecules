@@ -8,15 +8,17 @@ train.use_neptune = True
 data.task_name = 'ADME'
 data.dataset_name = 'hydrationfreeenergy_freesolv'
 data.split_method = 'random'
-data.split_frac = [0.9, 0.1, 0.1]
+data.split_frac = [0.8, 0.1, 0.1]
 data.split_seed = 'benchmark'
-data.batch_size = 32
+data.batch_size = 1
+data.num_workers = 0
 
 # ==============================================================================
-train.save_path = './experiments/MAT_benchamrk_test'
-train.gpus = [1]
-train.num_epochs = 100
+train.save_path = './experiments_results/MAT_benchamrk_test'
+train.gpus = 0
+train.num_epochs = 2
 train.evaluation = 'last'
+callbacks.excluded = ['ModelConfigSaver']
 train.custom_callbacks = ['NoamLRScheduler']
 
 # ==============================================================================

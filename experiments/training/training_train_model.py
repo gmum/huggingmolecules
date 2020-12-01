@@ -3,8 +3,8 @@ from pytorch_lightning import Trainer
 from .training_lightning_module import TrainingModule
 from .training_utils import *
 from .training_utils import get_custom_callbacks, apply_neptune, evaluate_and_save_results
-from ..featurization.featurization_api import PretrainedFeaturizerMixin
-from ..models.models_api import PretrainedModelBase
+from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
+from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 @gin.configurable('train', blacklist=['model', 'featurizer'])

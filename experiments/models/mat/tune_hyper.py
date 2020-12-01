@@ -1,5 +1,5 @@
 from src.huggingmolecules import MatModel, MatFeaturizer
-from src.huggingmolecules.training import tune_hyper
+from experiments.training import tune_hyper
 from src.huggingmolecules.utils import *
 
 apply_gin_config()

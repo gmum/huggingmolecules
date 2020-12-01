@@ -1,12 +1,9 @@
 # ==============================================================================
-study_name = 'TPE hps search'
-optuna.study_name = %study_name
-neptune.experiment_name = %study_name
-
-# ==============================================================================
+optuna.study_name = 'Whatever'
 optuna.storage = 'sqlite:///optuna_studies.db'
-optuna.save_path = 'experiments/tune_hyper_0'
+optuna.root_path = './experiments_results'
 optuna.keep_best_only = True
+train.use_neptune = True
 ModelCheckpoint.save_last = False
 
 # ==============================================================================
@@ -21,5 +18,10 @@ optuna.params = {
 
 # ==============================================================================
 optuna.resume = True
+
+# optuna.params = {
+#     'optimizer.lr': [0.001, 0.0005, 0.0001, 5e-05, 1e-05, 5e-06, 1e-06],
+#     'NoamLRScheduler.warmup_factor': [0, 0.1, 0.2, 0.3, 0.4, 0.5]
+# }
 
 

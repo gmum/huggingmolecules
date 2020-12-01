@@ -1,0 +1,45 @@
+# ==============================================================================
+optuna.study_name = None
+optuna.storage = 'sqlite:///optuna_studies.db'
+optuna.root_path = './experiments_results'
+optuna.resume = True
+
+# ==============================================================================
+optuna.direction = 'minimize'
+optuna.metric = 'valid_loss'
+optuna.sampler_name = 'GridSampler'
+optuna.params = {
+    'optimizer.lr': [0.001, 0.0005, 0.0001, 5e-05, 1e-05, 5e-06, 1e-06],
+    'data.split_seed': %seeds
+}
+optuna.keep_best_only = True
+optuna.keep_best_only.group_by = ['data.split_seed']
+
+# ==============================================================================
+data.task_name = None
+data.dataset_name = None
+data.split_method = 'random'
+data.split_frac = [0.8, 0.1, 0.1]
+data.batch_size = 32
+data.num_workers = 4
+
+# ==============================================================================
+train.use_neptune = True
+neptune.user_name = 'panpiotr8'
+neptune.project_name = 'Benchmarks'
+
+# ==============================================================================
+train.gpus = [1]
+train.num_epochs = 100
+train.evaluation = 'last'
+train.custom_callbacks = ['NoamLRScheduler']
+
+# ==============================================================================
+NoamLRScheduler.model_size_name = 'd_model'
+NoamLRScheduler.warmup_factor = 0.2
+
+# ==============================================================================
+optimizer.name = 'Adam'
+
+# ==============================================================================
+loss_fn.name = 'rmse_loss'

@@ -1,7 +1,7 @@
 import logging
 
+from experiments.training import train_model
 from src.huggingmolecules import MatModel, MatFeaturizer
-from src.huggingmolecules.training import train_model
 from src.huggingmolecules.utils import *
 
 logging.basicConfig(format='%(levelname)s:%(module)s: %(message)s', level=logging.INFO)

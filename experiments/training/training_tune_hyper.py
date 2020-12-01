@@ -1,17 +1,18 @@
+import os
 from typing import Optional
 
 import gin
 
 from .training_tune_hyper_utils import print_and_save_info, get_sampler, Objective, WeightRemoverCallback, \
     enqueue_failed_trials
-from ..featurization.featurization_api import PretrainedFeaturizerMixin
-from ..models.models_api import PretrainedModelBase
+from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
+from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 @gin.configurable('optuna', blacklist=['model', 'featurizer'])
 def tune_hyper(model: PretrainedModelBase,
                featurizer: PretrainedFeaturizerMixin, *,
-               save_path: str,
+               root_path: str,
                params: dict,
                direction: str,
                metric: str,
@@ -23,7 +24,10 @@ def tune_hyper(model: PretrainedModelBase,
                resume: bool = False,
                keep_best_only: bool = False):
     import optuna
-
+    save_path = os.path.join(root_path, study_name)
+    with gin.unlock_config():
+        gin.bind_parameter('neptune.experiment_name', study_name)
+    
     sampler = get_sampler(sampler_name, params)
 
     study = optuna.create_study(study_name=study_name,

@@ -9,7 +9,7 @@ import gin
 
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
-from src.huggingmolecules.training import train_model
+from .training_train_model import train_model
 
 
 def get_sampler(name: str, params: dict):

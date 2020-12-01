@@ -1,0 +1,4 @@
+# ==============================================================================
+data.task_name = 'ADME'
+data.dataset_name = 'hydrationfreeenergy_freesolv'
+seeds = [1234, 100, 44, 13]
