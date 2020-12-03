@@ -22,8 +22,8 @@ class MatModel(PretrainedModelBase[MatBatchEncoding, MatConfig]):
     def __init__(self, config: MatConfig):
         super().__init__(config)
 
-        self.encoder = Encoder(config)
         self.src_embed = Embeddings(config)
+        self.encoder = Encoder(config)
         self.generator = Generator(config)
 
         self.init_weights(config.init_type)

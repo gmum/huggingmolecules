@@ -15,36 +15,69 @@ class NeptuneCompatibleCallback(Callback):
         self.neptune = None
 
 
-@gin.configurable
-class NoamLRScheduler(NeptuneCompatibleCallback):
-    def __init__(self, model_size_name: str, warmup_factor: int):
+class LRSchedulerBase(NeptuneCompatibleCallback):
+    def __init__(self, warmup_factor: int):
         super().__init__()
-        self.model_size_name = model_size_name
         self.warmup_factor = warmup_factor
-        self.factor = None
+        self.base_lr = None
         self.warmup_steps = None
-        self.model_size = None
+        self.total_steps = None
 
     def on_train_start(self, trainer, pl_module):
-        self.factor = 100 * trainer.optimizers[0].param_groups[0]['lr']
-        total_steps = len(pl_module.train_dataloader.dataloader) * trainer.max_epochs
-        self.warmup_steps = self.warmup_factor * total_steps
-        config = pl_module.model.get_config()
-        self.model_size = getattr(config, self.model_size_name)
+        self.base_lr = trainer.optimizers[0].param_groups[0]['lr']
+        self.total_steps = len(pl_module.train_dataloader.dataloader) * trainer.max_epochs
+        self.warmup_steps = self.warmup_factor * self.total_steps
 
+        logging.info(f'Set base_lr to: {self.base_lr}')
         logging.info(f'Set warmup_steps to: {self.warmup_steps}')
-        logging.info(f'Set model_size to: {self.model_size}')
-        logging.info(f'Set factor to: {self.factor}')
+        logging.info(f'Set total_steps to: {self.total_steps}')
+
+    def get_multiplier(self, step):
+        raise NotImplementedError
 
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
         step = trainer.global_step + 1
         for i, group in enumerate(trainer.optimizers[0].param_groups):
-            group['lr'] = self.factor * \
-                          (self.model_size ** (-0.5) * min(step ** (-0.5),
-                                                           step * (1e-6 + self.warmup_steps) ** (-1.5)))
+            group['lr'] = self.base_lr * self.get_multiplier(step)
+
             logging.info(f'Set group-{i}-lr to {group["lr"]}')
             if self.neptune:
                 self.neptune.log_metric(f'group-{i}-lr', group['lr'])
+
+
+@gin.configurable
+class NoamLRScheduler(LRSchedulerBase):
+    def __init__(self, model_size_name: str, warmup_factor: int):
+        super().__init__(warmup_factor)
+        self.model_size_name = model_size_name
+        self.model_size = None
+
+    def on_train_start(self, trainer, pl_module):
+        super().on_train_start(trainer, pl_module)
+        config = pl_module.model.get_config()
+        self.model_size = getattr(config, self.model_size_name)
+
+        logging.info(f'Set model_size to: {self.model_size}')
+
+    def get_multiplier(self, step):
+        return 100 * (self.model_size ** (-0.5) * min(step ** (-0.5),
+                                                      step * (1e-6 + self.warmup_steps) ** (-1.5)))
+
+
+@gin.configurable
+class LinearLRScheduler(LRSchedulerBase):
+    def __init__(self, warmup_factor: int):
+        super().__init__(warmup_factor)
+
+    def on_train_start(self, trainer, pl_module):
+        super().on_train_start(trainer, pl_module)
+
+    def get_multiplier(self, step):
+        if step < self.warmup_steps:
+            return float(step) / float(max(1, self.warmup_steps))
+        return max(
+            0.0, float(self.total_steps - step) / float(max(1, self.total_steps - self.warmup_steps))
+        )
 
 
 class GinConfigSaver(NeptuneCompatibleCallback):

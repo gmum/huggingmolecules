@@ -3,10 +3,10 @@ from typing import Optional
 
 import gin
 
-from .training_tune_hyper_utils import print_and_save_info, get_sampler, Objective, WeightRemoverCallback, \
-    enqueue_failed_trials
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
+from .training_tune_hyper_utils import print_and_save_info, get_sampler, Objective, \
+    enqueue_failed_trials, get_weight_remover
 
 
 @gin.configurable('optuna', blacklist=['model', 'featurizer'])
@@ -22,12 +22,12 @@ def tune_hyper(model: PretrainedModelBase,
                study_name: str = None,
                storage: Optional[str] = None,
                resume: bool = False,
-               keep_best_only: bool = False):
+               weight_remover: Optional[str] = None):
     import optuna
     save_path = os.path.join(root_path, study_name)
     with gin.unlock_config():
         gin.bind_parameter('neptune.experiment_name', study_name)
-    
+
     sampler = get_sampler(sampler_name, params)
 
     study = optuna.create_study(study_name=study_name,
@@ -45,7 +45,7 @@ def tune_hyper(model: PretrainedModelBase,
                           optuna_params=params,
                           metric=metric)
 
-    callbacks = [WeightRemoverCallback(save_path, direction)] if keep_best_only else None
+    callbacks = [get_weight_remover(save_path)] if weight_remover else None
     study.optimize(objective,
                    n_trials=n_trials,
                    timeout=timeout,

@@ -12,8 +12,8 @@ optuna.params = {
     'optimizer.lr': [0.001, 0.0005, 0.0001, 5e-05, 1e-05, 5e-06, 1e-06],
     'data.split_seed': %seeds
 }
-optuna.keep_best_only = True
-optuna.keep_best_only.group_by = ['data.split_seed']
+optuna.weight_remover = 'all'
+ModelCheckpoint.save_last = False
 
 # ==============================================================================
 data.task_name = None

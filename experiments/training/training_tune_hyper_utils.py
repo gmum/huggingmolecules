@@ -54,15 +54,12 @@ class Objective:
         return trainer.logged_metrics[self.metric]
 
 
-@gin.configurable('optuna.keep_best_only', blacklist=['save_path', 'direction'])
-class WeightRemoverCallback:
-    def __init__(self,
-                 save_path: str,
-                 direction: str,
-                 group_by: Optional[List[str]] = None):
+class WeightRemoverCallbackBase:
+    def __init__(self, save_path: str):
         self.save_path = save_path
-        self.direction = direction
-        self.group_by = group_by
+
+    def _get_paths_to_remove(self, study):
+        raise NotImplementedError
 
     def __call__(self, study, trial):
         for trial_dir in self._get_paths_to_remove(study):
@@ -71,26 +68,54 @@ class WeightRemoverCallback:
             logging.info(f'Running command: {cmd}')
             os.system(cmd)
 
+
+@gin.configurable('weight_remover')
+def get_weight_remover(save_path, type: str = 'all', group_by: Optional[List[str]] = None):
+    if type == 'all':
+        return WeightRemoverAll(save_path)
+    elif type == 'keep_best':
+        return WeightRemoverKeepBest(save_path)
+    elif type == 'group_by':
+        if not group_by:
+            raise ValueError("Please specify weight_remover.group_by in config.")
+        direction = gin.query_parameter('optuna.direction')
+        return WeightRemoverGroupBy(save_path, direction, group_by)
+
+
+class WeightRemoverAll(WeightRemoverCallbackBase):
+    def _get_paths_to_remove(self, study):
+        from optuna.trial import TrialState
+        return [t for t in study.get_trials() if t.state == TrialState.COMPLETE]
+
+
+class WeightRemoverKeepBest(WeightRemoverCallbackBase):
     def _get_paths_to_remove(self, study):
         from optuna.trial import TrialState
         completed = [t for t in study.get_trials() if t.state == TrialState.COMPLETE]
-        if self.group_by:
-            groups = self._get_params_group_dict(completed)
-            return [f'trial_{t.number}' for t in completed if
-                    all(groups[p][t.params[p]] != t.value for p in self.group_by)]
-        else:
-            return [f'trial_{t.number}' for t in completed if t.value != study.best_trial.value]
+        return [f'trial_{t.number}' for t in completed if t.value != study.best_trial.value]
+
+
+class WeightRemoverGroupBy(WeightRemoverCallbackBase):
+    def __init__(self, save_path: str, direction: str, group_by: List[str]):
+        super().__init__(save_path)
+        self.direction = direction
+        self.group_by = group_by
+
+    def _get_paths_to_remove(self, study):
+        from optuna.trial import TrialState
+        completed = [t for t in study.get_trials() if t.state == TrialState.COMPLETE]
+        groups = self._get_params_group_dict(completed)
+        return [f'trial_{t.number}' for t in completed if
+                all(groups[p][t.params[p]] != t.value for p in self.group_by)]
 
     def _get_params_group_dict(self, completed):
         params_dict = {}
+        agg = max if self.direction == 'maximize' else min
         for param_name in self.group_by:
             grouped = defaultdict(list)
             for t in completed:
                 grouped[t.params[param_name]].append(t.value)
-            if self.direction == 'maximize':
-                params_dict[param_name] = {param: max(values) for param, values in grouped.items()}
-            else:
-                params_dict[param_name] = {param: min(values) for param, values in grouped.items()}
+            params_dict[param_name] = {param: agg(values) for param, values in grouped.items()}
         return params_dict
 
 

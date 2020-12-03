@@ -2,7 +2,7 @@
 optuna.study_name = 'Whatever'
 optuna.storage = 'sqlite:///optuna_studies.db'
 optuna.root_path = './experiments_results'
-optuna.keep_best_only = True
+optuna.weight_remover = 'all'
 train.use_neptune = True
 ModelCheckpoint.save_last = False
 
