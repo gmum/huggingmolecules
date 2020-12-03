@@ -1,6 +1,5 @@
 from pytorch_lightning import Trainer
 
-from src.huggingmolecules.models.models_api import PretrainedModelBase
 from .training_lightning_module import TrainingModule
 from .training_train_model_utils import *
 from .training_train_model_utils import get_custom_callbacks, apply_neptune, evaluate_and_save_results
@@ -25,7 +24,7 @@ def train_model(model: PretrainedModelBase,
     loggers = get_default_loggers(save_path)
 
     if use_neptune:
-        apply_neptune(callbacks, loggers, save_path=save_path)
+        apply_neptune(model, callbacks, loggers, save_path=save_path)
 
     trainer = Trainer(default_root_dir=save_path,
                       max_epochs=num_epochs,

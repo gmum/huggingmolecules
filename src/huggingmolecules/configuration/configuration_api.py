@@ -16,6 +16,9 @@ class PretrainedConfigMixin:
             param_dict: dict = json.load(fp)
         return cls(**param_dict)
 
+    def get_dict(self):
+        return self.__dict__
+
     def save(self, file_path: str):
         with open(file_path, 'w') as fp:
-            json.dump(self.__dict__, fp, indent=2)
+            json.dump(self.get_dict(), fp, indent=2)

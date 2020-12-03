@@ -1,7 +1,7 @@
 # ==============================================================================
 neptune.user_name = 'panpiotr8'
 neptune.project_name = 'sandbox'
-neptune.experiment_name = 'Benchmark test train'
+neptune.experiment_name = 'Benchmark test train 2'
 train.use_neptune = True
 
 # ==============================================================================

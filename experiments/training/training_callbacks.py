@@ -47,13 +47,6 @@ class NoamLRScheduler(NeptuneCompatibleCallback):
                 self.neptune.log_metric(f'group-{i}-lr', group['lr'])
 
 
-class HyperparamsNeptuneSaver(NeptuneCompatibleCallback):
-    def on_train_start(self, trainer, pl_module):
-        gin_str = get_formatted_config_str(excluded=['neptune', 'optuna', 'macro'])
-        parsed_gin_str = parse_gin_str(gin_str)
-        self.neptune.log_hyperparams(parsed_gin_str)
-
-
 class GinConfigSaver(NeptuneCompatibleCallback):
     def __init__(self, target_name: str = "gin-config-all.txt", excluded_namespaces: List[str] = None):
         super().__init__()

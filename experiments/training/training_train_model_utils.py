@@ -14,7 +14,9 @@ from torch.utils.data import DataLoader
 import experiments.training.training_callbacks as custom_callbacks_module
 import experiments.training.training_loss_fn as custom_loss_fn_module
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
-from .training_callbacks import NeptuneCompatibleCallback, HyperparamsNeptuneSaver, \
+from src.huggingmolecules.models.models_api import PretrainedModelBase
+from src.huggingmolecules.utils import get_formatted_config_str, parse_gin_str
+from .training_callbacks import NeptuneCompatibleCallback, \
     GinConfigSaver, ModelConfigSaver, ConfigurableModelCheckpoint
 
 
@@ -67,22 +69,38 @@ def get_optimizer(model: nn.Module, *, name: str = 'Adam', **kwargs) -> torch.op
     return opt_cls(model.parameters(), **kwargs)
 
 
-@gin.configurable('neptune', blacklist=['save_path'])
-def get_neptune(save_path: str, project_name: str, user_name: str, experiment_name: Optional[str] = None):
+def get_all_hyperparams(model: PretrainedModelBase):
+    gin_str = get_formatted_config_str(excluded=['neptune', 'optuna', 'macro'])
+    params = parse_gin_str(gin_str)
+    for k, v in model.get_config().get_dict().items():
+        params[f'model.{k}'] = v
+    return params
+
+
+@gin.configurable('neptune', blacklist=['model', 'save_path'])
+def get_neptune(model: PretrainedModelBase,
+                save_path: str,
+                project_name: str,
+                user_name: str,
+                experiment_name: Optional[str] = None):
     from pytorch_lightning.loggers import NeptuneLogger
     api_token = os.environ["NEPTUNE_API_TOKEN"]
     description = os.path.basename(save_path)
+    params = get_all_hyperparams(model)
     neptune = NeptuneLogger(api_key=api_token,
                             project_name=f'{user_name}/{project_name}',
                             experiment_name=experiment_name if experiment_name else description,
-                            description=description)
+                            description=description,
+                            params=params)
     return neptune
 
 
-def apply_neptune(callbacks: List[Callback], loggers: List[pl_loggers.LightningLoggerBase], *, save_path):
-    neptune = get_neptune(save_path)
+def apply_neptune(model: PretrainedModelBase,
+                  callbacks: List[Callback],
+                  loggers: List[pl_loggers.LightningLoggerBase], *,
+                  save_path):
+    neptune = get_neptune(model, save_path)
     loggers += [neptune]
-    callbacks += [HyperparamsNeptuneSaver()]
     for clb in callbacks:
         if isinstance(clb, NeptuneCompatibleCallback):
             clb.neptune = neptune
