@@ -85,7 +85,7 @@ def get_weight_remover(save_path, type: str = 'all', group_by: Optional[List[str
 class WeightRemoverAll(WeightRemoverCallbackBase):
     def _get_paths_to_remove(self, study):
         from optuna.trial import TrialState
-        return [t for t in study.get_trials() if t.state == TrialState.COMPLETE]
+        return [f'trial_{t.number}' for t in study.get_trials() if t.state == TrialState.COMPLETE]
 
 
 class WeightRemoverKeepBest(WeightRemoverCallbackBase):
