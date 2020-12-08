@@ -9,7 +9,7 @@ from src.huggingmolecules.featurization.featurization_api import PretrainedFeatu
 
 
 @dataclass
-class ChemBertEncoding(torch_geometric.data.Data):
+class ChemBertBatchEncoding(torch_geometric.data.Data):
     data: dict
     y: torch.FloatTensor
     batch_size: int
@@ -18,19 +18,19 @@ class ChemBertEncoding(torch_geometric.data.Data):
         return self.batch_size
 
 
-class ChemBertFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChemBertEncoding]):
+class ChemBertFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChemBertBatchEncoding]):
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
 
-    def _collate_encodings(self, encodings: List[Tuple[dict, float]]) -> ChemBertEncoding:
+    def _collate_encodings(self, encodings: List[Tuple[dict, float]]) -> ChemBertBatchEncoding:
         x_list = [e[0] for e in encodings]
-        y_list = [e[1] for e in encodings]
+        y_list = [torch.tensor(e[1]).float() for e in encodings]
         padded = self.tokenizer.pad(x_list, return_tensors='pt')
         padded = {k: v for k, v in padded.items()}
-        return ChemBertEncoding(padded, torch.stack(y_list).float().view(-1, 1), len(x_list))
+        return ChemBertBatchEncoding(padded, torch.stack(y_list).float().view(-1, 1), len(x_list))
 
     def _encode_smiles(self, smiles: str, y: Optional[float]) -> Tuple[dict, float]:
-        return self.tokenizer.encode_plus(smiles), torch.tensor(y).float()
+        return self.tokenizer.encode_plus(smiles), y
 
 
 class ChemBertModelWrapper(torch.nn.Module):

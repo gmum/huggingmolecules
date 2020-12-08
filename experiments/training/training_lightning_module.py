@@ -1,4 +1,5 @@
 import pytorch_lightning as pl
+import torch
 from torch.optim.lr_scheduler import LambdaLR
 
 from src.huggingmolecules.featurization.featurization_api import BatchEncodingProtocol
@@ -26,12 +27,14 @@ class TrainingModule(pl.LightningModule):
         output = self.forward(batch)
         loss = self.loss_fn(output, batch.y)
         self.log('valid_loss', loss)
+        self.log('valid_shift', torch.sum(output - batch.y))
         return loss
 
     def test_step(self, batch: BatchEncodingProtocol, batch_idx: int):
         output = self.forward(batch)
         loss = self.loss_fn(output, batch.y)
         self.log('test_loss', loss)
+        self.log('test_shift', torch.sum(output - batch.y))
         return loss
 
     def configure_optimizers(self):

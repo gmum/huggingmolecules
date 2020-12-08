@@ -25,6 +25,10 @@ def print_benchmark_results():
     for hps, val in zip(hps_list, best_hps):
         print(f'  {hps} = {val}')
 
+    mean = result["channel_test_loss"]["mean"]
+    std = result["channel_test_loss"]["std"]
+    print(f'Result: {round(mean, 3)} \u00B1 {round(std, 3)}')
+
 
 def set_default_experiment_name(prefix: str):
     with gin.unlock_config():

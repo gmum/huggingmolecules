@@ -1,0 +1,16 @@
+include 'experiments/configs/setup.gin'
+
+# ==============================================================================
+neptune.project_name = 'sandbox'
+neptune.experiment_name = 'Train MAT test'
+train.save_path = './experiments_results/train_mat_test'
+
+# ==============================================================================
+data.split_method = 'random'
+data.split_frac = [0.8, 0.1, 0.1]
+
+# ==============================================================================
+train.evaluation = 'last'
+
+# ==============================================================================
+train.resume = False

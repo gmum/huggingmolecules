@@ -1,0 +1,12 @@
+# ==============================================================================
+optimizer.name = 'Adam'
+optimizer.lr = 0.0005
+
+# ==============================================================================
+train.custom_callbacks = ['NoamLRScheduler']
+NoamLRScheduler.model_size_name = 'd_model'
+NoamLRScheduler.warmup_factor = 0.2
+
+# ==============================================================================
+data.batch_size = 32
+train.num_epochs = 100

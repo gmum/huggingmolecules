@@ -1,0 +1,27 @@
+include 'experiments/configs/setup.gin'
+
+# ==============================================================================
+neptune.project_name = 'Benchmarks'
+optuna.storage = 'sqlite:///benchmarks.db'
+optuna.root_path = './experiments_results'
+optuna.resume = True
+
+# ==============================================================================
+data.split_method = 'random'
+data.split_frac = [0.8, 0.1, 0.1]
+
+# ==============================================================================
+train.evaluation = 'last'
+
+# ==============================================================================
+optuna.weight_remover = 'all'
+ModelCheckpoint.save_last = False
+
+# ==============================================================================
+optuna.direction = 'minimize'
+optuna.metric = 'valid_loss'
+optuna.sampler_name = 'GridSampler'
+optuna.params = {
+    'optimizer.lr': [0.001, 0.0005, 0.0001, 5e-05, 1e-05, 5e-06, 1e-06],
+    'data.split_seed': %seeds
+}
