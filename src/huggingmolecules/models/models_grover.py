@@ -7,7 +7,7 @@ from torch_geometric.utils import add_self_loops
 
 from src.huggingmolecules.configuration import GroverConfig
 from .models_api import PretrainedModelBase
-from ..featurization.featurization_grover import GroverBatchEncoding
+from ..featurization.featurization_grover import GroverBatchEncoding, GroverFeaturizer
 
 GROVER_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
     'grover-base-whatever': './saved/grover-base-whatever'
@@ -23,8 +23,12 @@ class GroverModel(PretrainedModelBase[GroverBatchEncoding, GroverConfig]):
         self.output_net = OutputNetwork(config)
 
     @classmethod
-    def _get_config_cls(cls):
+    def get_config_cls(cls):
         return GroverConfig
+
+    @classmethod
+    def get_featurizer_cls(cls):
+        return GroverFeaturizer
 
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:

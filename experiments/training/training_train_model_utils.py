@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Tuple, List, Optional, Union
+from typing import Tuple, List, Optional, Union, Type
 
 import gin
 import pytorch_lightning as pl
@@ -13,6 +13,8 @@ from torch.utils.data import DataLoader
 
 import experiments.training.training_callbacks as custom_callbacks_module
 import experiments.training.training_loss_fn as custom_loss_fn_module
+import src.huggingmolecules.models as models
+import experiments.wrappers as wrappers
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 from src.huggingmolecules.utils import get_formatted_config_str, parse_gin_str
@@ -43,16 +45,6 @@ def get_custom_callbacks(callbacks_names: List[str] = None) -> List[Callback]:
         clb = clb_cls()
         callbacks.append(clb)
     return callbacks
-
-
-# @gin.configurable('lr_scheduler', blacklist=['optimizer'])
-# def get_lr_scheduler(optimizer, name='IdentityScheduler', **kwargs):
-#     try:
-#         scheduler_cls = getattr(custom_schedulers, name)
-#     except AttributeError:
-#         scheduler_cls = getattr(torch.optim.lr_scheduler, name)
-#     scheduler = scheduler_cls(optimizer, **kwargs)
-#     return scheduler
 
 
 @gin.configurable('loss_fn')
@@ -144,3 +136,15 @@ def evaluate_and_save_results(trainer: pl.Trainer, test_loader: DataLoader, save
     logging.info(results)
     with open(os.path.join(save_path, "test_results.json"), "w") as f:
         json.dump(results, f)
+
+
+@gin.configurable('model')
+def get_model_and_featurizer(cls_name: str, pretrained_name: str):
+    try:
+        model_cls = getattr(models, cls_name)
+    except AttributeError:
+        model_cls = getattr(wrappers, cls_name)
+    model: PretrainedModelBase = model_cls.from_pretrained(pretrained_name)
+    featurizer_cls = model.get_featurizer_cls()
+    featurizer: PretrainedFeaturizerMixin = featurizer_cls.from_pretrained(pretrained_name)
+    return model, featurizer

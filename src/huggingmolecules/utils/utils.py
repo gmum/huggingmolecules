@@ -4,13 +4,15 @@ from typing import List, Optional
 import gin
 
 
-def apply_gin_config(parser: argparse.ArgumentParser = None) -> argparse.Namespace:
+def apply_gin_config(parser: argparse.ArgumentParser = None, configs: Optional[List[str]] = None) -> argparse.Namespace:
     if not parser:
         parser = argparse.ArgumentParser()
+    if not configs:
+        configs = []
     parser.add_argument('-c', '--config-files', type=str, required=True)
     parser.add_argument('-b', '--bindings', type=str, required=False, default=None)
     args = parser.parse_args()
-    configs = args.config_files.split("#")
+    configs.extend(args.config_files.split("#"))
     bindings = args.bindings.split("#") if args.bindings else None
     gin.parse_config_files_and_bindings(configs, bindings)
     return args

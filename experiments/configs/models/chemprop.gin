@@ -1,4 +1,8 @@
 # ==============================================================================
+model.cls_name = 'ChempropModelWrapper'
+model.pretrained_name = 'vanilla'
+
+# ==============================================================================
 optimizer.name = 'Adam'
 optimizer.lr = 0.0001
 
@@ -9,4 +13,4 @@ NoamLRScheduler.warmup_factor = 0.4
 
 # ==============================================================================
 data.batch_size = 32
-train.num_epochs = 30
+train.num_epochs = 50

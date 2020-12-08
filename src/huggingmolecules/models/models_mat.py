@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from src.huggingmolecules.configuration.configuration_mat import MatConfig
-from src.huggingmolecules.featurization.featurization_mat import MatBatchEncoding
+from src.huggingmolecules.featurization.featurization_mat import MatBatchEncoding, MatFeaturizer
 from .models_api import PretrainedModelBase
 from .models_utils import xavier_normal_small_init_, xavier_uniform_small_init_
 
@@ -29,8 +29,12 @@ class MatModel(PretrainedModelBase[MatBatchEncoding, MatConfig]):
         self.init_weights(config.init_type)
 
     @classmethod
-    def _get_config_cls(cls):
+    def get_config_cls(cls):
         return MatConfig
+
+    @classmethod
+    def get_featurizer_cls(cls):
+        return MatFeaturizer
 
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name: str):

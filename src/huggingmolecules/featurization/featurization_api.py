@@ -78,3 +78,8 @@ class PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding]):
 
     def _collate_encodings(self, encodings: List[T_MoleculeEncoding]) -> T_BatchEncoding:
         raise NotImplementedError
+
+    @classmethod
+    def from_pretrained(cls, pretrained_name: str):
+        # TODO do we need featurizer pretrained?
+        return cls()

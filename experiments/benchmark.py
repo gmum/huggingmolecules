@@ -3,21 +3,19 @@ import sys
 
 from experiments.training.training_benchmark import benchmark
 from experiments.training.training_benchmark_utils import set_default_experiment_name, print_benchmark_results
-from src.huggingmolecules import MatModel, MatFeaturizer
+from experiments.training.training_train_model_utils import get_model_and_featurizer
 from src.huggingmolecules.utils import apply_gin_config
-
-name = "MAT_linear"
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--results_only', action='store_true')
-args = apply_gin_config(parser)
+parser.add_argument('--prefix', type=str, required=True)
+args = apply_gin_config(parser, configs=['experiments/configs/bases/benchmark.gin'])
 
 if args.results_only:
-    set_default_experiment_name(prefix=name)
+    set_default_experiment_name(prefix=args.prefix)
     print_benchmark_results()
     sys.exit()
 
-model = MatModel.from_pretrained('mat-base-freesolv')
-featurizer = MatFeaturizer()
+model, featurizer = get_model_and_featurizer()
 
-benchmark(model, featurizer, name)
+benchmark(model, featurizer, prefix=args.prefix)
