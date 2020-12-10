@@ -6,8 +6,9 @@ from .training_train_model_utils import get_custom_callbacks, apply_neptune, eva
 
 
 @gin.configurable('train', blacklist=['model', 'featurizer'])
-def train_model(model: PretrainedModelBase,
-                featurizer: PretrainedFeaturizerMixin, *,
+def train_model(*,
+                model: Optional[PretrainedModelBase] = None,
+                featurizer: Optional[PretrainedFeaturizerMixin] = None,
                 save_path: str,
                 num_epochs: int,
                 gpus: List[int],
@@ -15,6 +16,9 @@ def train_model(model: PretrainedModelBase,
                 use_neptune: bool = False,
                 evaluation: Optional[str] = None,
                 custom_callbacks: Optional[List[str]] = None):
+    if not model:
+        model, featurizer = get_model_and_featurizer()
+
     resume_path = os.path.join(save_path, 'last.ckpt')
     if not resume and os.path.exists(resume_path):
         raise IOError(f'Please clear {save_path} folder before running or pass train.resume=True')

@@ -34,8 +34,8 @@ class Objective:
     import optuna
 
     def __init__(self,
-                 model: PretrainedModelBase,
-                 featurizer: PretrainedFeaturizerMixin,
+                 model: Optional[PretrainedModelBase],
+                 featurizer: Optional[PretrainedFeaturizerMixin],
                  save_path: str,
                  optuna_params: dict,
                  metric: str):
@@ -49,8 +49,9 @@ class Objective:
         trial_path = os.path.join(self.save_path, f'trial_{trial.number}')
         suggested_values = {p: getattr(trial, v[0])(p, *v[1:]) for p, v in self.optuna_params.items()}
         bind_parameters_from_dict(suggested_values)
-        model_copy = copy.deepcopy(self.model)
-        trainer = train_model(model_copy, self.featurizer, save_path=trial_path)
+
+        model = copy.deepcopy(self.model) if self.model else None
+        trainer = train_model(model=model, featurizer=self.featurizer, save_path=trial_path)
         return trainer.logged_metrics[self.metric]
 
 

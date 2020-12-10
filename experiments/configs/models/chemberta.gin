@@ -1,6 +1,6 @@
 # ==============================================================================
 model.cls_name = 'ChembertaModelWrapper'
-model.pretrained_name = 'seyonec/ChemBERTa-zinc-base-v1'
+model.pretrained_name = 'seyonec/ChemBERTa_zinc250k_v2_40k'
 
 # ==============================================================================
 optimizer.name = 'Adam'

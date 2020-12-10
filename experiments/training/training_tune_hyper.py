@@ -10,8 +10,9 @@ from .training_tune_hyper_utils import print_and_save_info, get_sampler, Objecti
 
 
 @gin.configurable('optuna', blacklist=['model', 'featurizer'])
-def tune_hyper(model: PretrainedModelBase,
-               featurizer: PretrainedFeaturizerMixin, *,
+def tune_hyper(*,
+               model: Optional[PretrainedModelBase] = None,
+               featurizer: Optional[PretrainedFeaturizerMixin] = None,
                root_path: str,
                params: dict,
                direction: str,
