@@ -1,3 +1,5 @@
+from typing import Optional
+
 import pytorch_lightning as pl
 import torch
 from torch.optim.lr_scheduler import LambdaLR
@@ -12,6 +14,10 @@ class TrainingModule(pl.LightningModule):
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
+
+    def cuda(self, device: Optional[int] = None):
+        setattr(self.model, 'device', device)
+        return super(TrainingModule, self).cuda(device)
 
     def forward(self, batch: BatchEncodingProtocol):
         return self.model.forward(batch)

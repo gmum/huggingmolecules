@@ -1,3 +1,6 @@
+# shell scripts
+*.sh
+
 # database
 *.db
 

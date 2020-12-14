@@ -38,10 +38,10 @@ class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):
         config_cls = cls.get_config_cls()
         config = config_cls.from_pretrained(pretrained_name)
         model = cls(config)
-        model.load_weights(file_path)
+        model._load_pretrained_weights(file_path)
         return model
 
-    def load_weights(self, file_path: str):
+    def _load_pretrained_weights(self, file_path: str):
         pretrained_state_dict = torch.load(file_path)
         if 'model' in pretrained_state_dict:
             pretrained_state_dict = pretrained_state_dict['model']
@@ -53,5 +53,8 @@ class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):
                 param = param.data
             model_state_dict[name].copy_(param)
 
-    def save_weights(self):
-        pass
+    def load_weights(self, file_path: str):
+        state_dict = torch.load(file_path)
+        if 'state_dict' in state_dict:
+            state_dict = {k.replace("model.", "", 1): v for k, v in state_dict['state_dict'].items()}
+        self.load_state_dict(state_dict)
