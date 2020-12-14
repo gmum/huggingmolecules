@@ -63,16 +63,6 @@ class PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding]):
                           num_workers=num_workers,
                           shuffle=shuffle)
 
-    def get_data_loaders(self, train_dataset: List[T_MoleculeEncoding], valid_dataset: List[T_MoleculeEncoding],
-                         test_dataset: Optional[List[T_MoleculeEncoding]] = None, *, batch_size, num_workers=0) -> \
-            Tuple[DataLoader, DataLoader, DataLoader]:
-        train_loader = self.get_data_loader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-        valid_loader = self.get_data_loader(valid_dataset, batch_size=batch_size, shuffle=False,
-                                            num_workers=num_workers)
-        test_loader = None if test_dataset is None else self.get_data_loader(test_dataset, batch_size=batch_size,
-                                                                             shuffle=False, num_workers=num_workers)
-        return train_loader, valid_loader, test_loader
-
     def _encode_smiles(self, smiles: str, y: Optional[float]) -> T_MoleculeEncoding:
         raise NotImplementedError
 

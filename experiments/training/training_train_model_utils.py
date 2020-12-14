@@ -1,9 +1,11 @@
 import json
 import logging
 import os
-from typing import Tuple, List, Optional, Union, Type
+from typing import Tuple, List, Optional, Union
 
 import gin
+import pandas as pd
+import numpy as np
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
@@ -13,8 +15,8 @@ from torch.utils.data import DataLoader
 
 import experiments.training.training_callbacks as custom_callbacks_module
 import experiments.training.training_loss_fn as custom_loss_fn_module
-import src.huggingmolecules.models as models
 import experiments.wrappers as wrappers
+import src.huggingmolecules.models as models
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 from src.huggingmolecules.utils import get_formatted_config_str, parse_gin_str
@@ -106,27 +108,37 @@ def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
                      split_method: str = "random",
                      split_frac: List[float],
                      split_seed: Union[int, str] = "benchmark",
-                     num_workers: int = 0) -> Tuple[DataLoader, DataLoader, DataLoader]:
+                     num_workers: int = 0,
+                     normalize: bool = False) -> Tuple[DataLoader, DataLoader, DataLoader]:
     import tdc.single_pred
-
     task = getattr(tdc.single_pred, task_name)
     data = task(name=dataset_name)
     split = data.get_split(method=split_method, seed=split_seed, frac=split_frac)
 
-    train_data = featurizer.encode_smiles_list(split['train']['Drug'], split['train']['Y'])
-    valid_data = featurizer.encode_smiles_list(split['valid']['Drug'], split['valid']['Y'])
-    test_data = featurizer.encode_smiles_list(split['test']['Drug'], split['test']['Y'])
+    train_y = split['train']['Y'].to_numpy()
+    valid_y = split['valid']['Y'].to_numpy()
+    test_y = split['test']['Y'].to_numpy()
+
+    if normalize:
+        from sklearn import preprocessing
+        scaler = preprocessing.StandardScaler().fit(np.concatenate([train_y, valid_y]).reshape(-1, 1))
+        train_y = scaler.transform(train_y.reshape(-1, 1)).reshape(-1)
+        valid_y = scaler.transform(valid_y.reshape(-1, 1)).reshape(-1)
+        test_y = scaler.transform(test_y.reshape(-1, 1)).reshape(-1)
+
+    train_data = featurizer.encode_smiles_list(split['train']['Drug'], train_y)
+    valid_data = featurizer.encode_smiles_list(split['valid']['Drug'], valid_y)
+    test_data = featurizer.encode_smiles_list(split['test']['Drug'], test_y)
 
     logging.info(f'Train samples: {len(train_data)}')
     logging.info(f'Validation samples: {len(valid_data)}')
     logging.info(f'Test samples: {len(test_data)}')
 
-    train_loader, val_loader, test_loader = featurizer.get_data_loaders(train_data,
-                                                                        valid_data,
-                                                                        test_data,
-                                                                        batch_size=batch_size,
-                                                                        num_workers=num_workers)
-    return train_loader, val_loader, test_loader
+    train_loader = featurizer.get_data_loader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    valid_loader = featurizer.get_data_loader(valid_data, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    test_loader = featurizer.get_data_loader(test_data, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+
+    return train_loader, valid_loader, test_loader
 
 
 def evaluate_and_save_results(trainer: pl.Trainer, test_loader: DataLoader, save_path: str, evaluation: str):

@@ -3,7 +3,7 @@ include 'experiments/configs/setup.gin'
 # ==============================================================================
 neptune.project_name = 'sandbox'
 neptune.experiment_name = 'Train MAT test'
-train.save_path = './experiments_results/train_mat_test'
+train.save_path = './experiments_results/train_mat_test2'
 
 # ==============================================================================
 data.split_method = 'random'

@@ -23,7 +23,7 @@ def print_benchmark_results():
                                                  else v for v in hps_dict.values())))
 
     if total_no_trials <= no_trials:
-        print('BENCHMARK IS FINISHED ({no_trials}/{total_no_trials})')
+        print(f'BENCHMARK IS FINISHED ({no_trials}/{total_no_trials})')
     else:
         print(f'BENCHMARK IS RUNNING ({no_trials}/{total_no_trials})')
 
