@@ -1,7 +1,7 @@
 from pytorch_lightning import Trainer
 
-from .training_lightning_module import TrainingModule
-from .training_train_model_utils import *
+from experiments.src.training.training_lightning_module import TrainingModule
+from experiments.src.training.training_train_model_utils import *
 
 
 @gin.configurable('evaluate', blacklist=['model', 'featurizer'])

@@ -1,7 +1,7 @@
 import argparse
 
-from experiments.training.training_benchmark import benchmark
-from src.huggingmolecules.utils import apply_gin_config
+from experiments.src.gin import apply_gin_config
+from experiments.src.benchmarking import benchmark
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--results_only', action='store_true')

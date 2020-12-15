@@ -1,10 +1,8 @@
-from typing import Type, List, Optional, Generic, TypeVar
+from typing import Type, List, Optional
 
 import torch
 import torch.nn as nn
 
-from experiments.wrappers import ChempropModelWrapper
-from experiments.wrappers.wrappers_chemprop import ChempropFeaturizer
 from src.huggingmolecules.featurization.featurization_api import BatchEncodingProtocol
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 

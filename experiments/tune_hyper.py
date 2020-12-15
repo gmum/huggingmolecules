@@ -1,5 +1,5 @@
-from experiments.training import tune_hyper
-from src.huggingmolecules.utils import *
+from experiments.src import tune_hyper
+from experiments.src.gin import apply_gin_config
 
 apply_gin_config(configs=['experiments/configs/bases/tune_hyper.gin'])
 

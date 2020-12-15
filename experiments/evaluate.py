@@ -1,8 +1,8 @@
-from experiments.ensembles.ensembles_api import EnsembleElement, EnsembleModule
-from experiments.training.training_evaluate_model import evaluate_model
-from experiments.wrappers.wrappers_chemprop import ChempropFeaturizer
+from experiments.src.ensembles.ensembles_api import EnsembleElement, EnsembleModule
+from experiments.src.evaluation import evaluate_model
+from experiments.src.wrappers.wrappers_chemprop import ChempropFeaturizer
 from src.huggingmolecules import MatModel
-from src.huggingmolecules.utils import apply_gin_config
+from experiments.src.gin import apply_gin_config
 
 apply_gin_config(configs=['experiments/configs/bases/evaluate.gin'])
 

@@ -6,7 +6,7 @@ import gin
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-from src.huggingmolecules.utils import get_formatted_config_str, parse_gin_str
+from experiments.src.gin import get_formatted_config_str
 
 
 class NeptuneCompatibleCallback(Callback):

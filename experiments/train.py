@@ -1,7 +1,7 @@
 import logging
 
-from experiments.training import train_model
-from src.huggingmolecules.utils import *
+from experiments.src import train_model
+from experiments.src.gin import apply_gin_config
 
 logging.basicConfig(format='%(levelname)s:%(module)s: %(message)s', level=logging.INFO)
 

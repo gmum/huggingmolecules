@@ -2,8 +2,8 @@ from typing import Optional
 
 import gin
 
-from experiments.training import tune_hyper
-from experiments.training.training_benchmark_utils import print_benchmark_results, set_default_experiment_name
+from experiments.src import tune_hyper
+from experiments.src.benchmarking.training_benchmark_utils import print_benchmark_results, set_default_experiment_name
 
 
 @gin.configurable('benchmark')

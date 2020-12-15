@@ -1,13 +1,9 @@
 from typing import Optional
 
 import pytorch_lightning as pl
-import torch
-from pytorch_lightning.metrics import Accuracy, Precision, Recall
-from torch.optim.lr_scheduler import LambdaLR
-from sklearn.metrics import roc_auc_score
 import torch.nn.functional as F
 
-from experiments.training.training_metrics import AUROC
+from experiments.src.training.training_metrics import AUROC
 from src.huggingmolecules.featurization.featurization_api import BatchEncodingProtocol
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 
