@@ -4,7 +4,7 @@ import gin
 import functools
 
 
-def print_benchmark_results():
+def print_benchmark_results(test_metric: str):
     user_name = gin.query_parameter('neptune.user_name')
     project_name = gin.query_parameter('neptune.project_name')
     experiment_name = gin.query_parameter('optuna.study_name')
@@ -27,11 +27,15 @@ def print_benchmark_results():
     else:
         print(f'BENCHMARK IS RUNNING ({no_trials}/{total_no_trials})')
 
-    data['channel_valid_loss'] = data['channel_valid_loss'].astype(float)
-    data['channel_test_loss'] = data['channel_test_loss'].astype(float)
+    valid_metric = f'channel_valid_loss'
+    test_metric = f'channel_{test_metric}'
+
+    data[valid_metric] = data[valid_metric].astype(float)
+    data[test_metric] = data[test_metric].astype(float)
+
     grouped = data.groupby([f'parameter_{hps}' for hps in hps_list])
-    aggregated = grouped[['channel_valid_loss', 'channel_test_loss']].agg(['mean', 'std'])
-    best_hps = aggregated['channel_valid_loss']['mean'].idxmin()
+    aggregated = grouped[[valid_metric, test_metric]].agg(['mean', 'std'])
+    best_hps = aggregated[valid_metric]['mean'].idxmin()
     result = aggregated.loc[best_hps]
 
     print(result)
@@ -40,8 +44,8 @@ def print_benchmark_results():
     for hps, val in zip(hps_list, best_hps):
         print(f'  {hps} = {val}')
 
-    mean = result["channel_test_loss"]["mean"]
-    std = result["channel_test_loss"]["std"]
+    mean = result[test_metric]["mean"]
+    std = result[test_metric]["std"]
     print(f'Result: {round(mean, 3)} \u00B1 {round(std, 3)}')
 
 

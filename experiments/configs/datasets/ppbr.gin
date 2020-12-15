@@ -1,10 +1,10 @@
+include 'experiments/configs/tasks/classification.gin'
+
 # ==============================================================================
 data.task_name = 'ADME'
-data.dataset_name = 'VD_eDrug3D'
-data.normalize = True
-loss_fn.name = 'rmse_loss'
+data.dataset_name = 'PPBR_Ma'
 
 # ==============================================================================
 # For benchmark only:
 # ==============================================================================
-seeds = [1234, 100, 44, 13, 7407, 5357]
+seeds = [86948, 90712, 34232, 80386, 36214, 60977]

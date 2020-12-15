@@ -1,10 +1,10 @@
+include 'experiments/configs/tasks/regression.gin'
+
 # ==============================================================================
 data.task_name = 'ADME'
-data.dataset_name = 'HalfLife_eDrug3D'
-data.normalize = True
-loss_fn.name = 'rmse_loss'
+data.dataset_name = 'hydrationfreeenergy_freesolv'
 
 # ==============================================================================
 # For benchmark only:
 # ==============================================================================
-seeds = [1671, 8686, 749, 8997, 184, 2775]
+seeds = [1234, 100, 44, 13, 7407, 5357]

@@ -33,10 +33,10 @@ class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):
         raise NotImplementedError
 
     @classmethod
-    def from_pretrained(cls, pretrained_name: str):
+    def from_pretrained(cls, pretrained_name: str, task: str, **kwargs):
         file_path = cls._get_arch_from_pretrained_name(pretrained_name)
         config_cls = cls.get_config_cls()
-        config = config_cls.from_pretrained(pretrained_name)
+        config = config_cls.from_pretrained(pretrained_name, **kwargs)
         model = cls(config)
         model._load_pretrained_weights(file_path)
         return model

@@ -20,9 +20,9 @@ optuna.weight_remover = 'keep_best_only'
 ModelCheckpoint.save_last = False
 
 # ==============================================================================
+optuna.sampler_name = 'TPESampler'
 optuna.direction = 'minimize'
 optuna.metric = 'valid_loss'
-optuna.sampler_name = 'TPESampler'
 optuna.n_trials = 300
 optuna.params = {
     'optimizer.lr': ('suggest_loguniform', 0.000001, 0.001),

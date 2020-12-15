@@ -64,10 +64,10 @@ class ChempropModelWrapper(PretrainedModelBase):
         return self.model.parameters(**kwargs)
 
     @classmethod
-    def from_pretrained(cls, pretrained_name: str):
+    def from_pretrained(cls, pretrained_name: str, task: str, **kwargs):
         if pretrained_name == 'vanilla':
             args = chemprop.args.TrainArgs()
-            args.parse_args(args=["--data_path", "non_existent", "--dataset_type", "regression"])
+            args.parse_args(args=["--data_path", "non_existent", "--dataset_type", task])
             args.task_names = ["whatever"]
             model = chemprop.models.MoleculeModel(args)
             return cls(model)

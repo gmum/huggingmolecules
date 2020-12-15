@@ -14,8 +14,7 @@ data.split_frac = [0.8, 0.1, 0.1]
 train.evaluation = 'last'
 
 # ==============================================================================
-optuna.weight_remover = 'all'
-ModelCheckpoint.save_last = False
+callbacks.excluded = ['ConfigurableModelCheckpoint']
 
 # ==============================================================================
 optuna.direction = 'minimize'

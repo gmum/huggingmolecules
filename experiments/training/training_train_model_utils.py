@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Tuple, List, Optional, Union
+from typing import Tuple, List, Optional, Union, Literal
 
 import gin
 import pandas as pd
@@ -52,9 +52,10 @@ def get_custom_callbacks(callbacks_names: List[str] = None) -> List[Callback]:
 @gin.configurable('loss_fn')
 def get_loss_fn(*, name='mse_loss', **kwargs):
     try:
-        return getattr(custom_loss_fn_module, name)
+        loss_cls = getattr(custom_loss_fn_module, name)
     except AttributeError:
-        return getattr(F, name)
+        loss_cls = getattr(torch.nn, name)
+    return loss_cls(**kwargs)
 
 
 @gin.configurable('optimizer', blacklist=['model'])
@@ -109,7 +110,7 @@ def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
                      split_frac: List[float],
                      split_seed: Union[int, str] = "benchmark",
                      num_workers: int = 0,
-                     normalize: bool = False) -> Tuple[DataLoader, DataLoader, DataLoader]:
+                     normalize_labels: bool = False) -> Tuple[DataLoader, DataLoader, DataLoader]:
     import tdc.single_pred
     task = getattr(tdc.single_pred, task_name)
     data = task(name=dataset_name)
@@ -119,7 +120,7 @@ def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
     valid_y = split['valid']['Y'].to_numpy()
     test_y = split['test']['Y'].to_numpy()
 
-    if normalize:
+    if normalize_labels:
         from sklearn import preprocessing
         scaler = preprocessing.StandardScaler().fit(np.concatenate([train_y, valid_y]).reshape(-1, 1))
         train_y = scaler.transform(train_y.reshape(-1, 1)).reshape(-1)
@@ -151,12 +152,12 @@ def evaluate_and_save_results(trainer: pl.Trainer, test_loader: DataLoader, save
 
 
 @gin.configurable('model')
-def get_model_and_featurizer(cls_name: str, pretrained_name: str):
+def get_model_and_featurizer(cls_name: str, pretrained_name: str, task: Literal["regression", "classification"], **kwargs):
     try:
         model_cls = getattr(models, cls_name)
     except AttributeError:
         model_cls = getattr(wrappers, cls_name)
-    model: PretrainedModelBase = model_cls.from_pretrained(pretrained_name)
+    model: PretrainedModelBase = model_cls.from_pretrained(pretrained_name, task, **kwargs)
     featurizer_cls = model.get_featurizer_cls()
     featurizer: PretrainedFeaturizerMixin = featurizer_cls.from_pretrained(pretrained_name)
     return model, featurizer

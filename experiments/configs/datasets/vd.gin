@@ -1,7 +1,10 @@
+include 'experiments/configs/tasks/regression.gin'
+
 # ==============================================================================
 data.task_name = 'ADME'
-data.dataset_name = 'hydrationfreeenergy_freesolv'
-loss_fn.name = 'rmse_loss'
+data.dataset_name = 'VD_eDrug3D'
+
+data.normalize = True
 
 # ==============================================================================
 # For benchmark only:

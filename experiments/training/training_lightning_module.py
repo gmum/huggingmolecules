@@ -2,18 +2,26 @@ from typing import Optional
 
 import pytorch_lightning as pl
 import torch
+from pytorch_lightning.metrics import Accuracy, Precision, Recall
 from torch.optim.lr_scheduler import LambdaLR
+from sklearn.metrics import roc_auc_score
+import torch.nn.functional as F
 
+from experiments.training.training_metrics import AUROC
 from src.huggingmolecules.featurization.featurization_api import BatchEncodingProtocol
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 class TrainingModule(pl.LightningModule):
-    def __init__(self, model: PretrainedModelBase, *, loss_fn, optimizer):
+    def __init__(self, model: PretrainedModelBase, *, loss_fn, optimizer, task: str):
         super().__init__()
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
+        self.task = task
+
+        if task == 'classification':
+            self.auroc = {phase: AUROC() for phase in ['train', 'valid', 'test']}
 
     def cuda(self, device: Optional[int] = None):
         setattr(self.model, 'device', device)
@@ -22,25 +30,28 @@ class TrainingModule(pl.LightningModule):
     def forward(self, batch: BatchEncodingProtocol):
         return self.model.forward(batch)
 
-    def training_step(self, batch: BatchEncodingProtocol, batch_idx: int):
+    def _step(self, phase: str, batch: BatchEncodingProtocol, batch_idx: int):
         output = self.forward(batch)
         loss = self.loss_fn(output, batch.y)
-        self.log('train_loss', loss, on_epoch=True)
-        self.log('train_loss_step', loss, on_epoch=False)
+        self.log(f'{phase}_loss', loss, on_epoch=True)
+
+        if self.task == 'classification':
+            logits = F.sigmoid(output)
+            self.auroc[phase](logits, batch.y)
+            self.log(f'{phase}_auroc', self.auroc[phase], on_epoch=True, on_step=False)
+
+        return loss, output
+
+    def training_step(self, batch: BatchEncodingProtocol, batch_idx: int):
+        loss, _ = self._step('train', batch, batch_idx)
         return loss
 
     def validation_step(self, batch: BatchEncodingProtocol, batch_idx: int):
-        output = self.forward(batch)
-        loss = self.loss_fn(output, batch.y)
-        self.log('valid_loss', loss)
-        self.log('valid_shift', torch.sum(output - batch.y))
+        loss, _ = self._step('valid', batch, batch_idx)
         return loss
 
     def test_step(self, batch: BatchEncodingProtocol, batch_idx: int):
-        output = self.forward(batch)
-        loss = self.loss_fn(output, batch.y)
-        self.log('test_loss', loss)
-        self.log('test_shift', torch.sum(output - batch.y))
+        loss, _ = self._step('test', batch, batch_idx)
         return loss
 
     def configure_optimizers(self):

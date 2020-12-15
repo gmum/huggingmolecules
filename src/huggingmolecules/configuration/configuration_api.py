@@ -10,10 +10,12 @@ class PretrainedConfigMixin:
         raise NotImplementedError
 
     @classmethod
-    def from_pretrained(cls, pretrained_name: str):
+    def from_pretrained(cls, pretrained_name: str, **kwargs):
         file_path = cls._get_arch_from_pretrained_name(pretrained_name)
         with open(file_path, 'r') as fp:
             param_dict: dict = json.load(fp)
+        for k, v in kwargs:
+            param_dict[k] = v
         return cls(**param_dict)
 
     def get_dict(self):

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pytorch_lightning import Trainer
 
 from .training_lightning_module import TrainingModule
@@ -15,9 +17,10 @@ def train_model(*,
                 resume: bool = False,
                 use_neptune: bool = False,
                 evaluation: Optional[str] = None,
-                custom_callbacks: Optional[List[str]] = None):
+                custom_callbacks: Optional[List[str]] = None,
+                task: Literal["regression", "classification"] = "regression"):
     if not model:
-        model, featurizer = get_model_and_featurizer()
+        model, featurizer = get_model_and_featurizer(task=task)
 
     resume_path = os.path.join(save_path, 'last.ckpt')
     if not resume and os.path.exists(resume_path):
@@ -41,7 +44,7 @@ def train_model(*,
 
     optimizer = get_optimizer(model)
     loss_fn = get_loss_fn()
-    pl_module = TrainingModule(model, optimizer=optimizer, loss_fn=loss_fn)
+    pl_module = TrainingModule(model, optimizer=optimizer, loss_fn=loss_fn, task=task)
 
     train_loader, val_loader, test_loader = get_data_loaders(featurizer)
 

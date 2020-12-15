@@ -67,6 +67,6 @@ class ChembertaModelWrapper(PretrainedModelBase):
         return self.model.parameters(**kwargs)
 
     @classmethod
-    def from_pretrained(cls, pretrained_name: str):
+    def from_pretrained(cls, pretrained_name: str, task: str, **kwargs):
         model = AutoModelForSequenceClassification.from_pretrained(pretrained_name, num_labels=1)
         return cls(model)

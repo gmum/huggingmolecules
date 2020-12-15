@@ -1,10 +1,10 @@
+include 'experiments/configs/tasks/regression.gin'
+
 # ==============================================================================
 data.task_name = 'ADME'
-data.dataset_name = 'Clearance_eDrug3D'
-data.normalize = True
-loss_fn.name = 'rmse_loss'
+data.dataset_name = 'Caco2_Wang'
 
 # ==============================================================================
 # For benchmark only:
 # ==============================================================================
-seeds = [454, 246, 590, 386, 517, 413]
+seeds = [730, 752, 194, 101, 582, 764]
