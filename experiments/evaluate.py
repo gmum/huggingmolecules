@@ -4,7 +4,7 @@ from experiments.src.wrappers.wrappers_chemprop import ChempropFeaturizer
 from src.huggingmolecules import MatModel
 from experiments.src.gin import apply_gin_config
 
-apply_gin_config(configs=['experiments/configs/bases/evaluate.gin'])
+apply_gin_config(base='evaluate')
 
 models = [EnsembleElement(MatModel, 'mat-base-freesolv', 'saved/mat/weights0.ckpt'),
           EnsembleElement(MatModel, 'mat-base-freesolv', 'saved/mat/weights1.ckpt')]

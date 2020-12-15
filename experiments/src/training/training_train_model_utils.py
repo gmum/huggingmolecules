@@ -30,7 +30,7 @@ def get_default_loggers(save_path: str) -> List[pl_loggers.LightningLoggerBase]:
 def get_default_callbacks(save_path: str, excluded: List[str] = None) -> List[Callback]:
     checkpoint_callback = ConfigurableModelCheckpoint(filepath=os.path.join(save_path, "weights"))
     gin_config_essential = GinConfigSaver(target_name="gin-config-essential.txt",
-                                          excluded_namespaces=['neptune', 'optuna', 'macro'])
+                                          excluded_namespaces=['neptune', 'optuna', 'macro', 'benchmark'])
     callbacks = [checkpoint_callback, gin_config_essential, ModelConfigSaver(), GinConfigSaver()]
     excluded = excluded if excluded else []
     callbacks = [clb for clb in callbacks if type(clb).__name__ not in excluded]
@@ -63,7 +63,7 @@ def get_optimizer(model: nn.Module, *, name: str = 'Adam', **kwargs) -> torch.op
 
 
 def get_all_hyperparams(model: PretrainedModelBase):
-    gin_str = get_formatted_config_str(excluded=['neptune', 'optuna', 'macro'])
+    gin_str = get_formatted_config_str(excluded=['neptune', 'optuna', 'macro', 'benchmark'])
     params = parse_gin_str(gin_str)
     for k, v in model.get_config().get_dict().items():
         params[f'model.{k}'] = v

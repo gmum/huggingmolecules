@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import Tuple, List, Optional
 
-import chemprop
 import gin
 import numpy as np
 import torch
 import torch_geometric
+from chemprop.args import TrainArgs
 from chemprop.data import MoleculeDatapoint
 from chemprop.features import MolGraph, BatchMolGraph
 from chemprop.models import MoleculeModel
@@ -81,7 +81,7 @@ class ChempropModelWrapper(PretrainedModelBase):
     @classmethod
     def from_pretrained(cls, pretrained_name: str, task: str, **kwargs):
         if pretrained_name == 'vanilla':
-            args = chemprop.args.TrainArgs()
+            args = TrainArgs()
             args.parse_args(args=["--data_path", "non_existent", "--dataset_type", task])
             args.task_names = ["whatever"]
             model = MoleculeModel(args)
