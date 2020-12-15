@@ -3,4 +3,6 @@ train.task = "classification"
 loss_fn.name = 'BCEWithLogitsLoss'
 
 # ==============================================================================
-benchmark.test_metric = 'test_auroc'
+# For benchmark only:
+# ==============================================================================
+test_metric = 'test_auroc'

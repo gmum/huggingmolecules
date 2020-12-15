@@ -1,19 +1,24 @@
 from dataclasses import dataclass
 from typing import Tuple, List, Optional
 
+import chemprop
+import gin
+import numpy as np
 import torch
 import torch_geometric
+from chemprop.data import MoleculeDatapoint
+from chemprop.features import MolGraph, BatchMolGraph
+from chemprop.models import MoleculeModel
 
 from src.huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
-import chemprop
-
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 @dataclass
 class ChempropBatchEncoding(torch_geometric.data.Data):
-    batch_mol_graph: chemprop.features.BatchMolGraph
+    batch_mol_graph: BatchMolGraph
+    batch_features: Optional[List[torch.Tensor]]
     y: torch.FloatTensor
     batch_size: int
 
@@ -21,15 +26,25 @@ class ChempropBatchEncoding(torch_geometric.data.Data):
         return self.batch_size
 
 
+@gin.configurable()
 class ChempropFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChempropBatchEncoding]):
-    def _collate_encodings(self, encodings: List[Tuple[chemprop.features.MolGraph, float]]) -> ChempropBatchEncoding:
-        batch_mol_graph = chemprop.features.BatchMolGraph([e[0] for e in encodings])
-        y_list = [torch.tensor(e[1]).float() for e in encodings]
-        return ChempropBatchEncoding(batch_mol_graph, torch.stack(y_list).float().view(-1, 1), len(y_list))
+    def __init__(self, features_generator: Optional[List[str]] = None):
+        self.features_generator = features_generator
 
-    def _encode_smiles(self, smiles: str, y: Optional[float]) -> Tuple[chemprop.features.MolGraph, float]:
-        mol_graph = chemprop.features.MolGraph(smiles)
-        return mol_graph, y
+    def _collate_encodings(self, encodings: List[Tuple[MolGraph, Optional[np.array], float]]) -> ChempropBatchEncoding:
+        batch_mol_graph = BatchMolGraph([e[0] for e in encodings])
+        batch_features = [torch.tensor(e[1]).float() for e in encodings] if encodings[1][0] else None
+        y_list = [torch.tensor(e[2]).float() for e in encodings]
+        return ChempropBatchEncoding(batch_mol_graph,
+                                     batch_features,
+                                     torch.stack(y_list).float().view(-1, 1),
+                                     len(y_list))
+
+    def _encode_smiles(self, smiles: str, y: Optional[float]) -> Tuple[MolGraph, np.array, float]:
+        datapoint = MoleculeDatapoint([smiles], features_generator=self.features_generator)
+        mol_graph = MolGraph(datapoint.mol[0])
+        features = datapoint.features
+        return mol_graph, features, y
 
     @classmethod
     def from_pretrained(cls, pretrained_name: str):
@@ -58,7 +73,7 @@ class ChempropModelWrapper(PretrainedModelBase):
         return ChempropConfig
 
     def forward(self, batch: ChempropBatchEncoding):
-        return self.model([batch.batch_mol_graph])
+        return self.model([batch.batch_mol_graph], batch.batch_features)
 
     def parameters(self, **kwargs):
         return self.model.parameters(**kwargs)
@@ -69,7 +84,7 @@ class ChempropModelWrapper(PretrainedModelBase):
             args = chemprop.args.TrainArgs()
             args.parse_args(args=["--data_path", "non_existent", "--dataset_type", task])
             args.task_names = ["whatever"]
-            model = chemprop.models.MoleculeModel(args)
+            model = MoleculeModel(args)
             return cls(model)
         else:
             raise NotImplementedError
