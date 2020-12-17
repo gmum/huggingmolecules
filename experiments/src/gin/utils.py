@@ -33,10 +33,10 @@ def apply_gin_config(parser: argparse.ArgumentParser = None,
     dataset_config = os.path.join(configs_root, 'datasets', f'{dataset}.gin') if dataset else ''
 
     configs = [base_config, model_config, dataset_config]
-    configs.extend(args.config_files.split(";"))
+    configs.extend(args.config_files.split("#"))
     configs = [c for c in configs if len(c) > 0]
 
-    bindings = args.bindings.split(";")
+    bindings = args.bindings.split("#")
     gin.parse_config_files_and_bindings(configs, bindings)
     return args
 

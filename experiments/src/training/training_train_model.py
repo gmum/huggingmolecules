@@ -18,9 +18,12 @@ def train_model(*,
                 use_neptune: bool = False,
                 evaluation: Optional[str] = None,
                 custom_callbacks: Optional[List[str]] = None,
-                task: Literal["regression", "classification"] = "regression"):
+                batch_size: int,
+                num_workers: int = 0):
     if not model:
-        model, featurizer = get_model_and_featurizer(task=task)
+        gin_model = GinModel(task=get_task())
+        model = gin_model.get_model()
+        featurizer = gin_model.get_featurizer()
 
     resume_path = os.path.join(save_path, 'last.ckpt')
     if not resume and os.path.exists(resume_path):
@@ -42,11 +45,14 @@ def train_model(*,
                       resume_from_checkpoint=resume_path if resume else None,
                       gpus=gpus)
 
-    optimizer = get_optimizer(model)
-    loss_fn = get_loss_fn()
-    pl_module = TrainingModule(model, optimizer=optimizer, loss_fn=loss_fn, task=task)
+    pl_module = TrainingModule(model,
+                               optimizer=get_optimizer(model),
+                               loss_fn=get_loss_fn(),
+                               metric_cls=get_metric_cls())
 
-    train_loader, val_loader, test_loader = get_data_loaders(featurizer)
+    train_loader, val_loader, test_loader = get_data_loaders(featurizer,
+                                                             batch_size=batch_size,
+                                                             num_workers=num_workers)
 
     trainer.fit(pl_module,
                 train_dataloader=train_loader,

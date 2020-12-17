@@ -1,23 +1,27 @@
-from typing import Optional
+import pickle
+from typing import Optional, Any, List, Literal
 
 import pytorch_lightning as pl
-import torch.nn.functional as F
+import torch
+from pytorch_lightning.metrics.functional import auroc
 
-from experiments.src.training.training_metrics import AUROC
+from experiments.src.training.training_metrics import AUROC, BatchWeightedLoss
 from src.huggingmolecules.featurization.featurization_api import BatchEncodingProtocol
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 class TrainingModule(pl.LightningModule):
-    def __init__(self, model: PretrainedModelBase, *, loss_fn, optimizer, task: str):
+    def __init__(self, model: PretrainedModelBase, *, loss_fn, optimizer, metric_cls):
         super().__init__()
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
-        self.task = task
 
-        if task == 'classification':
-            self.auroc = {phase: AUROC() for phase in ['train', 'valid', 'test']}
+        self.outputs = {phase: [] for phase in ['valid', 'test']}
+
+        self.metric_loss = {phase: BatchWeightedLoss() for phase in ['train', 'valid', 'test']}
+        self.metric = {phase: metric_cls() for phase in ['train', 'valid', 'test']}
+        self.metric_name = metric_cls.__name__.lower()
 
     def cuda(self, device: Optional[int] = None):
         setattr(self.model, 'device', device)
@@ -26,29 +30,36 @@ class TrainingModule(pl.LightningModule):
     def forward(self, batch: BatchEncodingProtocol):
         return self.model.forward(batch)
 
-    def _step(self, phase: str, batch: BatchEncodingProtocol, batch_idx: int):
-        output = self.forward(batch)
-        loss = self.loss_fn(output, batch.y)
-        self.log(f'{phase}_loss', loss, on_epoch=True)
+    def _step(self, mode: str, batch: BatchEncodingProtocol, batch_idx: int):
+        preds = self.forward(batch)
+        loss = self.loss_fn(preds, batch.y)
 
-        if self.task == 'classification':
-            logits = F.sigmoid(output)
-            self.auroc[phase](logits, batch.y)
-            self.log(f'{phase}_auroc', self.auroc[phase], on_epoch=True, on_step=False)
+        self.metric_loss[mode](loss, len(batch))
+        self.metric[mode](preds, batch.y)
 
-        return loss, output
+        self.log(f'{mode}_loss', self.metric_loss[mode], on_epoch=True, on_step=False)
+        self.log(f'{mode}_{self.metric_name}', self.metric[mode], on_epoch=True, on_step=False)
+
+        return {'loss': loss, 'preds': preds}
 
     def training_step(self, batch: BatchEncodingProtocol, batch_idx: int):
-        loss, _ = self._step('train', batch, batch_idx)
-        return loss
+        return self._step('train', batch, batch_idx)['loss']
+
+    def on_validation_epoch_start(self) -> None:
+        self.outputs['valid'] = []
 
     def validation_step(self, batch: BatchEncodingProtocol, batch_idx: int):
-        loss, _ = self._step('valid', batch, batch_idx)
-        return loss
+        outputs = self._step('valid', batch, batch_idx)
+        self.outputs['valid'].append(outputs['preds'].view(-1))
+        return outputs['loss']
+
+    def on_test_epoch_start(self) -> None:
+        self.outputs['test'] = []
 
     def test_step(self, batch: BatchEncodingProtocol, batch_idx: int):
-        loss, _ = self._step('test', batch, batch_idx)
-        return loss
+        outputs = self._step('test', batch, batch_idx)
+        self.outputs['test'].append(outputs['preds'].view(-1))
+        return outputs['loss']
 
     def configure_optimizers(self):
         return self.optimizer

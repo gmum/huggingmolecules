@@ -33,7 +33,7 @@ class ChempropFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChempropB
 
     def _collate_encodings(self, encodings: List[Tuple[MolGraph, Optional[np.array], float]]) -> ChempropBatchEncoding:
         batch_mol_graph = BatchMolGraph([e[0] for e in encodings])
-        batch_features = [torch.tensor(e[1]).float() for e in encodings] if encodings[0][1] else None
+        batch_features = [torch.tensor(e[1]).float() for e in encodings] if encodings[0][1] is not None else None
         y_list = [torch.tensor(e[2]).float() for e in encodings]
         return ChempropBatchEncoding(batch_mol_graph,
                                      batch_features,

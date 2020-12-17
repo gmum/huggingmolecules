@@ -1,8 +1,4 @@
 # ==============================================================================
-train.task = "classification"
+task.name = "classification"
 loss_fn.name = 'BCEWithLogitsLoss'
-
-# ==============================================================================
-# For benchmark only:
-# ==============================================================================
-test_metric = 'test_auroc'
+metric.name = 'AUROC'

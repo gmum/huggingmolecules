@@ -13,13 +13,14 @@ from torch.utils.data import DataLoader
 
 import experiments.src.training.training_callbacks as custom_callbacks_module
 import experiments.src.training.training_loss_fn as custom_loss_fn_module
+import experiments.src.training.training_metrics as custom_metrics_module
 import experiments.src.wrappers as wrappers
 import src.huggingmolecules.models as models
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 from experiments.src.gin import get_formatted_config_str, parse_gin_str
 from .training_callbacks import NeptuneCompatibleCallback, \
-    GinConfigSaver, ModelConfigSaver, ConfigurableModelCheckpoint
+    GinConfigSaver, ModelConfigSaver, ConfigurableModelCheckpoint, ModelOutputSaver
 
 
 def get_default_loggers(save_path: str) -> List[pl_loggers.LightningLoggerBase]:
@@ -31,7 +32,11 @@ def get_default_callbacks(save_path: str, excluded: List[str] = None) -> List[Ca
     checkpoint_callback = ConfigurableModelCheckpoint(filepath=os.path.join(save_path, "weights"))
     gin_config_essential = GinConfigSaver(target_name="gin-config-essential.txt",
                                           excluded_namespaces=['neptune', 'optuna', 'macro', 'benchmark'])
-    callbacks = [checkpoint_callback, gin_config_essential, ModelConfigSaver(), GinConfigSaver()]
+    callbacks = [checkpoint_callback,
+                 gin_config_essential,
+                 ModelConfigSaver(),
+                 GinConfigSaver(),
+                 ModelOutputSaver()]
     excluded = excluded if excluded else []
     callbacks = [clb for clb in callbacks if type(clb).__name__ not in excluded]
     return callbacks
@@ -48,7 +53,7 @@ def get_custom_callbacks(callbacks_names: List[str] = None) -> List[Callback]:
 
 
 @gin.configurable('loss_fn')
-def get_loss_fn(*, name='mse_loss', **kwargs):
+def get_loss_fn(*, name, **kwargs):
     try:
         loss_cls = getattr(custom_loss_fn_module, name)
     except AttributeError:
@@ -56,10 +61,24 @@ def get_loss_fn(*, name='mse_loss', **kwargs):
     return loss_cls(**kwargs)
 
 
+@gin.configurable('metric')
+def get_metric_cls(*, name: str):
+    try:
+        metric_cls = getattr(custom_metrics_module, name)
+    except AttributeError:
+        metric_cls = getattr(pl.metrics, name)
+    return metric_cls
+
+
 @gin.configurable('optimizer', blacklist=['model'])
-def get_optimizer(model: nn.Module, *, name: str = 'Adam', **kwargs) -> torch.optim.Optimizer:
+def get_optimizer(model: nn.Module, *, name: str, **kwargs) -> torch.optim.Optimizer:
     opt_cls = getattr(torch.optim, name)
     return opt_cls(model.parameters(), **kwargs)
+
+
+@gin.configurable('task')
+def get_task(name: str):
+    return name
 
 
 def get_all_hyperparams(model: PretrainedModelBase):
@@ -99,16 +118,13 @@ def apply_neptune(model: PretrainedModelBase,
             clb.neptune = neptune
 
 
-@gin.configurable('data', blacklist=['featurizer'])
-def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
-                     batch_size: int,
-                     task_name: str,
-                     dataset_name: str,
-                     split_method: str = "random",
-                     split_frac: List[float],
-                     split_seed: Union[int, str] = "benchmark",
-                     num_workers: int = 0,
-                     normalize_labels: bool = False) -> Tuple[DataLoader, DataLoader, DataLoader]:
+@gin.configurable('data')
+def get_data(task_name: str,
+             dataset_name: str,
+             split_method: str = "random",
+             split_frac: List[float] = (0.8, 0.1, 0.1),
+             split_seed: Union[int, str] = "benchmark",
+             normalize_labels: bool = False):
     import tdc.single_pred
     task = getattr(tdc.single_pred, task_name)
     data = task(name=dataset_name)
@@ -125,9 +141,21 @@ def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
         valid_y = scaler.transform(valid_y.reshape(-1, 1)).reshape(-1)
         test_y = scaler.transform(test_y.reshape(-1, 1)).reshape(-1)
 
-    train_data = featurizer.encode_smiles_list(split['train']['Drug'], train_y)
-    valid_data = featurizer.encode_smiles_list(split['valid']['Drug'], valid_y)
-    test_data = featurizer.encode_smiles_list(split['test']['Drug'], test_y)
+    return {
+        'train': {'X': split['train']['Drug'], 'Y': train_y},
+        'valid': {'X': split['valid']['Drug'], 'Y': valid_y},
+        'test': {'X': split['test']['Drug'], 'Y': test_y},
+    }
+
+
+def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
+                     batch_size: int,
+                     num_workers: int = 0, ) -> Tuple[DataLoader, DataLoader, DataLoader]:
+    data = get_data()
+
+    train_data = featurizer.encode_smiles_list(data['train']['X'], data['train']['Y'])
+    valid_data = featurizer.encode_smiles_list(data['valid']['X'], data['valid']['Y'])
+    test_data = featurizer.encode_smiles_list(data['test']['X'], data['test']['Y'])
 
     logging.info(f'Train samples: {len(train_data)}')
     logging.info(f'Validation samples: {len(valid_data)}')
@@ -149,13 +177,30 @@ def evaluate_and_save_results(trainer: pl.Trainer, test_loader: DataLoader, save
         json.dump(results, f)
 
 
-@gin.configurable('model')
-def get_model_and_featurizer(cls_name: str, pretrained_name: str, task: Literal["regression", "classification"], **kwargs):
-    try:
-        model_cls = getattr(models, cls_name)
-    except AttributeError:
-        model_cls = getattr(wrappers, cls_name)
-    model: PretrainedModelBase = model_cls.from_pretrained(pretrained_name, task, **kwargs)
-    featurizer_cls = model.get_featurizer_cls()
-    featurizer: PretrainedFeaturizerMixin = featurizer_cls.from_pretrained(pretrained_name)
-    return model, featurizer
+@gin.configurable('model', blacklist=['task'])
+class GinModel:
+    def __init__(self,
+                 cls_name: str,
+                 pretrained_name: str,
+                 task: Literal["regression", "classification"],
+                 **kwargs):
+        self.cls_name = cls_name
+        self.pretrained_name = pretrained_name
+        self.task = task
+        self.kwargs = kwargs if kwargs else {}
+
+    def get_model_cls(self):
+        try:
+            model_cls = getattr(models, self.cls_name)
+        except AttributeError:
+            model_cls = getattr(wrappers, self.cls_name)
+        return model_cls
+
+    def get_model(self):
+        model_cls = self.get_model_cls()
+        return model_cls.from_pretrained(self.pretrained_name, self.task, **self.kwargs)
+
+    def get_featurizer(self):
+        model_cls = self.get_model_cls()
+        featurizer_cls = model_cls.get_featurizer_cls()
+        return featurizer_cls.from_pretrained(self.pretrained_name)
