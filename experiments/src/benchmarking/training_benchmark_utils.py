@@ -1,13 +1,16 @@
 import functools
+import itertools
 import os
 import pickle
-from typing import Optional, List
+from typing import Optional, List, Literal, Iterable, Sized
 
 import gin
 import pandas as pd
 import torch
 
 from experiments.src.training.training_train_model_utils import get_loss_fn, get_data, get_metric_cls
+
+from itertools import chain, combinations
 
 
 class EnsembleElement:
@@ -16,7 +19,7 @@ class EnsembleElement:
         self.outputs = {'valid': {}, 'test': {}}
 
     def __repr__(self):
-        return f'EnsembleElement({self.name})'
+        return f'EnsembleElement{self.name}'
 
 
 def set_default_study_name(prefix: Optional[str] = None):
@@ -72,12 +75,12 @@ def evaluate_ensemble(ensemble: List[EnsembleElement], *, targets: dict, phase: 
     return mean, std
 
 
-def pick_best_ensemble(models_list: List[EnsembleElement], *, targets, loss_fn,
-                       max_ensemble_size: Optional[int] = None):
+def pick_best_ensemble_greedy(models_list: List[EnsembleElement], *, targets, loss_fn,
+                              ensemble_max_size: Optional[int] = None):
     ensemble = []
     losses = []
     best_loss = float('inf')
-    n = max_ensemble_size if max_ensemble_size else len(models_list)
+    n = ensemble_max_size if ensemble_max_size else len(models_list)
     for i in range(n):
         for idx, model in enumerate(models_list):
             ensemble.append(model)
@@ -95,7 +98,25 @@ def pick_best_ensemble(models_list: List[EnsembleElement], *, targets, loss_fn,
     return ensemble
 
 
-def print_benchmark_results_ensemble(max_ensemble_size: Optional[int] = None):
+def pick_best_ensemble_brute(models_list: List[EnsembleElement], *, targets, loss_fn,
+                             ensemble_max_size: Optional[int] = None):
+    def powerset(iterable):
+        s = list(iterable)
+        return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
+
+    ensemble_max_size = ensemble_max_size if ensemble_max_size else len(models_list)
+    ensembles_list = [e for e in powerset(models_list) if 0 < len(e) <= ensemble_max_size]
+    results = []
+    for ensemble in ensembles_list:
+        valid_loss, _ = evaluate_ensemble(ensemble, targets=targets, phase='valid', metric_fn=loss_fn)
+        results.append((valid_loss, ensemble))
+
+    best_valid_loss, best_ensemble = min(results)
+    return best_ensemble
+
+
+def print_benchmark_results_ensemble(ensemble_max_size: Optional[int] = None,
+                                     ensemble_pick_method: Literal['brute', 'greedy'] = 'brute'):
     neptune_project, data, hps_list = fetch_data_from_neptune()
 
     data['parameter_data.split_seed'] = data['parameter_data.split_seed'].astype(float).astype(int)
@@ -111,7 +132,7 @@ def print_benchmark_results_ensemble(max_ensemble_size: Optional[int] = None):
                                                                     artifact_name='valid_output.pickle')
             model.outputs['test'][seed] = get_output_from_artifact(project=neptune_project, id=neptune_id,
                                                                    artifact_name='test_output.pickle')
-            models_list.append(model)
+        models_list.append(model)
 
     targets = {'valid': {}, 'test': {}}
     for seed in data['parameter_data.split_seed'].unique():
@@ -126,7 +147,14 @@ def print_benchmark_results_ensemble(max_ensemble_size: Optional[int] = None):
     #     data, models_list, targets = pickle.load(fp)
 
     loss_fn = get_loss_fn()
-    ensemble = pick_best_ensemble(models_list, targets=targets, loss_fn=loss_fn, max_ensemble_size=max_ensemble_size)
+    if ensemble_pick_method == 'brute':
+        ensemble = pick_best_ensemble_brute(models_list, targets=targets, loss_fn=loss_fn,
+                                            ensemble_max_size=ensemble_max_size)
+    elif ensemble_pick_method == 'greedy':
+        ensemble = pick_best_ensemble_greedy(models_list, targets=targets, loss_fn=loss_fn,
+                                             ensemble_max_size=ensemble_max_size)
+    else:
+        raise NotImplementedError
 
     print(f'Best ensemble:')
     for model in ensemble:
