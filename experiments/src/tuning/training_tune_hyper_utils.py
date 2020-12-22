@@ -27,7 +27,8 @@ def get_sampler(name: str, params: dict):
 def bind_parameters_from_dict(values_dict: Dict[str, Any]):
     with gin.unlock_config():
         for param, value in values_dict.items():
-            gin.bind_parameter(param, value)
+            if not param.startswith('ignore.'):
+                gin.bind_parameter(param, value)
 
 
 class Objective:
@@ -51,7 +52,7 @@ class Objective:
         bind_parameters_from_dict(suggested_values)
 
         model = copy.deepcopy(self.model) if self.model else None
-        trainer = train_model(model=model, featurizer=self.featurizer, save_path=trial_path)
+        trainer = train_model(model=model, featurizer=self.featurizer, root_path=trial_path)
         return trainer.logged_metrics[self.metric]
 
 

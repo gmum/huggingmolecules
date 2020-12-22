@@ -1,9 +1,0 @@
-include 'experiments/configs/setup.gin'
-
-# ==============================================================================
-evaluate.save_path = './experiments_results/evaluate_mat'
-
-# ==============================================================================
-data.split_method = 'random'
-data.split_frac = [0.8, 0.1, 0.1]
-data.batch_size = 32

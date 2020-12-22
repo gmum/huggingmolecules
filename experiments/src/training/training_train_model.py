@@ -5,13 +5,14 @@ from pytorch_lightning import Trainer
 from .training_lightning_module import TrainingModule
 from .training_train_model_utils import *
 from .training_train_model_utils import get_custom_callbacks, apply_neptune, evaluate_and_save_results
+from ..gin import get_default_name
 
 
 @gin.configurable('train', blacklist=['model', 'featurizer'])
 def train_model(*,
                 model: Optional[PretrainedModelBase] = None,
                 featurizer: Optional[PretrainedFeaturizerMixin] = None,
-                save_path: str,
+                root_path: str,
                 num_epochs: int,
                 gpus: List[int],
                 resume: bool = False,
@@ -25,6 +26,9 @@ def train_model(*,
         model = gin_model.get_model()
         featurizer = gin_model.get_featurizer()
 
+    study_name = get_default_name()
+    save_path = os.path.join(root_path, study_name)
+
     resume_path = os.path.join(save_path, 'last.ckpt')
     if not resume and os.path.exists(resume_path):
         raise IOError(f'Please clear {save_path} folder before running or pass train.resume=True')
@@ -34,7 +38,7 @@ def train_model(*,
     loggers = get_default_loggers(save_path)
 
     if use_neptune:
-        apply_neptune(model, callbacks, loggers, save_path=save_path)
+        apply_neptune(model, callbacks, loggers, neptune_experiment_name=study_name, neptune_description=save_path)
 
     trainer = Trainer(default_root_dir=save_path,
                       max_epochs=num_epochs,

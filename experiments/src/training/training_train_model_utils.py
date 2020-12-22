@@ -89,29 +89,27 @@ def get_all_hyperparams(model: PretrainedModelBase):
     return params
 
 
-@gin.configurable('neptune', blacklist=['model', 'save_path'])
-def get_neptune(model: PretrainedModelBase,
-                save_path: str,
-                project_name: str,
+@gin.configurable('neptune', blacklist=['model', 'experiment_name'])
+def get_neptune(model: PretrainedModelBase, *,
                 user_name: str,
-                experiment_name: Optional[str] = None):
+                project_name: str,
+                experiment_name: str,
+                description: str):
     from pytorch_lightning.loggers import NeptuneLogger
-    api_token = os.environ["NEPTUNE_API_TOKEN"]
-    description = os.path.basename(save_path)
-    params = get_all_hyperparams(model)
-    neptune = NeptuneLogger(api_key=api_token,
+    neptune = NeptuneLogger(api_key=os.environ["NEPTUNE_API_TOKEN"],
                             project_name=f'{user_name}/{project_name}',
-                            experiment_name=experiment_name if experiment_name else description,
+                            experiment_name=experiment_name,
                             description=description,
-                            params=params)
+                            params=get_all_hyperparams(model))
     return neptune
 
 
 def apply_neptune(model: PretrainedModelBase,
                   callbacks: List[Callback],
                   loggers: List[pl_loggers.LightningLoggerBase], *,
-                  save_path):
-    neptune = get_neptune(model, save_path)
+                  neptune_experiment_name: str,
+                  neptune_description: str):
+    neptune = get_neptune(model, experiment_name=neptune_experiment_name, description=neptune_description)
     loggers += [neptune]
     for clb in callbacks:
         if isinstance(clb, NeptuneCompatibleCallback):

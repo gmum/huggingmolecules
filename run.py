@@ -10,53 +10,92 @@ to_email = 'rumcajsgajos@gmail.com'
 
 all_datasets = ['freesolv', 'caco2', 'clearance', 'hia', 'bioavailability', 'ppbr']
 
+mat_best_lr = []
+chemberta_best_lr = []
+chemprop_best_lr = [1.0E-4, 1.0E-4, 1.0E-6, 5.0E-4, 1.0E-4, 5.0E-4]
+
 targets_dict = {
+    'mat_ensemble2': [
+        "python -m experiments.benchmark2 --name.prefix Ensemble2 "
+        "-m mat "
+        f"-d {dataset} "
+        "-b train.gpus=[?]#"
+        f"optimizer.lr={lr}"
+        for dataset, lr in zip(all_datasets, mat_best_lr)
+    ],
+    'chemberta_ensemble2': [
+        "python -m experiments.benchmark2 --name.prefix Ensemble2 "
+        "-m chemberta "
+        f"-d {dataset} "
+        "-b train.gpus=[?]#"
+        f"optimizer.lr={lr}"
+        for dataset, lr in zip(all_datasets, chemberta_best_lr)
+    ],
+    'chemprop_ensemble2': [
+        "python -m experiments.benchmark2 --name.prefix Ensemble2 "
+        "-m chemprop "
+        f"-d {dataset} "
+        "-b train.gpus=[?]#"
+        f"optimizer.lr={lr}"
+        for dataset, lr in zip(all_datasets, chemprop_best_lr)
+    ],
+    'finalize': [
+        f'python -m experiments.train --name.prefix "{prefix}" '
+        f"-m {model} "
+        f"-d {dataset} "
+        "-b train.gpus=0#"
+        f"optimizer.lr={lr}#"
+        f"data.split_seed={seed}#"
+        f"dummy.trial={trial}#"
+        "neptune.project_name=\\'Benchmarks\\'#"
+        f"train.num_workers=0 ; rm -rf experiments_results/{prefix}*"
+        for prefix, model, dataset, lr, seed, trial in [
+            ('Ensemble2', 'chemprop', 'freesolv', 1.0E-4, 13, 3)
+        ]
+    ],
+    'test_ensemble2': [
+        "python -m experiments.benchmark2 --name.prefix Ensemble2 "
+        "--benchmark.compute_results --benchmark.ensemble_max_size None --benchmark.ensemble_pick_method all "
+        "-m chemprop "
+        f"-d {dataset} "
+        "-b train.gpus=[3]#"
+        f"optimizer.lr={lr}"
+        for dataset, lr in zip(all_datasets[:1], chemprop_best_lr[:1])
+    ],
+
     'mat': [
-        "python -m experiments.benchmark "
+        "python -m experiments.benchmark --results_only --ensemble --pick_method greedy "
         "-m mat "
         f"-d {dataset} "
         "-b train.gpus=[0]"
-        for dataset in all_datasets
+        for dataset in ['caco2', 'hia', 'bioavailability', 'ppbr']
     ],
-    'chemberta': [
-        "python -m experiments.benchmark "
-        "-m chemberta "
-        f"-d {dataset} "
-        "-b train.gpus=[?]"
-        for dataset in all_datasets
-    ],
-    'chemprop': [
-        "python -m experiments.benchmark "
-        "-m chemprop "
-        f"-d {dataset} "
-        "-b train.gpus=[3]"
-        for dataset in all_datasets
-    ],
-    'chemprop_50': [
-        "python -m experiments.benchmark --prefix 50 "
-        "-m chemprop "
-        f"-d {dataset} "
-        "-b train.gpus=[0]#train.num_epochs=50"
-        for dataset in all_datasets
-    ],
-    'chemprop_r2d': [
-        "python -m experiments.benchmark "
-        "-m chemprop --prefix R2D_Norm "
-        f"-d {dataset} "
-        "-b train.gpus=[0]#ChempropFeaturizer.features_generator=[\\'rdkit_2d_normalized\\']"
-        for dataset in all_datasets
-    ]
+    'chemberta_clearance': [
+                               "python -m experiments.benchmark "
+                               "-m chemberta "
+                               f"-d {dataset} "
+                               "-b train.gpus=[0]"
+                               for dataset in ['hia', 'bioavailability', 'ppbr']
+                           ] + [
+                               "python -m experiments.benchmark "
+                               f"-m {model} "
+                               "-d clearance "
+                               "-b train.gpus=[0]"
+                               for model in ['chemberta', 'mat']
+                           ]
 }
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--target', type=str, required=True)
 parser.add_argument('-n', '--max_trials_num', type=int, default=3)
 parser.add_argument('--notify', action='store_true', default=False)
+parser.add_argument('--show_commands_only', action='store_true', default=False)
 args = parser.parse_args()
 
 target_name = args.target
 max_trials_num = args.max_trials_num
 notify = args.notify
+show_command_only = args.show_commands_only
 
 
 def send_notification_start():
@@ -94,6 +133,11 @@ def send_notification_succeed():
     ]
     yag.send(to_email, f'Target {args.target} SUCCEED', contents)
 
+
+if show_command_only:
+    print('Commands:')
+    print('\n'.join(targets_dict[target_name]))
+    sys.exit()
 
 if notify:
     yag = yagmail.SMTP(from_email)

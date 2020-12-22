@@ -9,6 +9,6 @@ additional_args = {
     'benchmark.ensemble_pick_method': {'type': str, 'default': 'brute'}
 }
 
-apply_gin_config(base='benchmark', additional_args=additional_args)
+apply_gin_config(base='benchmark2', additional_args=additional_args)
 
 benchmark()

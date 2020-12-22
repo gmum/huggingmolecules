@@ -1,16 +1,15 @@
 import functools
-import itertools
 import os
 import pickle
-from typing import Optional, List, Literal, Iterable, Sized
+from itertools import chain, combinations
+from typing import Optional, List, Literal
 
 import gin
 import pandas as pd
 import torch
 
+from experiments.src.gin import get_default_name
 from experiments.src.training.training_train_model_utils import get_loss_fn, get_data, get_metric_cls
-
-from itertools import chain, combinations
 
 
 class EnsembleElement:
@@ -22,23 +21,15 @@ class EnsembleElement:
         return f'EnsembleElement{self.name}'
 
 
-def set_default_study_name(prefix: Optional[str] = None):
-    with gin.unlock_config():
-        model_name = gin.query_parameter('model.cls_name')
-        task_name = gin.query_parameter('data.task_name')
-        dataset_name = gin.query_parameter('data.dataset_name')
-        prefix = f'{prefix}_' if prefix else ""
-        gin.bind_parameter('optuna.study_name', f'{prefix}{model_name}_{task_name}_{dataset_name}')
-
-
 def fetch_data_from_neptune():
     import neptune
     user_name = gin.query_parameter('neptune.user_name')
     project_name = gin.query_parameter('neptune.project_name')
-    experiment_name = gin.query_parameter('optuna.study_name')
+    experiment_name = get_default_name()
     hps_dict = gin.query_parameter('optuna.params')
     hps_list = [hps for hps in hps_dict.keys() if hps != 'data.split_seed']
     project = neptune.init(f'{user_name}/{project_name}')
+
     data = project.get_leaderboard(state='succeeded')
     data = data[data['name'] == experiment_name]
     no_trials = len(data)
@@ -73,6 +64,19 @@ def evaluate_ensemble(ensemble: List[EnsembleElement], *, targets: dict, phase: 
     mean = float(torch.mean(results))
     std = float(torch.std(results))
     return mean, std
+
+
+def check_models_list(models_list: List[EnsembleElement], targets):
+    error = False
+    for model in models_list:
+        for phase in ['valid', 'test']:
+            for seed in targets[phase].keys():
+                try:
+                    model.outputs[phase][seed]
+                except KeyError:
+                    error = True
+                    print(f"Model {model} lacks outputs['{phase}'][{seed}].")
+    assert not error
 
 
 def pick_best_ensemble_greedy(models_list: List[EnsembleElement], *, targets, loss_fn,
@@ -146,6 +150,8 @@ def print_benchmark_results_ensemble(ensemble_max_size: Optional[int] = None,
     # with open('rest', 'rb') as fp:
     #     data, models_list, targets = pickle.load(fp)
 
+    check_models_list(models_list, targets)
+
     loss_fn = get_loss_fn()
     if ensemble_pick_method == 'brute':
         ensemble = pick_best_ensemble_brute(models_list, targets=targets, loss_fn=loss_fn,
@@ -153,6 +159,8 @@ def print_benchmark_results_ensemble(ensemble_max_size: Optional[int] = None,
     elif ensemble_pick_method == 'greedy':
         ensemble = pick_best_ensemble_greedy(models_list, targets=targets, loss_fn=loss_fn,
                                              ensemble_max_size=ensemble_max_size)
+    elif ensemble_pick_method == 'all':
+        ensemble = models_list if not ensemble_max_size else models_list[:ensemble_max_size]
     else:
         raise NotImplementedError
 
@@ -174,7 +182,7 @@ def print_benchmark_results_ensemble(ensemble_max_size: Optional[int] = None,
     results = pd.DataFrame(results, columns=['name', 'mean', 'std'])
     print(results.groupby(['name']).agg({'mean': 'max', 'std': 'max'}))
     print()
-    print(f'Result: {round(mean, 3)} \u00B1 {round(std, 3)}')
+    print(f'Result: {round(mean, 3):.3f} \u00B1 {round(std, 3):.3f}')
 
 
 def print_benchmark_results_standard(test_metric: str):
