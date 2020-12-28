@@ -1,4 +1,5 @@
 stderr
+.~lock.results.ods#
 
 # shell scripts
 *.sh
@@ -14,6 +15,7 @@ data
 
 # experiments
 experiments_results
+benchmark_results
 
 # IDEs
 .idea

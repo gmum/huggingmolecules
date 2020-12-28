@@ -1,6 +1,6 @@
 import argparse
+import itertools
 import os
-import shutil
 import sys
 
 import yagmail
@@ -9,80 +9,45 @@ from_email = 'kowalski.jan.development@gmail.com'
 to_email = 'rumcajsgajos@gmail.com'
 
 all_datasets = ['freesolv', 'caco2', 'clearance', 'hia', 'bioavailability', 'ppbr']
+all_models = ['mat', 'chemberta', 'chemprop']
 
-mat_best_lr = []
-chemberta_best_lr = []
+mat_best_lr = [5.0E-5, 5.0E-4, 1.0E-6, 1.0E-5, 5.0E-6, 1.0E-5]
+chemberta_best_lr = [5.0E-4, 0.001, 0.001, 1.0E-5, 5.0E-6, 5.0E-6]
 chemprop_best_lr = [1.0E-4, 1.0E-4, 1.0E-6, 5.0E-4, 1.0E-4, 5.0E-4]
 
 targets_dict = {
-    'mat_ensemble2': [
-        "python -m experiments.benchmark2 --name.prefix Ensemble2 "
-        "-m mat "
+    'ensemble2_single': [
+        "python -m experiments.benchmark2 --results_only --name.prefix Ensemble2 "
+        "--benchmark.ensemble_pick_method all "
+        f"--benchmark.ensemble_max_size {size} "
+        f"-m {model} "
         f"-d {dataset} "
-        "-b train.gpus=[?]#"
-        f"optimizer.lr={lr}"
-        for dataset, lr in zip(all_datasets, mat_best_lr)
+        for size in [1, 3, 7] for dataset in all_datasets for model in all_models
     ],
-    'chemberta_ensemble2': [
-        "python -m experiments.benchmark2 --name.prefix Ensemble2 "
-        "-m chemberta "
+    'ensemble2_pairs': [
+        "python -m experiments.benchmark2 --results_only --name.prefix Ensemble2 "
+        "--benchmark.ensemble_pick_method all "
+        f"--benchmark.ensemble_max_size {size} "
+        f"--benchmark.models_names_list {' '.join(models)} "
         f"-d {dataset} "
-        "-b train.gpus=[?]#"
-        f"optimizer.lr={lr}"
-        for dataset, lr in zip(all_datasets, chemberta_best_lr)
-    ],
-    'chemprop_ensemble2': [
-        "python -m experiments.benchmark2 --name.prefix Ensemble2 "
-        "-m chemprop "
-        f"-d {dataset} "
-        "-b train.gpus=[?]#"
-        f"optimizer.lr={lr}"
-        for dataset, lr in zip(all_datasets, chemprop_best_lr)
+        for size in [6, 14] for dataset in all_datasets for models in itertools.combinations(all_models, 2)
     ],
     'finalize': [
         f'python -m experiments.train --name.prefix "{prefix}" '
         f"-m {model} "
         f"-d {dataset} "
-        "-b train.gpus=0#"
+        "-b train.gpus=[0]#"
         f"optimizer.lr={lr}#"
         f"data.split_seed={seed}#"
         f"dummy.trial={trial}#"
         "neptune.project_name=\\'Benchmarks\\'#"
-        f"train.num_workers=0 ; rm -rf experiments_results/{prefix}*"
+        f" ; rm -rf experiments_results/{prefix}*"
         for prefix, model, dataset, lr, seed, trial in [
-            ('Ensemble2', 'chemprop', 'freesolv', 1.0E-4, 13, 3)
+            ('', 'mat', 'clearance', 1.0E-4, 413, 0),
+            ('', 'mat', 'clearance', 5.0E-5, 454, 0)
         ]
     ],
-    'test_ensemble2': [
-        "python -m experiments.benchmark2 --name.prefix Ensemble2 "
-        "--benchmark.compute_results --benchmark.ensemble_max_size None --benchmark.ensemble_pick_method all "
-        "-m chemprop "
-        f"-d {dataset} "
-        "-b train.gpus=[3]#"
-        f"optimizer.lr={lr}"
-        for dataset, lr in zip(all_datasets[:1], chemprop_best_lr[:1])
-    ],
 
-    'mat': [
-        "python -m experiments.benchmark --results_only --ensemble --pick_method greedy "
-        "-m mat "
-        f"-d {dataset} "
-        "-b train.gpus=[0]"
-        for dataset in ['caco2', 'hia', 'bioavailability', 'ppbr']
-    ],
-    'chemberta_clearance': [
-                               "python -m experiments.benchmark "
-                               "-m chemberta "
-                               f"-d {dataset} "
-                               "-b train.gpus=[0]"
-                               for dataset in ['hia', 'bioavailability', 'ppbr']
-                           ] + [
-                               "python -m experiments.benchmark "
-                               f"-m {model} "
-                               "-d clearance "
-                               "-b train.gpus=[0]"
-                               for model in ['chemberta', 'mat']
-                           ]
 }
 
 parser = argparse.ArgumentParser()
@@ -158,7 +123,7 @@ for cmd_idx, cmd in enumerate(targets_dict[target_name], 1):
                 send_notification_aborted(cmd)
             sys.exit()
         if ret == 0:
-            os.remove(stderr_file)
+            os.system(f'rm -f {stderr_file}')
             break
         trial_no += 1
 

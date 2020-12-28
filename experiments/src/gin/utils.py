@@ -4,14 +4,17 @@ from typing import List, Optional
 
 import gin
 
+CONFIGS_ROOT = os.path.join('experiments', 'configs')
 
-def apply_gin_config(base: str = None,
+def apply_gin_config(*,
+                     base: str = None,
                      model: str = None,
                      dataset: str = None,
-                     configs_root: str = os.path.join('experiments', 'configs'),
-                     additional_args: Optional[dict] = None) -> None:
-
-    parser = argparse.ArgumentParser()
+                     configs_root: str = CONFIGS_ROOT,
+                     additional_args: Optional[dict] = None,
+                     parser: Optional[argparse.ArgumentParser] = None) -> argparse.Namespace:
+    if not parser:
+        parser = argparse.ArgumentParser()
 
     if not base:
         parser.add_argument('-bs', '--base', type=str, default=None)
@@ -48,6 +51,8 @@ def apply_gin_config(base: str = None,
             val = getattr(args, param)
             with gin.unlock_config():
                 gin.bind_parameter(param, val)
+
+    return args
 
 
 def get_formatted_config_str(excluded: Optional[List[str]] = None):

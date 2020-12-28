@@ -83,7 +83,7 @@ class ChempropModelWrapper(PretrainedModelBase):
         if pretrained_name == 'vanilla':
             args = TrainArgs()
             args.parse_args(args=["--data_path", "non_existent", "--dataset_type", task])
-            args.task_names = ["whatever"]
+            args.task_names = ["whatever"]  # taks_num must be > 0
             model = MoleculeModel(args)
             return cls(model)
         else:
