@@ -26,7 +26,6 @@ class ChempropBatchEncoding(torch_geometric.data.Data):
         return self.batch_size
 
 
-@gin.configurable()
 class ChempropFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChempropBatchEncoding]):
     def __init__(self, features_generator: Optional[List[str]] = None):
         self.features_generator = features_generator
@@ -51,7 +50,7 @@ class ChempropFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChempropB
         if pretrained_name == 'vanilla':
             return cls()
         else:
-            raise NotImplementedError
+            return cls(pretrained_name.split("+"))
 
 
 @dataclass
@@ -80,11 +79,8 @@ class ChempropModelWrapper(PretrainedModelBase):
 
     @classmethod
     def from_pretrained(cls, pretrained_name: str, task: str, **kwargs):
-        if pretrained_name == 'vanilla':
-            args = TrainArgs()
-            args.parse_args(args=["--data_path", "non_existent", "--dataset_type", task])
-            args.task_names = ["whatever"]  # taks_num must be > 0
-            model = MoleculeModel(args)
-            return cls(model)
-        else:
-            raise NotImplementedError
+        args = TrainArgs()
+        args.parse_args(args=["--data_path", "non_existent", "--dataset_type", task])
+        args.task_names = ["whatever"]  # taks_num must be > 0
+        model = MoleculeModel(args)
+        return cls(model)

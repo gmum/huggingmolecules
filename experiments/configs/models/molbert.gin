@@ -1,15 +1,15 @@
 # ==============================================================================
-model.cls_name = 'MatModel'
-model.pretrained_name = 'mat_masking_200k'
+model.cls_name = 'MolbertModelWrapper'
+model.pretrained_name = './pretrained/molbert_100epochs/checkpoints/last.ckpt'
 
 # ==============================================================================
 optimizer.name = 'Adam'
-optimizer.lr = 0.00005
+optimizer.lr = 0.0001
 
 # ==============================================================================
 train.custom_callbacks = ['NoamLRScheduler']
 NoamLRScheduler.model_size_name = 'd_model'
-NoamLRScheduler.warmup_factor = 0.2
+NoamLRScheduler.warmup_factor = 0.4
 
 # ==============================================================================
 train.batch_size = 32

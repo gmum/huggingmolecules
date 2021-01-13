@@ -1,5 +1,6 @@
 stderr
-.~lock.results.ods#
+targets.py
+smiles_stats.py
 
 # shell scripts
 *.sh
@@ -8,7 +9,7 @@ stderr
 *.db
 
 # weights
-saved
+pretrained
 
 # datasets
 data

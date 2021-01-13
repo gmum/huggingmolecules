@@ -34,15 +34,15 @@ class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):
 
     @classmethod
     def from_pretrained(cls, pretrained_name: str, task: str, **kwargs):
-        file_path = cls._get_arch_from_pretrained_name(pretrained_name)
         config_cls = cls.get_config_cls()
         config = config_cls.from_pretrained(pretrained_name, **kwargs)
         model = cls(config)
+        file_path = cls._get_arch_from_pretrained_name(pretrained_name)
         model._load_pretrained_weights(file_path)
         return model
 
     def _load_pretrained_weights(self, file_path: str):
-        pretrained_state_dict = torch.load(file_path)
+        pretrained_state_dict = torch.load(file_path, map_location='cpu')
         if 'model' in pretrained_state_dict:
             pretrained_state_dict = pretrained_state_dict['model']
         model_state_dict = self.state_dict()

@@ -1,8 +1,8 @@
 import logging
 import os
 import pickle
-from abc import abstractmethod
 from typing import *
+
 import pandas as pd
 from torch.utils.data import DataLoader
 
@@ -70,6 +70,11 @@ class PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding]):
         raise NotImplementedError
 
     @classmethod
+    def get_config_cls(cls):
+        raise NotImplementedError
+
+    @classmethod
     def from_pretrained(cls, pretrained_name: str):
-        # TODO do we need featurizer pretrained?
-        return cls()
+        config_cls = cls.get_config_cls()
+        config = config_cls.from_pretrained(pretrained_name)
+        return cls(config)

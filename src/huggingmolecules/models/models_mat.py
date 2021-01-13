@@ -13,8 +13,10 @@ from .models_api import PretrainedModelBase
 from .models_utils import xavier_normal_small_init_, xavier_uniform_small_init_
 
 MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
-    'mat-base-freesolv': './saved/mat-base-freesolv',
-    'mat-base-freesolv-tests': '../saved/mat-base-freesolv'
+    'mat_masking_2M_old': './pretrained/mat/weights/mat_masking_2M_old.pt',
+    'mat_masking_200k': './pretrained/mat/weights/mat_masking_200k.pt',
+    'mat_masking_2M': './pretrained/mat/weights/mat_masking_2M.pt',
+    'mat_masking_20M': './pretrained/mat/weights/mat_masking_20M.pt'
 }
 
 

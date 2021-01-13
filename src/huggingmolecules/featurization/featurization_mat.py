@@ -13,6 +13,9 @@ from .featurization_api import PretrainedFeaturizerMixin
 from .featurization_utils import pad_array
 import torch
 
+from .. import MatConfig
+
+
 @dataclass
 class MatMoleculeEncoding:
     node_features: torch.FloatTensor
@@ -35,10 +38,14 @@ class MatBatchEncoding(torch_geometric.data.Data):
 
 
 class MatFeaturizer(PretrainedFeaturizerMixin[MatMoleculeEncoding, MatBatchEncoding]):
+    @classmethod
+    def get_config_cls(cls):
+        return MatConfig
 
-    def __init__(self, add_dummy_node: bool = True, one_hot_formal_charge: bool = True):
-        self._add_dummy_node = add_dummy_node
-        self._one_hot_formal_charge = one_hot_formal_charge
+    def __init__(self, config: MatConfig):
+        self._add_dummy_node = config.add_dummy_node
+        self._one_hot_formal_charge = config.one_hot_formal_charge
+        self._one_hot_formal_charge_range = config.one_hot_formal_charge_range
 
     def _encode_smiles(self, smiles: str, y: Optional[float]) -> MatMoleculeEncoding:
         try:
@@ -51,7 +58,7 @@ class MatFeaturizer(PretrainedFeaturizerMixin[MatMoleculeEncoding, MatBatchEncod
             except:
                 AllChem.Compute2DCoords(mol)
 
-            afm, adj, dist = featurize_mol(mol, self._add_dummy_node, self._one_hot_formal_charge)
+            afm, adj, dist = featurize_mol(mol, self._add_dummy_node, self._one_hot_formal_charge, self._one_hot_formal_charge_range)
             afm = torch.tensor(afm).float()
             adj = torch.tensor(adj).float()
             dist = torch.tensor(dist).float()
@@ -79,8 +86,9 @@ class MatFeaturizer(PretrainedFeaturizerMixin[MatMoleculeEncoding, MatBatchEncod
                                 batch_size=len(features_list))
 
 
-def featurize_mol(mol: Chem.rdchem.Mol, add_dummy_node: bool, one_hot_formal_charge: bool) \
-        -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def featurize_mol(mol: Chem.rdchem.Mol, add_dummy_node: bool,
+                  one_hot_formal_charge: bool,
+                  one_hot_forma_charge_range: Optional[list] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Featurize molecule.
 
     Args:
@@ -91,7 +99,7 @@ def featurize_mol(mol: Chem.rdchem.Mol, add_dummy_node: bool, one_hot_formal_cha
     Returns:
         A tuple of molecular graph descriptors (node features, adjacency matrix, distance matrix).
     """
-    node_features = np.array([get_atom_features(atom, one_hot_formal_charge)
+    node_features = np.array([get_atom_features(atom, one_hot_formal_charge, one_hot_forma_charge_range)
                               for atom in mol.GetAtoms()])
 
     adj_matrix = np.eye(mol.GetNumAtoms())
@@ -122,7 +130,9 @@ def featurize_mol(mol: Chem.rdchem.Mol, add_dummy_node: bool, one_hot_formal_cha
     return node_features, adj_matrix, dist_matrix
 
 
-def get_atom_features(atom: Chem.rdchem.Atom, one_hot_formal_charge: bool = True) -> np.ndarray:
+def get_atom_features(atom: Chem.rdchem.Atom,
+                      one_hot_formal_charge: bool = True,
+                      one_hot_formal_charge_range = None) -> np.ndarray:
     """Calculate atom features.
 
     Args:
@@ -152,7 +162,7 @@ def get_atom_features(atom: Chem.rdchem.Atom, one_hot_formal_charge: bool = True
     if one_hot_formal_charge:
         attributes += one_hot_vector(
             atom.GetFormalCharge(),
-            [-1, 0, 1]
+            one_hot_formal_charge_range
         )
     else:
         attributes.append(atom.GetFormalCharge())

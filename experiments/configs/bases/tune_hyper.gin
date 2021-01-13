@@ -19,21 +19,10 @@ optuna.weight_remover = 'keep_best_only'
 ModelCheckpoint.save_last = False
 
 # ==============================================================================
-optuna.sampler_name = 'TPESampler'
+optuna.sampler_name = 'GridSampler'
 optuna.direction = 'minimize'
 optuna.metric = 'valid_loss'
-optuna.n_trials = 300
 optuna.params = {
-    'optimizer.lr': ('suggest_loguniform', 0.000001, 0.001),
-    'NoamLRScheduler.warmup_factor': ('suggest_uniform', 0.0, 0.5)
+    'optimizer.lr': [0.001, 0.0005, 0.0001, 5e-05, 1e-05, 5e-06, 1e-06],
+    'NoamLRScheduler.warmup_factor': [0, 0.1, 0.2, 0.3, 0.4, 0.5]
 }
-
-# ==============================================================================
-optuna.resume = True
-
-# optuna.params = {
-#     'optimizer.lr': [0.001, 0.0005, 0.0001, 5e-05, 1e-05, 5e-06, 1e-06],
-#     'NoamLRScheduler.warmup_factor': [0, 0.1, 0.2, 0.3, 0.4, 0.5]
-# }
-
-

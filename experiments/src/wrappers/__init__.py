@@ -1,2 +1,3 @@
 from .wrappers_chemberta import ChembertaModelWrapper
 from .wrappers_chemprop import ChempropModelWrapper
+from .wrappers_molbert import MolbertModelWrapper

@@ -7,7 +7,7 @@ from experiments.src.benchmarking.benchmarking_utils import print_results, check
 
 
 @gin.configurable('benchmark')
-def compute_benchmark_results(ensemble_max_size: Optional[Union[int, List[int]]] = None,
+def compute_benchmark_results(ensemble_max_size: Optional[int] = 1,
                               ensemble_pick_method: Literal['brute', 'greedy', 'all'] = 'brute',
                               prefix_list: Optional[List[str]] = None,
                               models_names_list: Optional[List[str]] = None,

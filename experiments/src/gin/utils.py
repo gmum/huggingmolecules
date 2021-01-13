@@ -6,12 +6,27 @@ import gin
 
 CONFIGS_ROOT = os.path.join('experiments', 'configs')
 
+additional_args = {
+    'name.prefix': {'type': str},
+    'model.pretrained_name': {'type': str},
+    'train.gpus': {'type': eval},
+    'train.num_epochs': {'type': int},
+    'benchmark.ensemble_max_size': {'type': int},
+    'benchmark.ensemble_pick_method': {'type': str},
+    'benchmark.prefix_list': {'type': str, 'nargs': '+'},
+    'benchmark.models_names_list': {'type': str, 'nargs': '+'}
+}
+
+
+class DefaultValue:
+    pass
+
+
 def apply_gin_config(*,
                      base: str = None,
                      model: str = None,
                      dataset: str = None,
                      configs_root: str = CONFIGS_ROOT,
-                     additional_args: Optional[dict] = None,
                      parser: Optional[argparse.ArgumentParser] = None) -> argparse.Namespace:
     if not parser:
         parser = argparse.ArgumentParser()
@@ -27,6 +42,7 @@ def apply_gin_config(*,
 
     if additional_args:
         for param, kwargs in additional_args.items():
+            kwargs.update({'default': DefaultValue()})
             parser.add_argument(f'--{param}', **kwargs)
 
     args = parser.parse_args()
@@ -49,8 +65,9 @@ def apply_gin_config(*,
     if additional_args:
         for param in additional_args.keys():
             val = getattr(args, param)
-            with gin.unlock_config():
-                gin.bind_parameter(param, val)
+            if not isinstance(val, DefaultValue):
+                with gin.unlock_config():
+                    gin.bind_parameter(param, val)
 
     return args
 
@@ -63,21 +80,12 @@ def get_formatted_config_str(excluded: Optional[List[str]] = None):
 
 
 def parse_gin_str(gin_str):
-    import io
-    buf = io.StringIO(gin_str)
-    C = {}
-    for line in buf.readlines():
-        if len(line.strip()) == 0 or line[0] == "#":
-            continue
-
-        k, v = line.split("=")
-        k, v = k.strip(), v.strip()
-        k1, k2 = k.split(".")
-
-        v = eval(v)
-
-        C[k1 + "." + k2] = v
-    return C
+    gin_dict = {}
+    parser = gin.config.config_parser.ConfigParser(gin_str, gin.config.ParserDelegate())
+    for statement in parser:
+        scope, selector, arg_name, value, location = statement
+        gin_dict[f"{selector}.{arg_name}"] = value
+    return gin_dict
 
 
 @gin.configurable('dummy')

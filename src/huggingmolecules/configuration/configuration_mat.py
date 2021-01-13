@@ -3,8 +3,10 @@ from dataclasses import dataclass
 from .configuration_api import PretrainedConfigMixin
 
 MAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING = {
-    'mat-base-freesolv': './saved/mat-base-freesolv-config',
-    'mat-base-freesolv-tests': '../saved/mat-base-freesolv-config'
+    'mat_masking_2M_old': './pretrained/mat/configs/mat_model_config_old.json',
+    'mat_masking_200k': './pretrained/mat/configs/mat_model_config.json',
+    'mat_masking_2M': './pretrained/mat/configs/mat_model_config.json',
+    'mat_masking_20M': './pretrained/mat/configs/mat_model_config.json'
 }
 
 
@@ -31,6 +33,9 @@ class MatConfig(PretrainedConfigMixin):
     scale_norm: bool = False
     use_adapter: bool = False
     init_type: str = 'uniform'
+    add_dummy_node: bool = True
+    one_hot_formal_charge: bool = True
+    one_hot_formal_charge_range: list = (-5, -4, -4, -2, -1, 0, 1, 2, 3, 4, 5)
 
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name: str):
