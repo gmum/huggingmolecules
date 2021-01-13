@@ -5,7 +5,7 @@ import gin
 
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
-from .training_tune_hyper_utils import print_and_save_info, get_sampler, Objective, \
+from .tuning_utils import print_and_save_info, get_sampler, Objective, \
     enqueue_failed_trials, get_weight_remover
 from ..gin import get_default_name
 

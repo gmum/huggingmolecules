@@ -11,7 +11,7 @@ import torch
 
 from experiments.src.gin import CONFIGS_ROOT
 from experiments.src.gin import get_default_name
-from experiments.src.training.training_train_model_utils import get_loss_fn, get_metric_cls, get_data
+from experiments.src.training.training_utils import get_loss_fn, get_metric_cls, get_data
 
 
 class EnsembleElement:

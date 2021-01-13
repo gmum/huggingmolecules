@@ -1,1 +1,1 @@
-from .training_tune_hyper import tune_hyper
+from .tuning_tune_hyper import tune_hyper

@@ -3,8 +3,8 @@ from typing import Literal
 from pytorch_lightning import Trainer
 
 from .training_lightning_module import TrainingModule
-from .training_train_model_utils import *
-from .training_train_model_utils import get_custom_callbacks, apply_neptune, evaluate_and_save_results
+from .training_utils import *
+from .training_utils import get_custom_callbacks, apply_neptune, evaluate_and_save_results
 from ..gin import get_default_name
 
 
