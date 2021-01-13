@@ -7,9 +7,9 @@ from typing import Dict, Any, Optional, List
 
 import gin
 
+from experiments.src.training.training_train_model import train_model
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
-from experiments.src.training.training_train_model import train_model
 
 
 def get_sampler(name: str, params: dict):

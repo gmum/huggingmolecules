@@ -5,6 +5,7 @@ neptune.project_name = 'Benchmarks'
 optuna.storage = 'sqlite:///benchmarks.db'
 optuna.root_path = './experiments_results'
 optuna.resume = True
+name.prefix = ''
 
 # ==============================================================================
 data.split_method = 'random'

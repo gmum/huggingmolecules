@@ -5,6 +5,7 @@ neptune.project_name = 'sandbox'
 optuna.storage = 'sqlite:///optuna_studies.db'
 optuna.root_path = './experiments_results'
 optuna.resume = True
+name.prefix = 'Tune'
 
 # ==============================================================================
 data.split_method = 'random'

@@ -1,11 +1,8 @@
-import pickle
-from typing import Optional, Any, List, Literal
+from typing import Optional
 
 import pytorch_lightning as pl
-import torch
-from pytorch_lightning.metrics.functional import auroc
 
-from experiments.src.training.training_metrics import AUROC, BatchWeightedLoss
+from experiments.src.training.training_metrics import BatchWeightedLoss
 from src.huggingmolecules.featurization.featurization_api import BatchEncodingProtocol
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 

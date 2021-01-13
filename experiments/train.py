@@ -1,8 +1,7 @@
 import logging
-import argparse
 
 from experiments.src import train_model
-from experiments.src.gin import apply_gin_config, gin
+from experiments.src.gin import apply_gin_config
 
 logging.basicConfig(format='%(levelname)s:%(module)s: %(message)s', level=logging.INFO)
 

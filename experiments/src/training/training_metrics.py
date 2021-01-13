@@ -1,9 +1,10 @@
 import logging
-from typing import Optional, Any, Sequence
+from typing import Optional, Any
+
 import torch
+import torch.nn.functional as F
 from pytorch_lightning.metrics import Metric
 from pytorch_lightning.metrics.functional.classification import auroc
-import torch.nn.functional as F
 
 
 class BatchWeightedLoss(Metric):

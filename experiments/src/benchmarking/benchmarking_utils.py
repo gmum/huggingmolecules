@@ -127,6 +127,8 @@ def fetch_data_from_neptune(models_list: List[EnsembleElement]) -> None:
     params_dict = get_params_dict()
     hps_dict = {k: v for k, v in params_dict.items() if k != 'data.split_seed'}
 
+    # TODO improve getting leaderboard with tags
+    # data = project.get_leaderboard(tags=)
     data = project.get_leaderboard(state='succeeded')
     data = data[data['name'].isin(set(model.name for model in models_list))]
     colums = ['id', 'name'] + [f'parameter_{p}' for p in params_dict]
@@ -135,7 +137,8 @@ def fetch_data_from_neptune(models_list: List[EnsembleElement]) -> None:
     for param_name, param_value in params_dict.items():
         dtype = type(param_value[0])
         param_name_pd = f'parameter_{param_name}'
-        data[param_name_pd] = data[param_name_pd].astype(dtype) if dtype != int else data[param_name_pd].astype(float).astype(int)
+        data[param_name_pd] = data[param_name_pd].astype(dtype) if dtype != int else data[param_name_pd].astype(
+            float).astype(int)
 
     for model in models_list:
         group = data[data['name'] == model.name]

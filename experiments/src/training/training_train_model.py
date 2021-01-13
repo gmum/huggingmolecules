@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Optional
 
 from pytorch_lightning import Trainer
 

@@ -12,5 +12,5 @@ NoamLRScheduler.model_size_name = 'd_model'
 NoamLRScheduler.warmup_factor = 0.4
 
 # ==============================================================================
-train.batch_size = 32
+train.batch_size = 8
 train.num_epochs = 100

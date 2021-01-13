@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Tuple, List, Optional, Union, Literal
+from typing import Tuple, List, Union, Literal
 
 import gin
 import numpy as np
@@ -16,9 +16,9 @@ import experiments.src.training.training_loss_fn as custom_loss_fn_module
 import experiments.src.training.training_metrics as custom_metrics_module
 import experiments.src.wrappers as wrappers
 import src.huggingmolecules.models as models
+from experiments.src.gin import get_formatted_config_str, parse_gin_str
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
-from experiments.src.gin import get_formatted_config_str, parse_gin_str
 from .training_callbacks import NeptuneCompatibleCallback, \
     GinConfigSaver, ModelConfigSaver, ConfigurableModelCheckpoint, ModelOutputSaver
 
@@ -100,6 +100,7 @@ def get_neptune(model: PretrainedModelBase, *,
                             project_name=f'{user_name}/{project_name}',
                             experiment_name=experiment_name,
                             description=description,
+                            tags=[experiment_name],
                             params=get_all_hyperparams(model))
     return neptune
 

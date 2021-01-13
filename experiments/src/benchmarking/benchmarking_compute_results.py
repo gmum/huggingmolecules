@@ -1,9 +1,9 @@
-from typing import Optional, List, Literal, Union
+from typing import Optional, List, Literal
 
 import gin
 
-from experiments.src.benchmarking.benchmarking_utils import print_results, check_models_list, \
-    fetch_data, pick_best_ensemble, get_names_list
+from experiments.src.benchmarking.benchmarking_utils import print_results, fetch_data, pick_best_ensemble, \
+    get_names_list
 
 
 @gin.configurable('benchmark')

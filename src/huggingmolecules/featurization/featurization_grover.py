@@ -2,10 +2,10 @@ from typing import *
 
 import numpy as np
 import torch
-from rdkit import Chem
 import torch_geometric.data
+from rdkit import Chem
 
-from .featurization_api import PretrainedFeaturizerMixin, T_MoleculeEncoding, T_BatchEncoding, BatchEncodingProtocol
+from .featurization_api import PretrainedFeaturizerMixin, T_MoleculeEncoding
 
 GroverMoleculeEncoding = torch_geometric.data.Data
 GroverBatchEncoding = torch_geometric.data.Batch

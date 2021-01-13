@@ -11,8 +11,6 @@ from sklearn.metrics import pairwise_distances
 
 from .featurization_api import PretrainedFeaturizerMixin
 from .featurization_utils import pad_array
-import torch
-
 from .. import MatConfig
 
 
@@ -58,7 +56,8 @@ class MatFeaturizer(PretrainedFeaturizerMixin[MatMoleculeEncoding, MatBatchEncod
             except:
                 AllChem.Compute2DCoords(mol)
 
-            afm, adj, dist = featurize_mol(mol, self._add_dummy_node, self._one_hot_formal_charge, self._one_hot_formal_charge_range)
+            afm, adj, dist = featurize_mol(mol, self._add_dummy_node, self._one_hot_formal_charge,
+                                           self._one_hot_formal_charge_range)
             afm = torch.tensor(afm).float()
             adj = torch.tensor(adj).float()
             dist = torch.tensor(dist).float()
@@ -132,7 +131,7 @@ def featurize_mol(mol: Chem.rdchem.Mol, add_dummy_node: bool,
 
 def get_atom_features(atom: Chem.rdchem.Atom,
                       one_hot_formal_charge: bool = True,
-                      one_hot_formal_charge_range = None) -> np.ndarray:
+                      one_hot_formal_charge_range=None) -> np.ndarray:
     """Calculate atom features.
 
     Args:
