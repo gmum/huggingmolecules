@@ -1,3 +1,8 @@
+"""
+This implementation is adapted from
+https://github.com/ardigen/MAT/blob/master/src/transformer.py
+"""
+
 import copy
 import math
 from typing import *
@@ -10,7 +15,7 @@ import torch.nn.functional as F
 from src.huggingmolecules.configuration.configuration_mat import MatConfig
 from src.huggingmolecules.featurization.featurization_mat import MatBatchEncoding, MatFeaturizer
 from .models_api import PretrainedModelBase
-from .models_utils import xavier_normal_small_init_, xavier_uniform_small_init_
+from .models_mat_utils import xavier_normal_small_init_, xavier_uniform_small_init_
 
 MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
     'mat_masking_2M_old': './pretrained/mat/weights/mat_masking_2M_old.pt',
