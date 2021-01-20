@@ -3,13 +3,12 @@ from dataclasses import dataclass
 from typing import *
 
 import torch
-import torch_geometric
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-from .featurization_api import PretrainedFeaturizerMixin
-from .featurization_mat_utils import featurize_mol, pad_array
 from src.huggingmolecules import MatConfig
+from .featurization_api import PretrainedFeaturizerMixin, RecursiveToDeviceMixin
+from .featurization_mat_utils import featurize_mol, pad_array
 
 
 @dataclass
@@ -21,7 +20,7 @@ class MatMoleculeEncoding:
 
 
 @dataclass
-class MatBatchEncoding(torch_geometric.data.Data):
+class MatBatchEncoding(RecursiveToDeviceMixin):
     node_features: torch.FloatTensor
     adjacency_matrix: torch.FloatTensor
     distance_matrix: torch.FloatTensor

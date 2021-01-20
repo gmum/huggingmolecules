@@ -1,6 +1,7 @@
 from typing import Optional
 
 import pytorch_lightning as pl
+import torch
 
 from experiments.src.training.training_metrics import BatchWeightedLoss
 from src.huggingmolecules.featurization.featurization_api import BatchEncodingProtocol
@@ -30,7 +31,7 @@ class TrainingModule(pl.LightningModule):
     def _step(self, mode: str, batch: BatchEncodingProtocol, batch_idx: int):
         output = self.forward(batch)
         loss = self.loss_fn(output, batch.y)
-        preds = output[0] if isinstance(output, tuple) else output
+        preds = torch.mean(torch.stack(output), dim=0) if isinstance(output, tuple) else output
 
         self.metric_loss[mode](loss, len(batch))
         self.metric[mode](preds, batch.y)

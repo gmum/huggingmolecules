@@ -1,4 +1,3 @@
-import logging
 import os
 from dataclasses import dataclass
 from typing import Tuple, List, Optional, Union
@@ -6,17 +5,16 @@ from typing import Tuple, List, Optional, Union
 import gin
 import numpy as np
 import torch
-import torch_geometric
 from molbert.apps.finetune import FinetuneSmilesMolbertApp
 from molbert.utils.featurizer.molfeaturizer import SmilesIndexFeaturizer
 
 from src.huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
-from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
+from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin, RecursiveToDeviceMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 @dataclass
-class MolbertBatchEncoding(torch_geometric.data.Data):
+class MolbertBatchEncoding(RecursiveToDeviceMixin):
     data: dict
     y: torch.FloatTensor
     batch_size: int

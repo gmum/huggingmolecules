@@ -3,16 +3,15 @@ from dataclasses import dataclass
 from typing import Tuple, List, Optional
 
 import torch
-import torch_geometric
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from src.huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
-from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
+from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin, RecursiveToDeviceMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 @dataclass
-class ChembertaBatchEncoding(torch_geometric.data.Data):
+class ChembertaBatchEncoding(RecursiveToDeviceMixin):
     data: dict
     y: torch.FloatTensor
     batch_size: int

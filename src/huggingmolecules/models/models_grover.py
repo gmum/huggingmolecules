@@ -122,8 +122,7 @@ class GroverModel(PretrainedModelBase[GroverBatchEncoding, GroverConfig]):
 
         atom_ffn_output = self.mol_atom_from_atom_ffn(mol_atom_from_atom_output)
         bond_ffn_output = self.mol_atom_from_bond_ffn(mol_atom_from_bond_output)
-        mean_output = (atom_ffn_output + bond_ffn_output) * 0.5
-        return mean_output, atom_ffn_output, bond_ffn_output
+        return atom_ffn_output, bond_ffn_output
 
 
 class GROVEREmbedding(nn.Module):

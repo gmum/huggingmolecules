@@ -23,7 +23,7 @@ class GroverLoss:
         self.dist_coff = dist_coff
 
     def __call__(self, preds, target):
-        pred, pred_1, pred_2 = preds
+        pred_1, pred_2 = preds
         dist_loss = self.dist_loss(torch.sigmoid(pred_1), torch.sigmoid(pred_2))
         pred_loss_1 = self.pred_loss(pred_1, target)
         pred_loss_2 = self.pred_loss(pred_2, target)

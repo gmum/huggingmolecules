@@ -1,22 +1,20 @@
 from dataclasses import dataclass
 from typing import Tuple, List, Optional
 
-import gin
 import numpy as np
 import torch
-import torch_geometric
 from chemprop.args import TrainArgs
 from chemprop.data import MoleculeDatapoint
 from chemprop.features import MolGraph, BatchMolGraph
 from chemprop.models import MoleculeModel
 
 from src.huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
-from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
+from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin, RecursiveToDeviceMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 @dataclass
-class ChempropBatchEncoding(torch_geometric.data.Data):
+class ChempropBatchEncoding(RecursiveToDeviceMixin):
     batch_mol_graph: BatchMolGraph
     batch_features: Optional[List[torch.Tensor]]
     y: torch.FloatTensor
