@@ -9,7 +9,7 @@ from rdkit.Chem import AllChem
 
 from .featurization_api import PretrainedFeaturizerMixin
 from .featurization_mat_utils import featurize_mol, pad_array
-from .. import MatConfig
+from src.huggingmolecules import MatConfig
 
 
 @dataclass

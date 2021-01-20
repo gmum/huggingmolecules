@@ -5,9 +5,9 @@ import numpy as np
 import torch
 from chemprop.data import MoleculeDatapoint
 
-from huggingmolecules.featurization.featurization_grover_utils import BatchMolGraph, MolGraph
+from .featurization_grover_utils import BatchMolGraph, MolGraph
 from src.huggingmolecules import GroverConfig
-from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin, RecursiveToDeviceMixin
+from .featurization_api import PretrainedFeaturizerMixin, RecursiveToDeviceMixin
 
 
 @dataclass
