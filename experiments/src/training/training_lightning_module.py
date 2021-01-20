@@ -28,8 +28,9 @@ class TrainingModule(pl.LightningModule):
         return self.model.forward(batch)
 
     def _step(self, mode: str, batch: BatchEncodingProtocol, batch_idx: int):
-        preds = self.forward(batch)
-        loss = self.loss_fn(preds, batch.y)
+        output = self.forward(batch)
+        loss = self.loss_fn(output, batch.y)
+        preds = output[0] if isinstance(output, tuple) else output
 
         self.metric_loss[mode](loss, len(batch))
         self.metric[mode](preds, batch.y)
@@ -37,7 +38,7 @@ class TrainingModule(pl.LightningModule):
         self.log(f'{mode}_loss', self.metric_loss[mode], on_epoch=True, on_step=False)
         self.log(f'{mode}_{self.metric_name}', self.metric[mode], on_epoch=True, on_step=False)
 
-        return {'loss': loss, 'preds': preds}
+        return {'loss': loss, 'output': output}
 
     def training_step(self, batch: BatchEncodingProtocol, batch_idx: int):
         return self._step('train', batch, batch_idx)['loss']
@@ -47,7 +48,7 @@ class TrainingModule(pl.LightningModule):
 
     def validation_step(self, batch: BatchEncodingProtocol, batch_idx: int):
         outputs = self._step('valid', batch, batch_idx)
-        self.outputs['valid'].append(outputs['preds'].view(-1))
+        self.outputs['valid'].append(outputs['output'])
         return outputs['loss']
 
     def on_test_epoch_start(self) -> None:
@@ -55,7 +56,7 @@ class TrainingModule(pl.LightningModule):
 
     def test_step(self, batch: BatchEncodingProtocol, batch_idx: int):
         outputs = self._step('test', batch, batch_idx)
-        self.outputs['test'].append(outputs['preds'].view(-1))
+        self.outputs['test'].append(outputs['output'])
         return outputs['loss']
 
     def configure_optimizers(self):

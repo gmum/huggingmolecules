@@ -1,10 +1,28 @@
-import logging
-import os
-import pickle
 from typing import *
 
-import pandas as pd
+import torch
 from torch.utils.data import DataLoader
+
+
+class RecursiveToDeviceMixin:
+    def _apply_to(self, value, device):
+        if value is None:
+            return value
+        elif isinstance(value, RecursiveToDeviceMixin):
+            return value.to(device)
+        elif torch.is_tensor(value):
+            return value.to(device)
+        elif isinstance(value, (tuple, list)):
+            return [self._apply_to(item, device) for item in value]
+        elif isinstance(value, dict):
+            return {k: self._apply_to(v, device) for k, v in value.items()}
+        else:
+            return value
+
+    def to(self, device):
+        for key, value in self.__dict__.items():
+            self.__dict__[key] = self._apply_to(value, device)
+        return self
 
 
 class BatchEncodingProtocol(Protocol):
@@ -34,27 +52,6 @@ class PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding]):
         for smiles, y in zip(smiles_list, y_list):
             encodings.append(self._encode_smiles(smiles, y))
         return encodings
-
-    def _load_dataset_from_cache(self, cache_path: str) -> List[T_MoleculeEncoding]:
-        logging.info(f"Loading encodings stored at '{cache_path}'")
-        encodings = pickle.load(open(cache_path, "rb"))
-        return encodings
-
-    def _save_dataset_to_cache(self, dataset: List[T_MoleculeEncoding], cache_path: str):
-        logging.info(f"Saving encodings to '{cache_path}'")
-        pickle.dump(dataset, open(cache_path, "wb"))
-
-    def load_dataset_from_csv(self, dataset_path: str, *, cache: bool = False) -> List[T_MoleculeEncoding]:
-        cache_path = f'{dataset_path}-{type(self).__name__}-cached'
-        if cache and os.path.exists(cache_path):
-            return self._load_dataset_from_cache(cache_path)
-        data = pd.read_csv(dataset_path)
-        smiles_list = data.iloc[:, 0].values
-        y_list = data.iloc[:, 1].values
-        dataset = self.encode_smiles_list(smiles_list, y_list)
-        if cache:
-            self._save_dataset_to_cache(dataset, cache_path)
-        return dataset
 
     def get_data_loader(self, dataset: List[T_MoleculeEncoding], *, batch_size: int, shuffle: bool = False,
                         num_workers: int = 0) -> DataLoader:

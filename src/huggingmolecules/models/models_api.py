@@ -43,6 +43,8 @@ class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):
 
     def _load_pretrained_weights(self, file_path: str):
         pretrained_state_dict = torch.load(file_path, map_location='cpu')
+        if 'state_dict' in pretrained_state_dict:
+            pretrained_state_dict = pretrained_state_dict['state_dict']
         if 'model' in pretrained_state_dict:
             pretrained_state_dict = pretrained_state_dict['model']
         model_state_dict = self.state_dict()

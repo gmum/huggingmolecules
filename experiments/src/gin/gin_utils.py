@@ -24,8 +24,8 @@ class DefaultValue:
 
 def apply_gin_config(*,
                      base: str = None,
-                     model: str = None,
                      dataset: str = None,
+                     model: str = None,
                      configs_root: str = CONFIGS_ROOT,
                      parser: Optional[argparse.ArgumentParser] = None) -> argparse.Namespace:
     if not parser:
@@ -33,10 +33,10 @@ def apply_gin_config(*,
 
     if not base:
         parser.add_argument('-bs', '--base', type=str, default=None)
-    if not model:
-        parser.add_argument('-m', '--model', type=str, default=None)
     if not dataset:
         parser.add_argument('-d', '--dataset', type=str, default=None)
+    if not model:
+        parser.add_argument('-m', '--model', type=str, default=None)
     parser.add_argument('-c', '--config-files', type=str, default='')
     parser.add_argument('-b', '--bindings', type=str, default='')
 
@@ -48,14 +48,14 @@ def apply_gin_config(*,
     args = parser.parse_args()
 
     base = base if base else args.base
-    model = model if model else args.model
     dataset = dataset if dataset else args.dataset
+    model = model if model else args.model
 
     base_config = os.path.join(configs_root, 'bases', f'{base}.gin') if base else ''
-    model_config = os.path.join(configs_root, 'models', f'{model}.gin') if model else ''
     dataset_config = os.path.join(configs_root, 'datasets', f'{dataset}.gin') if dataset else ''
+    model_config = os.path.join(configs_root, 'models', f'{model}.gin') if model else ''
 
-    configs = [base_config, model_config, dataset_config]
+    configs = [base_config, dataset_config, model_config]
     configs.extend(args.config_files.split("#"))
     configs = [c for c in configs if len(c) > 0]
 

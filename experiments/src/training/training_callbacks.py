@@ -116,7 +116,14 @@ class ModelOutputSaver(NeptuneCompatibleCallback):
         self.target = {'valid': valid_target, 'test': test_target}
 
     def save_outputs(self, trainer, pl_module, phase):
-        outputs = torch.cat(pl_module.outputs[phase]).cpu()
+        outputs = pl_module.outputs[phase]
+        if not isinstance(outputs[0], tuple):
+            outputs = torch.cat(outputs).view(-1)
+        else:
+            outputs = list(zip(*outputs))
+            for i in range(len(outputs)):
+                outputs[i] = torch.cat(outputs[i]).view(-1)
+
         target_path = os.path.join(trainer.default_root_dir, self.target[phase])
         with open(target_path, 'wb') as fp:
             pickle.dump(outputs, fp)
