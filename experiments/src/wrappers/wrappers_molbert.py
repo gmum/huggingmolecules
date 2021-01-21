@@ -25,7 +25,7 @@ class MolbertBatchEncoding(RecursiveToDeviceMixin):
 
 @gin.configurable()
 class MolbertFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], MolbertBatchEncoding]):
-    def __init__(self, max_size=128):
+    def __init__(self, max_size=512):
         self.tokenizer = SmilesIndexFeaturizer.bert_smiles_index_featurizer(max_size)
 
     def _collate_encodings(self, encodings: List[Tuple[np.ndarray, float]]) -> MolbertBatchEncoding:

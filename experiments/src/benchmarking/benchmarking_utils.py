@@ -1,3 +1,4 @@
+import io
 import itertools
 import logging
 import os
@@ -12,6 +13,7 @@ import torch
 from experiments.src.gin import CONFIGS_ROOT
 from experiments.src.gin import get_default_name
 from experiments.src.training.training_utils import get_loss_fn, get_metric_cls, get_data
+from experiments.src.wrappers.wrappers_molbert import MolbertFeaturizer
 
 
 class EnsembleElement:
@@ -105,6 +107,17 @@ def load_targets():
     return targets
 
 
+def load_targets_for_molbert():
+    targets = {'valid': {}, 'test': {}}
+    seed_list = get_params_dict()['data.split_seed']
+    featurizer = MolbertFeaturizer()
+    for seed in seed_list:
+        data = get_data(split_seed=seed)
+        targets['valid'][seed] = featurizer(data['valid']['X'], data['valid']['Y']).y.view(-1)
+        targets['test'][seed] = featurizer(data['test']['X'], data['test']['Y']).y.view(-1)
+    return targets
+
+
 def fetch_data(names_list: List[str], cache_dir: str) -> Tuple[List[EnsembleElement], dict]:
     os.makedirs(cache_dir, exist_ok=True)
     loaded, missing = load_data_from_cache(names_list, cache_dir)
@@ -115,7 +128,12 @@ def fetch_data(names_list: List[str], cache_dir: str) -> Tuple[List[EnsembleElem
 
     models_list = loaded + missing
     check_models_list(models_list, cache_dir)
-    return models_list, load_targets()
+
+    if any('MolbertModelWrapper' in item for item in names_list):
+        targets = load_targets_for_molbert()
+    else:
+        targets = load_targets()
+    return models_list, targets
 
 
 def fetch_data_from_neptune(models_list: List[EnsembleElement]) -> None:
@@ -155,12 +173,20 @@ def fetch_data_from_neptune(models_list: List[EnsembleElement]) -> None:
                                                                    artifact_name='test_output.pickle')
 
 
+class UnpicklerCPU(pickle.Unpickler):
+    def find_class(self, module, name):
+        if module == 'torch.storage' and name == '_load_from_bytes':
+            return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
+        else:
+            return super().find_class(module, name)
+
+
 def get_output_from_artifact(*, project, id: str, artifact_name: str):
     tmp_path = '/tmp/huggingmolecules_experiments/'
     experiment = project.get_experiments(id=id)[0]
     experiment.download_artifact(artifact_name, tmp_path)
     with open(os.path.join(tmp_path, artifact_name), 'rb') as fp:
-        output = pickle.load(fp)
+        output = UnpicklerCPU(fp).load()
     os.system(f'rm -rf {tmp_path}')
     return output
 

@@ -118,11 +118,11 @@ class ModelOutputSaver(NeptuneCompatibleCallback):
     def save_outputs(self, trainer, pl_module, phase):
         outputs = pl_module.outputs[phase]
         if not isinstance(outputs[0], tuple):
-            outputs = torch.cat(outputs).view(-1)
+            outputs = torch.cat(outputs).view(-1).cpu()
         else:
             outputs = list(zip(*outputs))
             for i in range(len(outputs)):
-                outputs[i] = torch.cat(outputs[i]).view(-1)
+                outputs[i] = torch.cat(outputs[i]).view(-1).cpu()
 
         target_path = os.path.join(trainer.default_root_dir, self.target[phase])
         with open(target_path, 'wb') as fp:
