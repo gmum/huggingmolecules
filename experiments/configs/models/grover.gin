@@ -8,12 +8,13 @@ loss_fn.dist_coff = 0.1
 
 # ==============================================================================
 optimizer.name = 'Adam'
-optimizer.lr = 0.00005
+optimizer.lr = 0.00001
+optimizer.weight_decay = 2e-07
 
 # ==============================================================================
 train.custom_callbacks = ['NoamLRScheduler']
-NoamLRScheduler.model_size_name = 'hidden_size'
-NoamLRScheduler.warmup_factor = 0.2
+NoamLRScheduler.model_size = 1
+NoamLRScheduler.warmup_factor = 0.3
 
 # ==============================================================================
 train.batch_size = 32

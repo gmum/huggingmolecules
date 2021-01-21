@@ -11,6 +11,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from experiments.src.gin import get_formatted_config_str
 
 
+# TODO can be replaced with trainer.experiment call
 class NeptuneCompatibleCallback(Callback):
     def __init__(self):
         super(NeptuneCompatibleCallback, self).__init__()
@@ -49,17 +50,17 @@ class LRSchedulerBase(NeptuneCompatibleCallback):
 
 @gin.configurable
 class NoamLRScheduler(LRSchedulerBase):
-    def __init__(self, model_size_name: str, warmup_factor: int):
+    def __init__(self, warmup_factor: int, model_size_name: str = None, model_size: int = None):
         super().__init__(warmup_factor)
         self.model_size_name = model_size_name
-        self.model_size = None
+        self.model_size = model_size
 
     def on_train_start(self, trainer, pl_module):
         super().on_train_start(trainer, pl_module)
-        config = pl_module.model.get_config()
-        self.model_size = getattr(config, self.model_size_name)
-
-        logging.info(f'Set model_size to: {self.model_size}')
+        if not self.model_size:
+            config = pl_module.model.get_config()
+            self.model_size = getattr(config, self.model_size_name)
+            logging.info(f'Set model_size to: {self.model_size}')
 
     def get_multiplier(self, step):
         return 100 * (self.model_size ** (-0.5) * min(step ** (-0.5),

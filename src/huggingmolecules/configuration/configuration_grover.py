@@ -15,7 +15,7 @@ class GroverConfig(PretrainedConfigMixin):
     attn_hidden: int = 4
     attn_out: int = 128
     bond_fdim: int = 14
-    atom_fdim: int = 133
+    atom_fdim: int = 151
     embedding_output_type: str = 'both'
     activation: str = 'PReLU'
     num_mt_block: int = 1
