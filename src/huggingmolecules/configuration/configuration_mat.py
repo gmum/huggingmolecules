@@ -12,7 +12,7 @@ MAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING = {
 
 @dataclass
 class MatConfig(PretrainedConfigMixin):
-    d_atom: int = 28
+    d_atom: int = 36
     d_model: int = 1024
     N: int = 8
     h: int = 16
