@@ -8,9 +8,9 @@ optimizer.lr = 0.0001
 
 # ==============================================================================
 train.custom_callbacks = ['NoamLRScheduler']
-NoamLRScheduler.model_size_name = 'd_model'
-NoamLRScheduler.warmup_factor = 0.3
+NoamLRScheduler.warmup_factor = 0.4
+NoamLRScheduler.model_size = 1
 
 # ==============================================================================
 train.batch_size = 32
-train.num_epochs = 100
+train.num_epochs = 20

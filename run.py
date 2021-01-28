@@ -37,7 +37,7 @@ def send_notification_stderr(last_command, stderr_path, status):
         '<h2>last command:</h2>',
         last_command,
         '<h2>stderr:</h2>',
-        stderr[:-1000]
+        stderr[-1000:]
     ]
     yag.send(to_email, f'Target {args.target} {status}', contents)
 

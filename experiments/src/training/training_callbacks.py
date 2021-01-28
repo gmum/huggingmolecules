@@ -19,29 +19,25 @@ class NeptuneCompatibleCallback(Callback):
 
 
 class LRSchedulerBase(NeptuneCompatibleCallback):
-    def __init__(self, warmup_factor: int):
+    def __init__(self):
         super().__init__()
-        self.warmup_factor = warmup_factor
         self.base_lr = None
-        self.warmup_steps = None
         self.total_steps = None
 
     def on_train_start(self, trainer, pl_module):
         self.base_lr = trainer.optimizers[0].param_groups[0]['lr']
         self.total_steps = len(pl_module.train_dataloader.dataloader) * trainer.max_epochs
-        self.warmup_steps = self.warmup_factor * self.total_steps
 
         logging.info(f'Set base_lr to: {self.base_lr}')
-        logging.info(f'Set warmup_steps to: {self.warmup_steps}')
         logging.info(f'Set total_steps to: {self.total_steps}')
 
-    def get_multiplier(self, step):
+    def get_lr(self, step):
         raise NotImplementedError
 
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
-        step = trainer.global_step + 1
+        step = trainer.global_step
         for i, group in enumerate(trainer.optimizers[0].param_groups):
-            group['lr'] = self.base_lr * self.get_multiplier(step)
+            group['lr'] = self.get_lr(step)
 
             logging.info(f'Set group-{i}-lr to {group["lr"]}')
             if self.neptune:
@@ -50,35 +46,65 @@ class LRSchedulerBase(NeptuneCompatibleCallback):
 
 @gin.configurable
 class NoamLRScheduler(LRSchedulerBase):
-    def __init__(self, warmup_factor: int, model_size_name: str = None, model_size: int = None):
-        super().__init__(warmup_factor)
-        self.model_size_name = model_size_name
+    def __init__(self, warmup_factor: int, model_size: int):
+        super().__init__()
+        self.warmup_factor = warmup_factor
         self.model_size = model_size
+        self.warmup_steps = None
 
     def on_train_start(self, trainer, pl_module):
         super().on_train_start(trainer, pl_module)
-        if not self.model_size:
-            config = pl_module.model.get_config()
-            self.model_size = getattr(config, self.model_size_name)
-            logging.info(f'Set model_size to: {self.model_size}')
+        self.warmup_steps = self.warmup_factor * self.total_steps
 
-    def get_multiplier(self, step):
-        return 100 * (self.model_size ** (-0.5) * min(step ** (-0.5),
-                                                      step * (1e-6 + self.warmup_steps) ** (-1.5)))
+    def get_lr(self, step):
+        step += 1
+        return self.base_lr * 100 * (self.model_size ** (-0.5) * min(step ** (-0.5),
+                                                                     step * (1e-6 + self.warmup_steps) ** (-1.5)))
+
+
+@gin.configurable
+class EnhancedNoamLRScheduler(LRSchedulerBase):
+    def __init__(self, warmup_factor: int, init_lr_ratio: float = 10, final_lr_ratio: float = 6):
+        super().__init__()
+        self.warmup_factor = warmup_factor
+        self.init_lr_ratio = init_lr_ratio
+        self.final_lr_ratio = final_lr_ratio
+        self.warmup_steps = None
+        self.init_lr = None
+        self.final_lr = None
+        self.linear_increment = None
+        self.exp_gamma = None
+
+    def on_train_start(self, trainer, pl_module):
+        super().on_train_start(trainer, pl_module)
+        self.warmup_steps = self.warmup_factor * self.total_steps
+        self.init_lr = self.base_lr / self.init_lr_ratio
+        self.final_lr = self.base_lr / self.final_lr_ratio
+        self.linear_increment = (self.base_lr - self.init_lr) / self.warmup_steps
+        self.exp_gamma = (self.final_lr / self.base_lr) ** (1 / (self.total_steps - self.warmup_steps))
+
+    def get_lr(self, step):
+        if step < self.warmup_steps:
+            return self.init_lr + step * self.linear_increment
+        else:
+            return self.base_lr * (self.exp_gamma ** (step - self.warmup_steps))
 
 
 @gin.configurable
 class LinearLRScheduler(LRSchedulerBase):
     def __init__(self, warmup_factor: int):
-        super().__init__(warmup_factor)
+        super().__init__()
+        self.warmup_factor = warmup_factor
+        self.warmup_steps = None
 
     def on_train_start(self, trainer, pl_module):
         super().on_train_start(trainer, pl_module)
+        self.warmup_steps = self.warmup_factor * self.total_steps
 
-    def get_multiplier(self, step):
+    def get_lr(self, step):
         if step < self.warmup_steps:
-            return float(step) / float(max(1, self.warmup_steps))
-        return max(
+            return self.base_lr * float(step) / float(max(1, self.warmup_steps))
+        return self.base_lr * max(
             0.0, float(self.total_steps - step) / float(max(1, self.total_steps - self.warmup_steps))
         )
 

@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import pickle
 from typing import Tuple, List, Union, Literal
 
 import gin
@@ -16,7 +17,7 @@ import experiments.src.training.training_loss_fn as custom_loss_fn_module
 import experiments.src.training.training_metrics as custom_metrics_module
 import experiments.src.wrappers as wrappers
 import src.huggingmolecules.models as models
-from experiments.src.gin import get_formatted_config_str, parse_gin_str
+from experiments.src.gin import get_formatted_config_str, parse_gin_str, get_default_name
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 from .training_callbacks import NeptuneCompatibleCallback, \
@@ -118,12 +119,12 @@ def apply_neptune(model: PretrainedModelBase,
 
 
 @gin.configurable('data')
-def get_data(task_name: str,
-             dataset_name: str,
-             split_method: str = "random",
-             split_frac: List[float] = (0.8, 0.1, 0.1),
-             split_seed: Union[int, str] = "benchmark",
-             normalize_labels: bool = False):
+def get_data_split(task_name: str,
+                   dataset_name: str,
+                   split_method: str = "random",
+                   split_frac: List[float] = (0.8, 0.1, 0.1),
+                   split_seed: Union[int, str] = "benchmark",
+                   normalize_labels: bool = False) -> dict:
     import tdc.single_pred
     task = getattr(tdc.single_pred, task_name)
     data = task(name=dataset_name)
@@ -141,20 +142,64 @@ def get_data(task_name: str,
         test_y = scaler.transform(test_y.reshape(-1, 1)).reshape(-1)
 
     return {
-        'train': {'X': split['train']['Drug'], 'Y': train_y},
-        'valid': {'X': split['valid']['Drug'], 'Y': valid_y},
-        'test': {'X': split['test']['Drug'], 'Y': test_y},
+        'train': {'IDs': split['train']['Drug_ID'], 'X': split['train']['Drug'], 'Y': train_y},
+        'valid': {'IDs': split['valid']['Drug_ID'], 'X': split['valid']['Drug'], 'Y': valid_y},
+        'test': {'IDs': split['test']['Drug_ID'], 'X': split['test']['Drug'], 'Y': test_y},
     }
+
+
+def _get_cache_filepath():
+    filename = f'{get_default_name()}_cache'
+    return os.path.join('cached', filename)
+
+
+def is_cached():
+    return os.path.exists(_get_cache_filepath())
+
+
+def load_from_cache(split):
+    filepath = _get_cache_filepath()
+    with open(filepath, 'rb') as fp:
+        data_dict = pickle.load(fp)
+
+    for target in split.keys():
+        for i, mol_id in enumerate(split[target]['IDs']):
+            split[target]['X'].iloc[i] = data_dict[mol_id]
+
+    return split
+
+
+def dump_to_cache(split):
+    data = {}
+    for target in split.keys():
+        for mol_id, x in zip(split[target]['IDs'], split[target]['X']):
+            data[mol_id] = x
+
+    filepath = _get_cache_filepath()
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    with open(filepath, 'wb') as fp:
+        pickle.dump(data, fp)
 
 
 def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
                      batch_size: int,
-                     num_workers: int = 0, ) -> Tuple[DataLoader, DataLoader, DataLoader]:
-    data = get_data()
+                     num_workers: int = 0,
+                     cache: bool = True) -> Tuple[DataLoader, DataLoader, DataLoader]:
+    split = get_data_split()
 
-    train_data = featurizer.encode_smiles_list(data['train']['X'], data['train']['Y'])
-    valid_data = featurizer.encode_smiles_list(data['valid']['X'], data['valid']['Y'])
-    test_data = featurizer.encode_smiles_list(data['test']['X'], data['test']['Y'])
+    if cache and is_cached():
+        split = load_from_cache(split)
+    else:
+        split['train']['X'] = featurizer.encode_smiles_list(split['train']['X'], split['train']['Y'])
+        split['valid']['X'] = featurizer.encode_smiles_list(split['valid']['X'], split['valid']['Y'])
+        split['test']['X'] = featurizer.encode_smiles_list(split['test']['X'], split['test']['Y'])
+
+    if cache and not is_cached():
+        dump_to_cache(split)
+
+    train_data = split['train']['X']
+    valid_data = split['valid']['X']
+    test_data = split['test']['X']
 
     logging.info(f'Train samples: {len(train_data)}')
     logging.info(f'Validation samples: {len(valid_data)}')

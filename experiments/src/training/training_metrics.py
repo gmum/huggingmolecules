@@ -8,6 +8,8 @@ from pytorch_lightning.metrics.functional.classification import auroc
 
 
 class BatchWeightedLoss(Metric):
+    direction = 'minimize'
+
     def __init__(
             self,
             compute_on_step: bool = True,
@@ -35,6 +37,8 @@ class BatchWeightedLoss(Metric):
 
 
 class AUROC(Metric):
+    direction = 'maximize'
+
     def __init__(
             self,
             compute_on_step: bool = True,
@@ -64,6 +68,8 @@ class AUROC(Metric):
 
 
 class RMSE(Metric):
+    direction = 'minimize'
+
     def __init__(
             self,
             compute_on_step: bool = True,
