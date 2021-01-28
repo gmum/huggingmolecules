@@ -1,28 +1,10 @@
 from typing import *
+from typing import TypeVar
 
 import torch
 from torch.utils.data import DataLoader
 
-
-class RecursiveToDeviceMixin:
-    def _apply_to(self, value, device):
-        if value is None:
-            return value
-        elif isinstance(value, RecursiveToDeviceMixin):
-            return value.to(device)
-        elif torch.is_tensor(value):
-            return value.to(device)
-        elif isinstance(value, (tuple, list)):
-            return [self._apply_to(item, device) for item in value]
-        elif isinstance(value, dict):
-            return {k: self._apply_to(v, device) for k, v in value.items()}
-        else:
-            return value
-
-    def to(self, device):
-        for key, value in self.__dict__.items():
-            self.__dict__[key] = self._apply_to(value, device)
-        return self
+from src.huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
 
 
 class BatchEncodingProtocol(Protocol):
@@ -36,9 +18,13 @@ class BatchEncodingProtocol(Protocol):
 
 T_MoleculeEncoding = TypeVar('T_MoleculeEncoding')
 T_BatchEncoding = TypeVar('T_BatchEncoding', bound=BatchEncodingProtocol)
+T_Config = TypeVar("T_Config", bound=PretrainedConfigMixin)
 
 
-class PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding]):
+class PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding, T_Config]):
+    def __init__(self, config: T_Config):
+        self.config = config
+
     def __call__(self, smiles_list: List[str], y_list: Optional[List[float]] = None) -> T_BatchEncoding:
         encodings = self.encode_smiles_list(smiles_list, y_list)
         batch = self._collate_encodings(encodings)
@@ -67,11 +53,33 @@ class PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding]):
         raise NotImplementedError
 
     @classmethod
-    def get_config_cls(cls):
+    def get_config_cls(cls) -> Type[T_Config]:
         raise NotImplementedError
 
     @classmethod
-    def from_pretrained(cls, pretrained_name: str):
+    def from_pretrained(cls, pretrained_name: str) \
+            -> "PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding, T_Config])":
         config_cls = cls.get_config_cls()
         config = config_cls.from_pretrained(pretrained_name)
         return cls(config)
+
+
+class RecursiveToDeviceMixin:
+    def _apply_to(self, value, device):
+        if value is None:
+            return value
+        elif isinstance(value, RecursiveToDeviceMixin):
+            return value.to(device)
+        elif torch.is_tensor(value):
+            return value.to(device)
+        elif isinstance(value, (tuple, list)):
+            return [self._apply_to(item, device) for item in value]
+        elif isinstance(value, dict):
+            return {k: self._apply_to(v, device) for k, v in value.items()}
+        else:
+            return value
+
+    def to(self, device):
+        for key, value in self.__dict__.items():
+            self.__dict__[key] = self._apply_to(value, device)
+        return self

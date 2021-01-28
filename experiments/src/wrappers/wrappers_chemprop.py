@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Type
 
 import numpy as np
 import torch
@@ -14,6 +14,11 @@ from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 @dataclass
+class ChempropConfig(PretrainedConfigMixin):
+    d_model: int = 1  # for better NoamLRScheduler control
+
+
+@dataclass
 class ChempropBatchEncoding(RecursiveToDeviceMixin):
     batch_mol_graph: BatchMolGraph
     batch_features: Optional[List[torch.Tensor]]
@@ -24,8 +29,9 @@ class ChempropBatchEncoding(RecursiveToDeviceMixin):
         return self.batch_size
 
 
-class ChempropFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChempropBatchEncoding]):
-    def __init__(self, features_generator: Optional[List[str]] = None):
+class ChempropFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChempropBatchEncoding, ChempropConfig]):
+    def __init__(self, config: ChempropConfig, features_generator: Optional[List[str]] = None):
+        super().__init__(config)
         self.features_generator = features_generator
 
     def _collate_encodings(self, encodings: List[Tuple[MolGraph, Optional[np.array], float]]) -> ChempropBatchEncoding:
@@ -45,15 +51,11 @@ class ChempropFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChempropB
 
     @classmethod
     def from_pretrained(cls, pretrained_name: str):
+        config = ChempropConfig()
         if pretrained_name == 'vanilla':
-            return cls()
+            return cls(config)
         else:
-            return cls(pretrained_name.split("+"))
-
-
-@dataclass
-class ChempropConfig(PretrainedConfigMixin):
-    d_model: int = 1  # for better NoamLRScheduler control
+            return cls(config, pretrained_name.split("+"))
 
 
 class ChempropModelWrapper(PretrainedModelBase):

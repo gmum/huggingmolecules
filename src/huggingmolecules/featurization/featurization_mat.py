@@ -1,14 +1,13 @@
-import logging
 from dataclasses import dataclass
 from typing import *
 
 import torch
-from rdkit import Chem
-from rdkit.Chem import AllChem
+from sklearn.metrics import pairwise_distances
 
 from src.huggingmolecules import MatConfig
 from .featurization_api import PretrainedFeaturizerMixin, RecursiveToDeviceMixin
-from .featurization_mat_utils import featurize_mol, pad_array
+from .featurization_mat_utils import add_dummy_node, build_position_matrix, build_atom_features_matrix, \
+    get_mol_from_smiles, build_adjacency_matrix, pad_sequence
 
 
 @dataclass
@@ -24,7 +23,6 @@ class MatBatchEncoding(RecursiveToDeviceMixin):
     node_features: torch.FloatTensor
     adjacency_matrix: torch.FloatTensor
     distance_matrix: torch.FloatTensor
-    batch_mask: torch.BoolTensor
     y: Optional[torch.FloatTensor]
     batch_size: int
 
@@ -32,51 +30,37 @@ class MatBatchEncoding(RecursiveToDeviceMixin):
         return self.batch_size
 
 
-class MatFeaturizer(PretrainedFeaturizerMixin[MatMoleculeEncoding, MatBatchEncoding]):
+class MatFeaturizer(PretrainedFeaturizerMixin[MatMoleculeEncoding, MatBatchEncoding, MatConfig]):
     @classmethod
     def get_config_cls(cls):
         return MatConfig
 
-    def __init__(self, config: MatConfig):
-        self._add_dummy_node = config.add_dummy_node
-        self._one_hot_formal_charge = config.one_hot_formal_charge
-        self._one_hot_formal_charge_range = config.one_hot_formal_charge_range
-
     def _encode_smiles(self, smiles: str, y: Optional[float]) -> MatMoleculeEncoding:
-        try:
-            mol = Chem.MolFromSmiles(smiles)
-            try:
-                mol = Chem.AddHs(mol)
-                AllChem.EmbedMolecule(mol, maxAttempts=10)
-                AllChem.UFFOptimizeMolecule(mol)
-                mol = Chem.RemoveHs(mol)
-            except:
-                AllChem.Compute2DCoords(mol)
+        mol = get_mol_from_smiles(smiles)
 
-            afm, adj, dist = featurize_mol(mol, self._add_dummy_node, self._one_hot_formal_charge,
-                                           self._one_hot_formal_charge_range)
-            afm = torch.tensor(afm).float()
-            adj = torch.tensor(adj).float()
-            dist = torch.tensor(dist).float()
-            y = None if y is None else torch.tensor(y).float()
-            return MatMoleculeEncoding(node_features=afm, adjacency_matrix=adj, distance_matrix=dist, y=y)
-        except ValueError as e:
-            logging.warning('the SMILES ({}) can not be converted to a graph.\nREASON: {}'.format(smiles, e))
+        node_features = build_atom_features_matrix(mol)
+        adj_matrix = build_adjacency_matrix(mol)
+        pos_matrix = build_position_matrix(mol)
+        dist_matrix = pairwise_distances(pos_matrix)
+
+        node_features, adj_matrix, dist_matrix, _ = add_dummy_node(node_features=node_features,
+                                                                   adj_matrix=adj_matrix,
+                                                                   dist_matrix=dist_matrix)
+
+        return MatMoleculeEncoding(node_features=node_features,
+                                   adjacency_matrix=adj_matrix,
+                                   distance_matrix=dist_matrix,
+                                   y=y)
 
     def _collate_encodings(self, encodings: List[MatMoleculeEncoding]) -> MatBatchEncoding:
-        adjacency_list, distance_list, features_list, batch_mask_list, y_list = [], [], [], [], []
-        max_size = max(e.adjacency_matrix.shape[0] for e in encodings)
-        for e in encodings:
-            adjacency_list.append(pad_array(e.adjacency_matrix, size=(max_size, max_size)))
-            distance_list.append(pad_array(e.distance_matrix, size=(max_size, max_size)))
-            features_list.append(pad_array(e.node_features, size=(max_size, e.node_features.shape[1])))
-            batch_mask = torch.sum(torch.abs(e.node_features), dim=-1) != 0
-            batch_mask_list.append(pad_array(batch_mask, size=(max_size,), dtype=torch.bool))
-            y_list.append(e.y)
+        node_features = pad_sequence([torch.tensor(e.node_features).float() for e in encodings])
+        adj_matrix = pad_sequence([torch.tensor(e.adjacency_matrix).float() for e in encodings])
+        dist_matrix = pad_sequence([torch.tensor(e.distance_matrix).float() for e in encodings])
+        y = None if any(e.y is None for e in encodings) \
+            else torch.stack([torch.tensor(e.y).float() for e in encodings]).unsqueeze(1)
 
-        return MatBatchEncoding(node_features=torch.stack(features_list).float(),
-                                adjacency_matrix=torch.stack(adjacency_list).float(),
-                                distance_matrix=torch.stack(distance_list).float(),
-                                batch_mask=torch.stack(batch_mask_list).bool(),
-                                y=None if None in y_list else torch.stack(y_list).float().view(-1, 1),
-                                batch_size=len(features_list))
+        return MatBatchEncoding(node_features=node_features,
+                                adjacency_matrix=adj_matrix,
+                                distance_matrix=dist_matrix,
+                                y=y,
+                                batch_size=len(encodings))

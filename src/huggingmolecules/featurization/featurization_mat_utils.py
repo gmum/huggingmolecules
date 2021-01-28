@@ -3,110 +3,113 @@ This implementation is copied from
 https://github.com/ardigen/MAT/tree/master/src/featurization/data_utils.py
 """
 
-from typing import Optional, Tuple, List, Iterable
+from typing import Tuple, List, TypeVar
 
 import numpy as np
 import torch
 from rdkit import Chem
-from sklearn.metrics import pairwise_distances
+from rdkit.Chem import AllChem
+from rdkit.Chem.rdchem import Mol
+from rdkit.Chem.rdmolfiles import MolFromSmiles
+
+from src.huggingmolecules.featurization.featurization_common_utils import one_hot_vector
+
+T_Tensor = TypeVar('T_Tensor', bound=torch.Tensor)
 
 
-def featurize_mol(mol: Chem.rdchem.Mol, add_dummy_node: bool,
-                  one_hot_formal_charge: bool,
-                  one_hot_forma_charge_range: Optional[list] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Featurize molecule.
+def pad_array(array: T_Tensor, *, size: Tuple[int, ...], dtype: torch.dtype = None) -> T_Tensor:
+    if dtype is None:
+        dtype = array.dtype
+    result = torch.zeros(size=size, dtype=dtype)
+    slices = tuple(slice(s) for s in array.shape)
+    result[slices] = array
+    return result
 
-    Args:
-        mol (rdchem.Mol): An RDKit Mol object.
-        add_dummy_node (bool): If True, a dummy node will be added to the molecular graph.
-        one_hot_formal_charge (bool): If True, formal charges on atoms are one-hot encoded.
 
-    Returns:
-        A tuple of molecular graph descriptors (node features, adjacency matrix, distance matrix).
-    """
-    node_features = np.array([get_atom_features(atom, one_hot_formal_charge, one_hot_forma_charge_range)
-                              for atom in mol.GetAtoms()])
+def pad_sequence(sequence: List[T_Tensor], dtype: torch.dtype = None) -> T_Tensor:
+    shapes = torch.stack([torch.tensor(t.shape) for t in sequence])
+    max_shape = tuple(torch.max(shapes, dim=0).values)
+    return torch.stack([pad_array(t, size=max_shape, dtype=dtype) for t in sequence])
 
-    adj_matrix = np.eye(mol.GetNumAtoms())
-    for bond in mol.GetBonds():
-        begin_atom = bond.GetBeginAtom().GetIdx()
-        end_atom = bond.GetEndAtom().GetIdx()
-        adj_matrix[begin_atom, end_atom] = adj_matrix[end_atom, begin_atom] = 1
 
-    conf = mol.GetConformer()
-    pos_matrix = np.array([[conf.GetAtomPosition(k).x, conf.GetAtomPosition(k).y, conf.GetAtomPosition(k).z]
-                           for k in range(mol.GetNumAtoms())])
-    dist_matrix = pairwise_distances(pos_matrix)
-
-    if add_dummy_node:
+def add_dummy_node(*, node_features=None, adj_matrix=None, dist_matrix=None, bond_features=None):
+    if node_features is not None:
         m = np.zeros((node_features.shape[0] + 1, node_features.shape[1] + 1))
         m[1:, 1:] = node_features
-        m[0, 0] = 1.
+        m[0, 0] = 1.0
         node_features = m
-
+    if adj_matrix is not None:
         m = np.zeros((adj_matrix.shape[0] + 1, adj_matrix.shape[1] + 1))
         m[1:, 1:] = adj_matrix
         adj_matrix = m
-
+    if dist_matrix is not None:
         m = np.full((dist_matrix.shape[0] + 1, dist_matrix.shape[1] + 1), 1e6)
         m[1:, 1:] = dist_matrix
+        m[0, 0] = 0
         dist_matrix = m
+    if bond_features is not None:
+        m = np.zeros((bond_features.shape[0], bond_features.shape[1] + 1, bond_features.shape[2] + 1))
+        m[:, 1:, 1:] = bond_features
+        bond_features = m
 
-    return node_features, adj_matrix, dist_matrix
+    return node_features, adj_matrix, dist_matrix, bond_features
 
 
-def get_atom_features(atom: Chem.rdchem.Atom,
-                      one_hot_formal_charge: bool = True,
-                      one_hot_formal_charge_range=None) -> np.ndarray:
-    """Calculate atom features.
+def build_position_matrix(molecule: Mol) -> np.array:
+    conf = molecule.GetConformer()
+    return np.array(
+        [
+            [
+                conf.GetAtomPosition(k).x,
+                conf.GetAtomPosition(k).y,
+                conf.GetAtomPosition(k).z,
+            ]
+            for k in range(molecule.GetNumAtoms())
+        ]
+    )
 
-    Args:
-        atom (rdchem.Atom): An RDKit Atom object.
-        one_hot_formal_charge (bool): If True, formal charges on atoms are one-hot encoded.
 
-    Returns:
-        A 1-dimensional array (ndarray) of atom features.
-    """
+def build_atom_features_matrix(mol: Mol) -> np.ndarray:
+    return np.array([get_atom_features(atom) for atom in mol.GetAtoms()])
+
+
+def get_atom_features(atom) -> np.ndarray:
     attributes = []
 
     attributes += one_hot_vector(
-        atom.GetAtomicNum(),
-        [5, 6, 7, 8, 9, 15, 16, 17, 35, 53, 999]
+        atom.GetAtomicNum(), [5, 6, 7, 8, 9, 15, 16, 17, 35, 53, 999]
     )
-
+    attributes += one_hot_vector(len(atom.GetNeighbors()), [0, 1, 2, 3, 4, 5])
+    attributes += one_hot_vector(atom.GetTotalNumHs(), [0, 1, 2, 3, 4])
     attributes += one_hot_vector(
-        len(atom.GetNeighbors()),
-        [0, 1, 2, 3, 4, 5]
+        atom.GetFormalCharge(), [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
     )
-
-    attributes += one_hot_vector(
-        atom.GetTotalNumHs(),
-        [0, 1, 2, 3, 4]
-    )
-
-    if one_hot_formal_charge:
-        attributes += one_hot_vector(
-            atom.GetFormalCharge(),
-            one_hot_formal_charge_range
-        )
-    else:
-        attributes.append(atom.GetFormalCharge())
-
     attributes.append(atom.IsInRing())
     attributes.append(atom.GetIsAromatic())
 
     return np.array(attributes, dtype=np.float32)
 
 
-def one_hot_vector(val: int, lst: List[int]) -> Iterable:
-    """Converts a value to a one-hot vector based on options in lst"""
-    if val not in lst:
-        val = lst[-1]
-    return map(lambda x: x == val, lst)
+def get_mol_from_smiles(smiles: str) -> Mol:
+    mol = MolFromSmiles(smiles)
+    try:
+        mol = Chem.AddHs(mol)
+        AllChem.EmbedMolecule(mol, maxAttempts=5000)
+        AllChem.UFFOptimizeMolecule(mol)
+        mol = Chem.RemoveHs(mol)
+    except RuntimeError:
+        mol = MolFromSmiles(smiles)
+        AllChem.Compute2DCoords(mol)
+
+    return mol
 
 
-def pad_array(array: torch.Tensor, *, size: Tuple[int, ...], dtype: torch.dtype = torch.float) -> torch.Tensor:
-    result = torch.zeros(size=size, dtype=dtype)
-    slices = tuple(slice(s) for s in array.shape)
-    result[slices] = array
-    return result
+def build_adjacency_matrix(molecule: Mol) -> np.array:
+    adj_matrix = np.eye(molecule.GetNumAtoms())
+
+    for bond in molecule.GetBonds():
+        begin_atom = bond.GetBeginAtom().GetIdx()
+        end_atom = bond.GetEndAtom().GetIdx()
+        adj_matrix[begin_atom, end_atom] = adj_matrix[end_atom, begin_atom] = 1
+
+    return adj_matrix

@@ -48,9 +48,10 @@ class MatModel(PretrainedModelBase[MatBatchEncoding, MatConfig]):
         return MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING.get(pretrained_name, None)
 
     def forward(self, batch: MatBatchEncoding):
+        batch_mask = torch.sum(torch.abs(batch.node_features), dim=-1) != 0
         embedded = self.src_embed(batch.node_features)
-        encoded = self.encoder(embedded, batch.batch_mask, batch.adjacency_matrix, batch.distance_matrix, None)
-        output = self.generator(encoded, batch.batch_mask)
+        encoded = self.encoder(embedded, batch_mask, batch.adjacency_matrix, batch.distance_matrix, None)
+        output = self.generator(encoded, batch_mask)
         return output
 
     def init_weights(self, init_type: str):

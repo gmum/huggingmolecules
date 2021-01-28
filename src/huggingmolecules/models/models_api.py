@@ -1,12 +1,9 @@
-from typing import TypeVar, Generic
+from typing import Generic
 
 import torch
 import torch.nn as nn
 
-from ..configuration.configuration_api import PretrainedConfigMixin
-from ..featurization.featurization_api import T_BatchEncoding
-
-T_Config = TypeVar("T_Config", bound=PretrainedConfigMixin)
+from ..featurization.featurization_api import T_BatchEncoding, T_Config
 
 
 class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):

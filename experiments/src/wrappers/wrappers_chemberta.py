@@ -11,6 +11,11 @@ from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 @dataclass
+class ChembertaConfig(PretrainedConfigMixin):
+    d_model: int = 1024
+
+
+@dataclass
 class ChembertaBatchEncoding(RecursiveToDeviceMixin):
     data: dict
     y: torch.FloatTensor
@@ -20,8 +25,9 @@ class ChembertaBatchEncoding(RecursiveToDeviceMixin):
         return self.batch_size
 
 
-class ChembertaFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChembertaBatchEncoding]):
-    def __init__(self, tokenizer):
+class ChembertaFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChembertaBatchEncoding, ChembertaConfig]):
+    def __init__(self, config: ChembertaConfig, tokenizer):
+        super().__init__(config)
         self.tokenizer = tokenizer
 
     def _collate_encodings(self, encodings: List[Tuple[dict, float]]) -> ChembertaBatchEncoding:
@@ -37,12 +43,8 @@ class ChembertaFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], Chembert
     @classmethod
     def from_pretrained(cls, pretrained_name: str):
         tokenizer = AutoTokenizer.from_pretrained(pretrained_name)
-        return cls(tokenizer)
-
-
-@dataclass
-class ChembertaConfig(PretrainedConfigMixin):
-    d_model: int = 1024
+        config = ChembertaConfig()
+        return cls(config, tokenizer)
 
 
 class ChembertaModelWrapper(PretrainedModelBase):

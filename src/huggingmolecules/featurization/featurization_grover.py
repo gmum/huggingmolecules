@@ -5,9 +5,9 @@ import numpy as np
 import torch
 from chemprop.data import MoleculeDatapoint
 
-from .featurization_grover_utils import BatchMolGraph, MolGraph
 from src.huggingmolecules import GroverConfig
 from .featurization_api import PretrainedFeaturizerMixin, RecursiveToDeviceMixin
+from .featurization_grover_utils import BatchMolGraph, MolGraph
 
 
 @dataclass
@@ -28,12 +28,13 @@ class GroverBatchEncoding(RecursiveToDeviceMixin):
         return self.batch_size
 
 
-class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverBatchEncoding]):
+class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverBatchEncoding, GroverConfig]):
     @classmethod
     def get_config_cls(cls):
         return GroverConfig
 
     def __init__(self, config: GroverConfig, features_generator: Optional[List[str]] = None):
+        super().__init__(config)
         self.features_generator = features_generator
 
     def _collate_encodings(self, encodings: List[GroverMoleculeEncoding]) -> GroverBatchEncoding:

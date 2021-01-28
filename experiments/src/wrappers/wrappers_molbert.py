@@ -14,6 +14,10 @@ from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 @dataclass
+class MolbertConfig(PretrainedConfigMixin):
+    d_model: int = 1024
+
+@dataclass
 class MolbertBatchEncoding(RecursiveToDeviceMixin):
     data: dict
     y: torch.FloatTensor
@@ -24,8 +28,9 @@ class MolbertBatchEncoding(RecursiveToDeviceMixin):
 
 
 @gin.configurable()
-class MolbertFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], MolbertBatchEncoding]):
-    def __init__(self, max_size=512):
+class MolbertFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], MolbertBatchEncoding, MolbertConfig]):
+    def __init__(self, config: MolbertConfig, max_size=512):
+        super().__init__(config)
         self.tokenizer = SmilesIndexFeaturizer.bert_smiles_index_featurizer(max_size)
 
     def _collate_encodings(self, encodings: List[Tuple[np.ndarray, float]]) -> MolbertBatchEncoding:
@@ -50,9 +55,6 @@ class MolbertFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], MolbertBat
         return cls()
 
 
-@dataclass
-class MolbertConfig(PretrainedConfigMixin):
-    d_model: int = 1024
 
 
 class MolbertModelWrapper(PretrainedModelBase):
