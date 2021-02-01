@@ -99,7 +99,7 @@ class GroverModel(PretrainedModelBase[GroverBatchEncoding, GroverConfig]):
         return nn.Sequential(*ffn)
 
     def forward(self, batch: GroverBatchEncoding):
-        _, _, _, _, _, a_scope, _, _ = batch.batch_mol_graph.get_components()
+        _, _, _, _, _, a_scope, _, _ = batch.get_components()
 
         output = self.grover(batch)
 
@@ -979,7 +979,7 @@ class GTransEncoder(nn.Module):
             return atom_in_bond_out, bond_in_bond_out
 
     def forward(self, batch: GroverBatchEncoding, features_batch=None):
-        f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a = batch.batch_mol_graph.get_components()
+        f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a = batch.get_components()
 
         node_batch = f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a
         edge_batch = f_atoms, f_bonds, a2b, b2a, b2revb, a_scope, b_scope, a2a

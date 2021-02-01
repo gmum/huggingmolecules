@@ -6,6 +6,7 @@ from sklearn.metrics import pairwise_distances
 
 from src.huggingmolecules import MatConfig
 from .featurization_api import PretrainedFeaturizerMixin, RecursiveToDeviceMixin
+from .featurization_common_utils import stack_y
 from .featurization_mat_utils import add_dummy_node, build_position_matrix, build_atom_features_matrix, \
     get_mol_from_smiles, build_adjacency_matrix, pad_sequence
 
@@ -56,11 +57,9 @@ class MatFeaturizer(PretrainedFeaturizerMixin[MatMoleculeEncoding, MatBatchEncod
         node_features = pad_sequence([torch.tensor(e.node_features).float() for e in encodings])
         adj_matrix = pad_sequence([torch.tensor(e.adjacency_matrix).float() for e in encodings])
         dist_matrix = pad_sequence([torch.tensor(e.distance_matrix).float() for e in encodings])
-        y = None if any(e.y is None for e in encodings) \
-            else torch.stack([torch.tensor(e.y).float() for e in encodings]).unsqueeze(1)
 
         return MatBatchEncoding(node_features=node_features,
                                 adjacency_matrix=adj_matrix,
                                 distance_matrix=dist_matrix,
-                                y=y,
+                                y=stack_y(encodings),
                                 batch_size=len(encodings))

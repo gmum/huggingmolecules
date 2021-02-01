@@ -74,20 +74,16 @@ def build_atom_features_matrix(mol: Mol) -> np.ndarray:
 
 
 def get_atom_features(atom) -> np.ndarray:
-    attributes = []
+    features = []
 
-    attributes += one_hot_vector(
-        atom.GetAtomicNum(), [5, 6, 7, 8, 9, 15, 16, 17, 35, 53, 999]
-    )
-    attributes += one_hot_vector(len(atom.GetNeighbors()), [0, 1, 2, 3, 4, 5])
-    attributes += one_hot_vector(atom.GetTotalNumHs(), [0, 1, 2, 3, 4])
-    attributes += one_hot_vector(
-        atom.GetFormalCharge(), [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
-    )
-    attributes.append(atom.IsInRing())
-    attributes.append(atom.GetIsAromatic())
+    features += one_hot_vector(atom.GetAtomicNum(), [5, 6, 7, 8, 9, 15, 16, 17, 35, 53, 999])
+    features += one_hot_vector(len(atom.GetNeighbors()), [0, 1, 2, 3, 4, 5])
+    features += one_hot_vector(atom.GetTotalNumHs(), [0, 1, 2, 3, 4])
+    features += one_hot_vector(atom.GetFormalCharge(), [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5])
+    features.append(atom.IsInRing())
+    features.append(atom.GetIsAromatic())
 
-    return np.array(attributes, dtype=np.float32)
+    return np.array(features, dtype=np.float32)
 
 
 def get_mol_from_smiles(smiles: str) -> Mol:
