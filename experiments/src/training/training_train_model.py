@@ -20,7 +20,8 @@ def train_model(*,
                 evaluation: Optional[str] = None,
                 custom_callbacks: Optional[List[str]] = None,
                 batch_size: int,
-                num_workers: int = 0):
+                num_workers: int = 0,
+                cache_encodings: bool = True):
     if not model:
         gin_model = GinModel(task=get_task())
         model = gin_model.get_model()
@@ -56,7 +57,8 @@ def train_model(*,
 
     train_loader, val_loader, test_loader = get_data_loaders(featurizer,
                                                              batch_size=batch_size,
-                                                             num_workers=num_workers)
+                                                             num_workers=num_workers,
+                                                             cache=cache_encodings)
 
     trainer.fit(pl_module,
                 train_dataloader=train_loader,

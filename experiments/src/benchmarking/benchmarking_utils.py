@@ -108,14 +108,28 @@ def load_targets():
     return targets
 
 
-def load_targets_for_molbert():
+def load_targets_for_molbert(models_list):
     targets = {'valid': {}, 'test': {}}
     seed_list = get_params_dict()['data.split_seed']
-    featurizer = MolbertFeaturizer()
+    featurizer = MolbertFeaturizer(None)
     for seed in seed_list:
         data = get_data_split(split_seed=seed)
         targets['valid'][seed] = featurizer(data['valid']['X'], data['valid']['Y']).y.view(-1)
-        targets['test'][seed] = featurizer(data['test']['X'], data['test']['Y']).y.view(-1)
+
+        batch = featurizer(data['test']['X'], data['test']['Y'])
+        test_y = batch.y.view(-1)
+        invalid_y = batch.invalid_y
+        if invalid_y.shape[0] > 0:
+            print(f'Missing {invalid_y.shape[0]} molecules from test set')
+            major = torch.mean(test_y)
+            test_y = torch.cat([test_y, torch.tensor(invalid_y).float()])
+            for model in models_list:
+                if 'MolbertModelWrapper' in model.name:
+                    output = model.outputs['test'][seed]
+                    model.outputs['test'][seed] = torch.cat([output, major.expand_as(invalid_y)])
+
+        targets['test'][seed] = test_y
+
     return targets
 
 
@@ -131,7 +145,7 @@ def fetch_data(names_list: List[str], cache_dir: str) -> Tuple[List[EnsembleElem
     check_models_list(models_list, cache_dir)
 
     if any('MolbertModelWrapper' in item for item in names_list):
-        targets = load_targets_for_molbert()
+        targets = load_targets_for_molbert(models_list)
     else:
         targets = load_targets()
     return models_list, targets
@@ -187,11 +201,14 @@ class UnpicklerCPU(pickle.Unpickler):
 
 def get_output_from_artifact(*, project, id: str, artifact_name: str):
     tmp_path = '/tmp/huggingmolecules_experiments/'
-    experiment = project.get_experiments(id=id)[0]
-    experiment.download_artifact(artifact_name, tmp_path)
-    with open(os.path.join(tmp_path, artifact_name), 'rb') as fp:
-        output = UnpicklerCPU(fp).load()
-    os.system(f'rm -rf {tmp_path}')
+    try:
+        experiment = project.get_experiments(id=id)[0]
+        experiment.download_artifact(artifact_name, tmp_path)
+        with open(os.path.join(tmp_path, artifact_name), 'rb') as fp:
+            output = UnpicklerCPU(fp).load()
+        os.system(f'rm -rf {tmp_path}')
+    except Exception as e:
+        raise RuntimeError(f'Downloading artifacts failed on {id}. Exception: {e}')
     return output
 
 

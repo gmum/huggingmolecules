@@ -97,7 +97,7 @@ def get_mol_from_smiles(smiles: str) -> Mol:
         AllChem.EmbedMolecule(mol, maxAttempts=5000)
         AllChem.UFFOptimizeMolecule(mol)
         mol = Chem.RemoveHs(mol)
-    except RuntimeError:
+    except ValueError:
         mol = MolFromSmiles(smiles)
         AllChem.Compute2DCoords(mol)
 

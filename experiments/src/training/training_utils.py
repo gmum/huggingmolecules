@@ -121,13 +121,14 @@ def apply_neptune(model: PretrainedModelBase,
 @gin.configurable('data')
 def get_data_split(task_name: str,
                    dataset_name: str,
+                   assay_name: str = None,
                    split_method: str = "random",
                    split_frac: List[float] = (0.8, 0.1, 0.1),
                    split_seed: Union[int, str] = "benchmark",
                    normalize_labels: bool = False) -> dict:
     import tdc.single_pred
     task = getattr(tdc.single_pred, task_name)
-    data = task(name=dataset_name)
+    data = task(name=dataset_name, label_name=assay_name)
     split = data.get_split(method=split_method, seed=split_seed, frac=split_frac)
 
     train_y = split['train']['Y'].to_numpy()

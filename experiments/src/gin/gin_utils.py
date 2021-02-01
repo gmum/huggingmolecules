@@ -88,16 +88,12 @@ def parse_gin_str(gin_str):
     return gin_dict
 
 
-@gin.configurable('dummy')
-def dummy_function_just_for_dummy_gin_params(**kwargs):
-    pass
-
-
 @gin.configurable('name')
 def get_default_name(prefix: str = "",
                      model_name: Optional[str] = None,
                      task_name: Optional[str] = None,
                      dataset_name: Optional[str] = None,
+                     assay_name: Optional[str] = None,
                      full_name: Optional[str] = None):
     if full_name:
         return full_name
@@ -105,4 +101,14 @@ def get_default_name(prefix: str = "",
     model_name = model_name if model_name else gin.query_parameter('model.cls_name')
     task_name = task_name if task_name else gin.query_parameter('data.task_name')
     dataset_name = dataset_name if dataset_name else gin.query_parameter('data.dataset_name')
+    try:
+        assay_name = assay_name if assay_name else gin.query_parameter('data.assay_name')
+        dataset_name = f'{dataset_name}_{assay_name}'
+    except ValueError:
+        pass
     return f'{prefix}{model_name}_{task_name}_{dataset_name}'
+
+
+@gin.configurable('dummy')
+def dummy_function_just_for_dummy_gin_params(**kwargs):
+    pass
