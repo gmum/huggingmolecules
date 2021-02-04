@@ -19,8 +19,7 @@ class MatConfig(PretrainedConfigMixin):
     N_dense: int = 1
     lambda_attention: float = 0.33
     lambda_distance: float = 0.33
-    leaky_relu_slope: float = 0.1
-    dense_output_nonlinearity: str = 'relu'
+    lin_factor: float = 1
     distance_matrix_kernel: str = 'exp'
     dropout: float = 0.0
     aggregation_type: str = 'mean'

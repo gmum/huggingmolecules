@@ -54,6 +54,8 @@ class GroverModel(PretrainedModelBase[GroverBatchEncoding, GroverConfig]):
         self.mol_atom_from_atom_ffn = self.create_ffn(config)
         self.mol_atom_from_bond_ffn = self.create_ffn(config)
 
+        self.init_weights(config.init_type)
+
     def create_ffn(self, config: GroverConfig):
         """
         Creates the feed-forward network for the model.

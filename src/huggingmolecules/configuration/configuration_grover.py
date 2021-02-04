@@ -30,6 +30,7 @@ class GroverConfig(PretrainedConfigMixin):
     depth: int = 6
     undirected: bool = False
     dense: bool = False
+    init_type: str = 'normal'
     backbone: str = 'dualtrans'
 
     @classmethod
