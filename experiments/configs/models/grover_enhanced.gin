@@ -1,0 +1,23 @@
+# ==============================================================================
+model.cls_name = 'GroverModel'
+model.pretrained_name = 'grover_base'
+
+# ==============================================================================
+loss_fn.name = 'GroverLoss'
+loss_fn.dist_coff = 0.1
+
+# ==============================================================================
+optimizer.name = 'Adam'
+optimizer.lr = 0.0001
+optimizer.weight_decay = 2e-07
+
+# ==============================================================================
+train.custom_callbacks = ['EnhancedNoamLRScheduler']
+EnhancedNoamLRScheduler.warmup_factor = 0.1
+EnhancedNoamLRScheduler.init_lr_ratio = 10
+EnhancedNoamLRScheduler.final_lr_ratio = 2
+
+# ==============================================================================
+train.batch_size = 32
+train.num_epochs = 150
+train.cache_encodings = False

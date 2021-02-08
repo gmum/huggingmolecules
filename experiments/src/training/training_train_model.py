@@ -4,7 +4,7 @@ from pytorch_lightning import Trainer
 
 from .training_lightning_module import TrainingModule
 from .training_utils import *
-from .training_utils import get_custom_callbacks, apply_neptune, evaluate_and_save_results
+from .training_utils import get_custom_callbacks, _apply_neptune, evaluate_and_save_results
 from ..gin import get_default_name
 
 
@@ -39,7 +39,7 @@ def train_model(*,
     loggers = get_default_loggers(save_path)
 
     if use_neptune:
-        apply_neptune(model, callbacks, loggers, neptune_experiment_name=study_name, neptune_description=save_path)
+        _apply_neptune(model, callbacks, loggers, neptune_experiment_name=study_name, neptune_description=save_path)
 
     trainer = Trainer(default_root_dir=save_path,
                       max_epochs=num_epochs,

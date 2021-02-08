@@ -6,11 +6,12 @@ from typing import Tuple, List, Union, Literal
 
 import gin
 import numpy as np
+import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from pytorch_lightning import loggers as pl_loggers, Callback
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 
 import experiments.src.training.training_callbacks as custom_callbacks_module
 import experiments.src.training.training_loss_fn as custom_loss_fn_module
@@ -91,11 +92,11 @@ def get_all_hyperparams(model: PretrainedModelBase):
 
 
 @gin.configurable('neptune', blacklist=['model', 'experiment_name'])
-def get_neptune(model: PretrainedModelBase, *,
-                user_name: str,
-                project_name: str,
-                experiment_name: str,
-                description: str):
+def _get_neptune(model: PretrainedModelBase, *,
+                 user_name: str,
+                 project_name: str,
+                 experiment_name: str,
+                 description: str):
     from pytorch_lightning.loggers import NeptuneLogger
     neptune = NeptuneLogger(api_key=os.environ["NEPTUNE_API_TOKEN"],
                             project_name=f'{user_name}/{project_name}',
@@ -106,16 +107,90 @@ def get_neptune(model: PretrainedModelBase, *,
     return neptune
 
 
-def apply_neptune(model: PretrainedModelBase,
-                  callbacks: List[Callback],
-                  loggers: List[pl_loggers.LightningLoggerBase], *,
-                  neptune_experiment_name: str,
-                  neptune_description: str):
-    neptune = get_neptune(model, experiment_name=neptune_experiment_name, description=neptune_description)
+def _apply_neptune(model: PretrainedModelBase,
+                   callbacks: List[Callback],
+                   loggers: List[pl_loggers.LightningLoggerBase], *,
+                   neptune_experiment_name: str,
+                   neptune_description: str):
+    neptune = _get_neptune(model, experiment_name=neptune_experiment_name, description=neptune_description)
     loggers += [neptune]
     for clb in callbacks:
         if isinstance(clb, NeptuneCompatibleCallback):
             clb.neptune = neptune
+
+
+def _get_data_split_tdc(task_name: str,
+                        dataset_name: str,
+                        assay_name: str,
+                        split_method: str,
+                        split_frac: Tuple[float, float, float],
+                        split_seed: Union[int, str]):
+    import tdc.single_pred
+    task = getattr(tdc.single_pred, task_name)
+    data = task(name=dataset_name, label_name=assay_name)
+    split = data.get_split(method=split_method, seed=split_seed, frac=split_frac)
+
+    return {
+        'train': {'IDs': split['train']['Drug_ID'].to_list(), 'X': split['train']['Drug'].to_list(),
+                  'Y': split['train']['Y'].to_numpy()},
+        'valid': {'IDs': split['valid']['Drug_ID'].to_list(), 'X': split['valid']['Drug'].to_list(),
+                  'Y': split['valid']['Y'].to_numpy()},
+        'test': {'IDs': split['test']['Drug_ID'].to_list(), 'X': split['test']['Drug'].to_list(),
+                 'Y': split['test']['Y'].to_numpy()},
+    }
+
+
+def _split_data_random(data, split_frac: Tuple[float, float, float], seed: int = None):
+    train_len = int(split_frac[0] * len(data))
+    valid_len = int(split_frac[1] * len(data))
+    test_len = len(data) - train_len - valid_len
+    generator = torch.Generator().manual_seed(seed) if seed else None
+    train_data, valid_data, test_data = random_split(data, [train_len, valid_len, test_len], generator=generator)
+    return data.iloc[train_data.indices], data.iloc[valid_data.indices], data.iloc[test_data.indices]
+
+
+def _split_data_from_file(data, split_path: str):
+    split = np.load(split_path, allow_pickle=True)
+    train_split, valid_split, test_split = split.tolist()
+    return data.iloc[train_split], data.iloc[valid_split], data.iloc[test_split]
+
+
+def _get_data_split_csv(dataset_name: str,
+                        assay_name: str,
+                        dataset_path: str,
+                        split_method: str,
+                        split_frac: Tuple[float, float, float],
+                        split_seed: Union[int, str]):
+    split_seed = 1234 if split_seed == "benchmark" else split_seed
+    csv_path = os.path.join(dataset_path, f'{dataset_name.lower()}.csv')
+    data = pd.read_csv(csv_path)
+    data.insert(0, 'IDs', range(0, len(data)))
+    if split_method == 'scaffold':
+        split_path = os.path.join(dataset_path, f'split-scaffold-{split_seed}.npy')
+        train_data, valid_data, test_data = _split_data_from_file(data, split_path)
+    else:
+        train_data, valid_data, test_data = _split_data_random(data, split_frac, split_seed)
+
+    return {
+        'train': {'IDs': train_data['IDs'].to_list(),
+                  'X': train_data['smiles'].to_list(),
+                  'Y': train_data['y'].to_numpy()},
+        'valid': {'IDs': valid_data['IDs'].to_list(),
+                  'X': valid_data['smiles'].to_list(),
+                  'Y': valid_data['y'].to_numpy()},
+        'test': {'IDs': test_data['IDs'].to_list(),
+                 'X': test_data['smiles'].to_list(),
+                 'Y': test_data['y'].to_numpy()}
+    }
+
+
+def normalize_labels_inplace(split: dict):
+    from sklearn import preprocessing
+    scaler = preprocessing.StandardScaler(). \
+        fit(np.concatenate([split['train']['Y'], split['valid']['Y']]).reshape(-1, 1))
+    split['train']['Y'] = scaler.transform(split['train']['Y'].reshape(-1, 1)).reshape(-1)
+    split['valid']['Y'] = scaler.transform(split['valid']['Y'].reshape(-1, 1)).reshape(-1)
+    split['test']['Y'] = scaler.transform(split['test']['Y'].reshape(-1, 1)).reshape(-1)
 
 
 @gin.configurable('data')
@@ -123,30 +198,21 @@ def get_data_split(task_name: str,
                    dataset_name: str,
                    assay_name: str = None,
                    split_method: str = "random",
-                   split_frac: List[float] = (0.8, 0.1, 0.1),
-                   split_seed: Union[int, str] = "benchmark",
-                   normalize_labels: bool = False) -> dict:
-    import tdc.single_pred
-    task = getattr(tdc.single_pred, task_name)
-    data = task(name=dataset_name, label_name=assay_name)
-    split = data.get_split(method=split_method, seed=split_seed, frac=split_frac)
-
-    train_y = split['train']['Y'].to_numpy()
-    valid_y = split['valid']['Y'].to_numpy()
-    test_y = split['test']['Y'].to_numpy()
+                   split_frac: Tuple[float, float, float] = (0.8, 0.1, 0.1),
+                   split_seed: Union[int, str] = None,
+                   normalize_labels: bool = False,
+                   dataset_path: str = None) -> dict:
+    if dataset_path is None:
+        split = _get_data_split_tdc(task_name, dataset_name, assay_name,
+                                    split_method, split_frac, split_seed)
+    else:
+        split = _get_data_split_csv(dataset_name, assay_name, dataset_path,
+                                    split_method, split_frac, split_seed)
 
     if normalize_labels:
-        from sklearn import preprocessing
-        scaler = preprocessing.StandardScaler().fit(np.concatenate([train_y, valid_y]).reshape(-1, 1))
-        train_y = scaler.transform(train_y.reshape(-1, 1)).reshape(-1)
-        valid_y = scaler.transform(valid_y.reshape(-1, 1)).reshape(-1)
-        test_y = scaler.transform(test_y.reshape(-1, 1)).reshape(-1)
+        normalize_labels_inplace(split)
 
-    return {
-        'train': {'IDs': split['train']['Drug_ID'], 'X': split['train']['Drug'], 'Y': train_y},
-        'valid': {'IDs': split['valid']['Drug_ID'], 'X': split['valid']['Drug'], 'Y': valid_y},
-        'test': {'IDs': split['test']['Drug_ID'], 'X': split['test']['Drug'], 'Y': test_y},
-    }
+    return split
 
 
 def _get_cache_filepath():
@@ -154,23 +220,23 @@ def _get_cache_filepath():
     return os.path.join('cached', filename)
 
 
-def is_cached():
+def _is_cached():
     return os.path.exists(_get_cache_filepath())
 
 
-def load_from_cache(split):
+def _load_from_cache(split):
     filepath = _get_cache_filepath()
     with open(filepath, 'rb') as fp:
         data_dict = pickle.load(fp)
 
     for target in split.keys():
         for i, mol_id in enumerate(split[target]['IDs']):
-            split[target]['X'].iloc[i] = data_dict[mol_id]
+            split[target]['X'][i] = data_dict[mol_id]
 
     return split
 
 
-def dump_to_cache(split):
+def _dump_to_cache(split):
     data = {}
     for target in split.keys():
         for mol_id, x in zip(split[target]['IDs'], split[target]['X']):
@@ -188,15 +254,15 @@ def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
                      cache: bool = True) -> Tuple[DataLoader, DataLoader, DataLoader]:
     split = get_data_split()
 
-    if cache and is_cached():
-        split = load_from_cache(split)
+    if cache and _is_cached():
+        split = _load_from_cache(split)
     else:
         split['train']['X'] = featurizer.encode_smiles_list(split['train']['X'], split['train']['Y'])
         split['valid']['X'] = featurizer.encode_smiles_list(split['valid']['X'], split['valid']['Y'])
         split['test']['X'] = featurizer.encode_smiles_list(split['test']['X'], split['test']['Y'])
 
-    if cache and not is_cached():
-        dump_to_cache(split)
+    if cache and not _is_cached():
+        _dump_to_cache(split)
 
     train_data = split['train']['X']
     valid_data = split['valid']['X']
