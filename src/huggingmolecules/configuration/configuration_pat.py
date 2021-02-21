@@ -10,33 +10,25 @@ PAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING = {
 @dataclass
 class PatConfig(PretrainedConfigMixin):
     d_atom: int = 37
+    d_edge: int = 40
     d_model: int = 1024
-    N: int = 8
-    h: int = 16
-    N_dense: int = 1
-    lin_factor: float = 2.0
-    num_radial: int = 32
-    cutoff: float = 20.0
-    edge_dim: int = 40
-    lambda_attention: float = 0.33
-    lambda_distance: float = 0.33
-    leaky_relu_slope: float = 0.1
-    dense_output_nonlinearity: str = 'relu'
-    distance_matrix_kernel: str = 'exp'
-    dropout: float = 0.0
-    aggregation_type: str = 'mean'
-    n_generator_layers: int = 1
-    n_output: int = 1
-    trainable_lambda: bool = False
-    integrated_distances: bool = False
-    use_edge_features: bool = False
-    control_edges: bool = False
-    scale_norm: bool = False
-    use_adapter: bool = False
     init_type: str = 'normal'
-    add_dummy_node: bool = True
-    one_hot_formal_charge: bool = True
-    one_hot_formal_charge_range: list = (-5, -4, -4, -2, -1, 0, 1, 2, 3, 4, 5)
+    dropout: float = 0.0
+
+    envelope_num_radial: int = 32
+    envelope_cutoff: float = 20.0
+    envelope_exponent: float = 5.0
+
+    encoder_n_layers: int = 8
+    encoder_n_attn_heads: int = 16
+
+    ffn_activation: str = 'LeakyReLU'
+    ffn_n_layers: int = 1
+    ffn_d_hidden: int = 0
+
+    generator_aggregation: str = 'mean'
+    generator_n_layers: int = 1
+    generator_d_outputs: int = 1
 
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name: str):

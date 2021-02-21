@@ -11,8 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .models_api import PretrainedModelBase
-from .models_common_utils import clones
-from .models_mat import Embeddings, Generator, PositionwiseFeedForward, Encoder
+from .models_common_utils import PositionwiseFeedForward, MultiHeadedAttention, Embedding, Encoder, Generator
 from .. import PatConfig
 from ..featurization.featurization_pat import PatBatchEncoding, PatFeaturizer
 
@@ -37,14 +36,41 @@ class PatModel(PretrainedModelBase[PatBatchEncoding, PatConfig]):
     def __init__(self, config: PatConfig):
         super().__init__(config)
 
-        self.src_embed = Embeddings(config.d_atom, config.d_model, config.dropout)
-        self.dist_rbf = BesselBasisLayerEnvelope(num_radial=config.num_radial, cutoff=config.cutoff)
-        attn = MultiHeadedAttention(config.h, config.d_model, config.edge_dim, config.dropout)
-        ff = PositionwiseFeedForward(config.d_model, config.N_dense, config.dropout, config.lin_factor)
-        self.encoder = Encoder(attn, ff, config.d_model, config.dropout, config.N)
-        self.generator = Generator(config.d_model, config.aggregation_type, config.n_output, config.n_generator_layers,
-                                   config.dropout)
+        # Embedding
+        self.src_embed = Embedding(d_input=config.d_atom,
+                                   d_output=config.d_model,
+                                   dropout=config.dropout)
 
+        # Distance
+        self.dist_rbf = BesselBasisLayerEnvelope(num_radial=config.envelope_num_radial,
+                                                 cutoff=config.envelope_cutoff,
+                                                 exponent=config.envelope_exponent)
+
+        # Encoder
+        attention = PatAttention(config)
+        sa_layer = MultiHeadedAttention(h=config.encoder_n_attn_heads,
+                                        d_model=config.d_model,
+                                        dropout=config.dropout,
+                                        attention=attention)
+        ff_layer = PositionwiseFeedForward(d_input=config.d_model,
+                                           d_hidden=config.ffn_d_hidden,
+                                           activation=config.ffn_activation,
+                                           n_layers=config.ffn_n_layers,
+                                           dropout=config.dropout)
+        self.encoder = Encoder(sa_layer=sa_layer,
+                               ff_layer=ff_layer,
+                               d_model=config.d_model,
+                               dropout=config.dropout,
+                               n_layers=config.encoder_n_layers)
+
+        # Generator
+        self.generator = Generator(d_model=config.d_model,
+                                   aggregation_type=config.generator_aggregation,
+                                   d_output=config.generator_d_outputs,
+                                   n_layers=config.generator_n_layers,
+                                   dropout=config.dropout)
+
+        # Initialization
         self.init_weights(config.init_type)
 
     def forward(self, batch: PatBatchEncoding):
@@ -59,12 +85,34 @@ class PatModel(PretrainedModelBase[PatBatchEncoding, PatConfig]):
 
 # Distance Layers
 
+
+class BesselBasisLayerEnvelope(nn.Module):
+    def __init__(self, *,
+                 num_radial: float,
+                 cutoff: float,
+                 exponent: float):
+        super().__init__()
+        self.num_radial = num_radial
+        self.cutoff = cutoff
+        self.sqrt_cutoff = np.sqrt(2. / cutoff)
+        self.inv_cutoff = 1. / cutoff
+        self.envelope = Envelope(exponent=exponent)
+
+        self.frequencies = np.pi * torch.arange(1, num_radial + 1).float()
+
+    def forward(self, inputs):
+        inputs = inputs.unsqueeze(-1) + 1e-6
+        d_scaled = inputs * self.inv_cutoff
+        d_cutoff = self.envelope(d_scaled)
+        return (d_cutoff * torch.sin(self.frequencies * d_scaled)).permute(0, 3, 1, 2)
+
+
 class Envelope(nn.Module):
     """
     Envelope function that ensures a smooth cutoff
     """
 
-    def __init__(self, exponent):
+    def __init__(self, *, exponent: float):
         super().__init__()
         self.exponent = exponent
 
@@ -81,89 +129,22 @@ class Envelope(nn.Module):
         return torch.where(inputs < 1, env_val, torch.zeros_like(inputs))
 
 
-class BesselBasisLayerEnvelope(nn.Module):
-    def __init__(self, num_radial, cutoff, envelope_exponent=5, **kwargs):
-        super().__init__()
-        self.num_radial = num_radial
-        self.cutoff = cutoff
-        self.sqrt_cutoff = np.sqrt(2. / cutoff)
-        self.inv_cutoff = 1. / cutoff
-        self.envelope = Envelope(envelope_exponent)
-
-        self.frequencies = np.pi * torch.arange(1, num_radial + 1).float()
-
-    def forward(self, inputs):
-        inputs = inputs.unsqueeze(-1) + 1e-6
-        d_scaled = inputs * self.inv_cutoff
-        d_cutoff = self.envelope(d_scaled)
-        return (d_cutoff * torch.sin(self.frequencies * d_scaled)).permute(0, 3, 1, 2)
-
-
 # Attention
 
-class PatEdgeFeaturesLayer(nn.Module):
-    def __init__(self, d_edge, d_out, d_hidden, h, dropout):
-        super(PatEdgeFeaturesLayer, self).__init__()
-        self.d_k = d_out // h
-        self.h = h
+class PatAttention(nn.Module):
+    def __init__(self, config: PatConfig):
+        super().__init__()
+        d_k = config.d_model // config.encoder_n_attn_heads
 
-        self.nn = nn.Sequential(
-            nn.Linear(d_edge, d_hidden),
-            nn.LeakyReLU(negative_slope=0.1),
-            nn.Dropout(dropout),
-            nn.Linear(d_hidden, d_out),
-        )
+        self.relative_K = PatEdgeFeaturesLayer(config)
+        self.relative_V = PatEdgeFeaturesLayer(config)
 
-    def forward(self, p_edge):
-        p_edge = p_edge.permute(0, 2, 3, 1)
-        p_edge = self.nn(p_edge).permute(0, 3, 1, 2)
-        p_edge = p_edge.view(p_edge.size(0), self.h, self.d_k, p_edge.size(2), p_edge.size(3))
-        return p_edge
+        self.relative_u = nn.Parameter(torch.empty(1, config.encoder_n_attn_heads, 1, d_k))
+        self.relative_v = nn.Parameter(torch.empty(1, config.encoder_n_attn_heads, 1, d_k, 1))
 
-
-class MultiHeadedAttention(nn.Module):
-    def __init__(self, h, d_model, edge_dim, dropout=0.1):
-        assert d_model % h == 0
-        super(MultiHeadedAttention, self).__init__()
-
-        self.d_k = d_model // h
-        self.h = h
-
-        self.linears = clones(nn.Linear(d_model, d_model), 4)
-        self.dropout = nn.Dropout(p=dropout)
-
-        self.relative_K = PatEdgeFeaturesLayer(edge_dim, d_model, self.d_k, h, dropout)
-        self.relative_V = PatEdgeFeaturesLayer(edge_dim, d_model, self.d_k, h, dropout)
-
-        self.relative_u = nn.Parameter(torch.empty(1, self.h, 1, self.d_k))
-        self.relative_v = nn.Parameter(torch.empty(1, self.h, 1, self.d_k, 1))
-
-        self.attn = None
-
-    def forward(self, query, key, value, edges_att, mask=None):
-        if mask is not None:
-            mask = mask.unsqueeze(1)
-
-        n_batches = query.size(0)
-
-        # Do all the linear projections in batch from d_model => h x d_k
-        query, key, value = \
-            [l(x).view(n_batches, -1, self.h, self.d_k).transpose(1, 2)
-             for l, x in zip(self.linears, (query, key, value))]
-
-        # Apply attention on all the projected vectors in batch.
-        x, self.attn = self.attention(query, key, value,
-                                      edges_att, mask)
-
-        # "Concat" using a view and apply a final linear.
-        x = x.transpose(1, 2).contiguous() \
-            .view(n_batches, -1, self.h * self.d_k)
-        return self.linears[-1](x)
-
-    def attention(self,
-                  query, key, value,
-                  edges_att, mask,
-                  inf=1e12):
+    def forward(self, query, key, value, mask, dropout,
+                edges_att,
+                inf=1e12):
         """Compute 'Scaled Dot Product Attention'"""
         b, h, n, d_k = query.size(0), query.size(1), query.size(2), query.size(-1)
 
@@ -182,7 +163,7 @@ class MultiHeadedAttention(nn.Module):
             scores = scores.masked_fill(mask.unsqueeze(1).repeat(1, h, n, 1) == 0, -inf)
         p_attn = F.softmax(scores, dim=-1)
 
-        p_attn = self.dropout(p_attn)
+        p_attn = dropout(p_attn)
 
         atoms_features1 = torch.matmul(p_attn, value)
         atoms_features2 = (p_attn.unsqueeze(2) * relative_V).sum(-1).permute(0, 1, 3, 2)
@@ -190,3 +171,27 @@ class MultiHeadedAttention(nn.Module):
         atoms_features = atoms_features1 + atoms_features2
 
         return atoms_features, p_attn
+
+
+class PatEdgeFeaturesLayer(nn.Module):
+    def __init__(self, config: PatConfig):
+        super(PatEdgeFeaturesLayer, self).__init__()
+        self.d_k = config.d_model // config.encoder_n_attn_heads
+        self.h = config.encoder_n_attn_heads
+
+        input_dim = config.d_edge
+        hidden_dim = self.d_k
+        output_dim = config.d_model
+
+        self.nn = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.LeakyReLU(negative_slope=0.1),
+            nn.Dropout(config.dropout),
+            nn.Linear(hidden_dim, output_dim),
+        )
+
+    def forward(self, p_edge):
+        p_edge = p_edge.permute(0, 2, 3, 1)
+        p_edge = self.nn(p_edge).permute(0, 3, 1, 2)
+        p_edge = p_edge.view(p_edge.size(0), self.h, self.d_k, p_edge.size(2), p_edge.size(3))
+        return p_edge

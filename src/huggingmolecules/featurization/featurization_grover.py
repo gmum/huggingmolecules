@@ -43,6 +43,11 @@ class GroverBatchEncoding(RecursiveToDeviceMixin):
 
 
 class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverBatchEncoding, GroverConfig]):
+    def __init__(self, config: GroverConfig):
+        super().__init__(config)
+        self.atom_fdim = config.d_atom
+        self.bond_fdim = config.d_bond + config.d_atom
+
     @classmethod
     def get_config_cls(cls):
         return GroverConfig
@@ -63,9 +68,6 @@ class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverB
                                       y=y)
 
     def _collate_encodings(self, encodings: List[GroverMoleculeEncoding]) -> GroverBatchEncoding:
-        atom_fdim = len(encodings[0].f_atoms[0])
-        bond_fdim = len(encodings[0].f_bonds[0])
-
         # Start n_atoms and n_bonds at 1 b/c zero padding
         n_atoms = 1  # number of atoms (start at 1 b/c need index 0 as padding)
         n_bonds = 1  # number of bonds (start at 1 b/c need index 0 as padding)
@@ -73,8 +75,8 @@ class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverB
         b_scope = []  # list of tuples indicating (start_bond_index, num_bonds) for each molecule
 
         # All start with zero padding so that indexing with zero padding returns zeros
-        f_atoms = [[0] * atom_fdim]
-        f_bonds = [[0] * bond_fdim]
+        f_atoms = [[0] * self.atom_fdim]
+        f_bonds = [[0] * self.bond_fdim]
         a2b = [[]]  # mapping from atom index to incoming bond indices
         b2a = [0]  # mapping from bond index to the index of the atom the bond is coming from
         b2revb = [0]  # mapping from bond index to the index of the reverse bond
