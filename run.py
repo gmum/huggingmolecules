@@ -10,12 +10,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--target', type=str, required=True)
 parser.add_argument('-n', '--max_trials_num', type=int, default=3)
 parser.add_argument('--notify', action='store_true', default=False)
+parser.add_argument('--force_run', action='store_true', default=False)
 parser.add_argument('--show_commands_only', action='store_true', default=False)
 args = parser.parse_args()
 
 target_name = args.target
 max_trials_num = args.max_trials_num
 notify = args.notify
+force_run = args.force_run
 show_commands_only = args.show_commands_only
 
 
@@ -76,7 +78,8 @@ for cmd_idx, cmd in enumerate(targets_dict[target_name], 1):
             os.system(f'cat {stderr_file}')
         if notify:
             send_notification_stderr(cmd, stderr_file, 'FAILED')
-        sys.exit()
+        if not force_run:
+            sys.exit()
 
 if notify:
     send_notification('SUCCEEDED')

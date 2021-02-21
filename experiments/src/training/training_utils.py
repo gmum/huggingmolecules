@@ -165,11 +165,14 @@ def _get_data_split_csv(dataset_name: str,
     csv_path = os.path.join(dataset_path, f'{dataset_name.lower()}.csv')
     data = pd.read_csv(csv_path)
     data.insert(0, 'IDs', range(0, len(data)))
-    if split_method == 'scaffold':
-        split_path = os.path.join(dataset_path, f'split-scaffold-{split_seed}.npy')
-        train_data, valid_data, test_data = _split_data_from_file(data, split_path)
-    else:
+    if split_method == 'random':
         train_data, valid_data, test_data = _split_data_random(data, split_frac, split_seed)
+    else:
+        if split_seed <= 5:
+            split_path = os.path.join(dataset_path, f'split-random-{split_seed}.npy')
+            train_data, valid_data, test_data = _split_data_from_file(data, split_path)
+        else:
+            train_data, valid_data, test_data = _split_data_random(data, split_frac, split_seed)
 
     return {
         'train': {'IDs': train_data['IDs'].to_list(),

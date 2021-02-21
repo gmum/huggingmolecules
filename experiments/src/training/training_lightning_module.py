@@ -34,7 +34,7 @@ class TrainingModule(pl.LightningModule):
         preds = torch.mean(torch.stack(output), dim=0) if isinstance(output, tuple) else output
 
         self.metric_loss[mode](loss, len(batch))
-        self.metric[mode](preds, batch.y)
+        self.metric[mode](preds.cpu(), batch.y.cpu())
 
         self.log(f'{mode}_loss', self.metric_loss[mode], on_epoch=True, on_step=False)
         self.log(f'{mode}_{self.metric_name}', self.metric[mode], on_epoch=True, on_step=False)
