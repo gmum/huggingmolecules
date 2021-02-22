@@ -33,7 +33,7 @@ def send_notification_stderr(last_command, stderr_path, status):
     try:
         with open(stderr_path) as fp:
             stderr = fp.read()
-    except FileExistsError:
+    except FileNotFoundError:
         stderr = '?'
     contents = [
         '<h2>last command:</h2>',

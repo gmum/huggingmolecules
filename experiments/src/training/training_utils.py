@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import pickle
-from typing import Tuple, List, Union, Literal
+from typing import Tuple, List, Union, Literal, Type
 
 import gin
 import numpy as np
@@ -303,7 +303,7 @@ class GinModel:
         self.task = task
         self.kwargs = kwargs if kwargs else {}
 
-    def get_model_cls(self):
+    def get_model_cls(self) -> Type[PretrainedModelBase]:
         try:
             model_cls = getattr(models, self.cls_name)
         except AttributeError:
@@ -312,9 +312,19 @@ class GinModel:
 
     def get_model(self):
         model_cls = self.get_model_cls()
-        return model_cls.from_pretrained(self.pretrained_name, self.task, **self.kwargs)
+        if self.pretrained_name is not None:
+            return model_cls.from_pretrained(self.pretrained_name, self.task, **self.kwargs)
+        else:
+            config_cls = model_cls.get_config_cls()
+            config = config_cls()
+            return model_cls(config)
 
-    def get_featurizer(self):
+    def get_featurizer(self) -> PretrainedFeaturizerMixin:
         model_cls = self.get_model_cls()
         featurizer_cls = model_cls.get_featurizer_cls()
-        return featurizer_cls.from_pretrained(self.pretrained_name)
+        if self.pretrained_name is not None:
+            return featurizer_cls.from_pretrained(self.pretrained_name)
+        else:
+            config_cls = model_cls.get_config_cls()
+            config = config_cls()
+            return featurizer_cls(config)
