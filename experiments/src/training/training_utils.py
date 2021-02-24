@@ -254,8 +254,16 @@ def _dump_to_cache(split):
 def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
                      batch_size: int,
                      num_workers: int = 0,
-                     cache: bool = True) -> Tuple[DataLoader, DataLoader, DataLoader]:
-    split = get_data_split()
+                     cache: bool = False,
+                     task_name: str = None,
+                     dataset_name: str = None) -> Tuple[DataLoader, DataLoader, DataLoader]:
+    if task_name and dataset_name:
+        split = get_data_split(task_name=task_name, dataset_name=dataset_name)
+    elif task_name is None and dataset_name is None:
+        split = get_data_split()
+    else:
+        raise AttributeError(
+            'Both `task_name` and `dataset_name` attributes must be set either to None or to str values')
 
     if cache and _is_cached():
         split = _load_from_cache(split)

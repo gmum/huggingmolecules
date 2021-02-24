@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 from .models_api import PretrainedModelBase
 from .models_common_utils import PositionwiseFeedForward, MultiHeadedAttention, Embedding, Encoder, Generator
-from .. import PatConfig
+from ..configuration import PatConfig
 from ..featurization.featurization_pat import PatBatchEncoding, PatFeaturizer
 
 PAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {

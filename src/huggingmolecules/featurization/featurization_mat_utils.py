@@ -12,7 +12,7 @@ from rdkit.Chem import AllChem
 from rdkit.Chem.rdchem import Mol
 from rdkit.Chem.rdmolfiles import MolFromSmiles
 
-from src.huggingmolecules.featurization.featurization_common_utils import one_hot_vector
+from ..featurization.featurization_common_utils import one_hot_vector
 
 T_Tensor = TypeVar('T_Tensor', bound=torch.Tensor)
 

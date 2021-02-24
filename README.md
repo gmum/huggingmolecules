@@ -1,26 +1,85 @@
 # Huggingmolecules
 
-We envision models that are pretrained a vast range of domain-relevant tasks to become the backbone of drug discovery, and in the long run other applications of predictive modeling to chemistry. This repository aims to further this vision and give easy access to state-of-the-art pre-trained models.
+We envision models that are pretrained a vast range of domain-relevant tasks to become the backbone of drug discovery,
+and in the long run other applications of predictive modeling to chemistry. This repository aims to further this vision
+and give easy access to state-of-the-art pre-trained models.
 
+## Quick tour
+
+To quickly fine-tune a model on a dataset using pytorch lightning package follow the below example based on the MAT model and the freesolv dataset:
+
+```python
+from huggingmolecules import MatModel, MatFeaturizer
+
+# The following import works only from the source code directory:
+from experiments.src import TrainingModule, get_data_loaders
+
+from torch.nn import MSELoss
+from torch.optim import Adam
+
+from pytorch_lightning import Trainer
+from pytorch_lightning.metrics import MeanSquaredError
+
+# Build and load the pre-trained model and the appropriate featurizer:
+model = MatModel.from_pretrained('mat_masking_20M')
+featurizer = MatFeaturizer.from_pretrained('mat_masking_20M')
+
+# Build the pytorch lightning training module:
+pl_module = TrainingModule(model,
+                           loss_fn=MSELoss(),
+                           metric_cls=MeanSquaredError,
+                           optimizer=Adam(model.parameters()))
+
+# Build the data loader for freesolv dataset:
+train_dataloader, _, _ = get_data_loaders(featurizer,
+                                          batch_size=32,
+                                          task_name='ADME',
+                                          dataset_name='hydrationfreeenergy_freesolv')
+
+# Build the pytorch lightning trainer and fine-tune the module on train dataset:
+trainer = Trainer(max_epochs=100)
+trainer.fit(pl_module, train_dataloader=train_dataloader)
+
+# Make the prediction for the batch of SMILES strings:
+batch = featurizer(['C/C=C/C', '[C]=O'])
+output = pl_module.model(batch)
+```
+
+## Installation
+
+Create your conda environment first:
+
+```conda create -y -n -q huggingmolecules python=3.8.5 -c rdkit rdkit=2020.09.1```
+
+Then install the package by running the following commands from the cloned directory:
+
+```
+conda activate huggingmolecules
+pip install -e ./src
+```
 
 ## Project Structure
 
 The project consists of two main modules: src/ and experiments/.
-* src/ module contains abstract interfaces for pre-trained models along with their implementations based on pytorch library. This module makes configuring, downloading and running existing models easy and out-of-the-box.
-* experiments/ module makes use of abstract interfaces defined in src/ module and implements scripts based on pytorch lightning for running various experiments. This module makes training, benchmarking and hyper-tuning of models flawless and easily extensible.
 
+* The src/ module contains abstract interfaces for pre-trained models along with their implementations based on pytorch
+  library. This module makes configuring, downloading and running existing models easy and out-of-the-box.
+* The experiments/ module makes use of abstract interfaces defined in src/ module and implements scripts based on
+  pytorch lightning for running various experiments. This module makes training, benchmarking and hyper-tuning of models
+  flawless and easily extensible.
 
+## The src/ module
 
-## src/ module
+Huggingmolecules currently provides the following architectures in the src/module:
 
-For the moment there are three models implemented in src/module:
 * MAT
 * MAT++
 * GROVER
 
-Their impelementations are divided into three modules: configuration, featurization and models module. The relation between these modules is shown on the following examples based on the MAT model:
+Their impelementations are divided into three modules: configuration, featurization and models module. The relation
+between these modules is shown on the following examples based on the MAT model:
 
-### configuration examples
+### Configuration examples
 
 ```python
 from huggingmolecules import MatConfig
@@ -42,7 +101,7 @@ config.save('mat_masking_20M_normal.json')
 config = MatConfig.from_pretrained('mat_masking_20M_normal.json')
 ```
 
-### featurization examples
+### Featurization examples
 
 ```python
 from huggingmolecules import MatConfig, MatFeaturizer
@@ -58,7 +117,7 @@ featurizer = MatFeaturizer.from_pretrained('mat_masking_20M')
 batch = featurizer(['C/C=C/C', '[C]=O'])
 ```
 
-### models examples
+### Models examples
 
 ```python
 from huggingmolecules import MatConfig, MatFeaturizer, MatModel
@@ -99,14 +158,19 @@ model = MatModel.from_pretrained('tuned_mat_masking_20M.pt',
                                  config=config)
 ```
 
-## experiments/ module
+## The experiments/ module
 
 It's recommended to run experiments from the source code. For the moment there are three scripts implemented:
-* ```experiments/train.py``` - for training with pytorch lightning package 
-* ```experiments/tune_hyper.py``` - for hyper-parameters tuning with optuna package 
+
+* ```experiments/train.py``` - for training with pytorch lightning package
+* ```experiments/tune_hyper.py``` - for hyper-parameters tuning with optuna package
 * ```experiments/benchmark_1.py``` - for benchmarking based on hyper-parameters tuning
 
-### running scripts:
+### Additional dependencies
+
+// TODO
+
+### Running scripts:
 
 In general running scripts can be done with the following syntax:
 
@@ -117,14 +181,18 @@ python -m experiments.<script_name> /
        -b <parameters_bindings>
 ```
 
-Then the script ```<script_name>.py``` runs with functions/methods parameters values defined in the following gin-config files:
-1.  ```experiments/configs/bases/<script_name>.gin```
+Then the script ```<script_name>.py``` runs with functions/methods parameters values defined in the following gin-config
+files:
+
+1. ```experiments/configs/bases/<script_name>.gin```
 2. ```experiments/configs/datasets/<dataset_name>.gin```
 3. ```experiments/configs/models/<model_name>.gin```
 
-If the binding flag ```-b``` is used, then bindings defined in ```<parameters_binding>``` overrides corresponding bindings defined in above gin-config files.
+If the binding flag ```-b``` is used, then bindings defined in ```<parameters_binding>``` overrides corresponding
+bindings defined in above gin-config files.
 
-So for instance, if we want to fine-tune MAT model (pretrained on masking_20M task) on freesolv dataset using GPU 1, we simply type:
+So for instance, if we want to fine-tune MAT model (pretrained on masking_20M task) on freesolv dataset using GPU 1, we
+simply type:
 
 ```
 python -m experiments.train /
@@ -143,12 +211,34 @@ python -m experiments.train /
        --train.gpus [1]
 ```
 
-### benchmarks
+### Other models
+
+In addition to the models implemented in the src/ module we provide few other models to use in the experiments/ module:
+
+* Chemprop
+* Molbert
+* Chemberta
+
+For instance to fine-tune the Chemprop model on the freesolv dataset using CPU, simply type:
+
+```
+python -m experiments.train /
+       -d freesolv / 
+       -m chemprop /
+       --train.gpus 0
+```
+
+### Benchmarking
 
 For the moment there is one benchmark available. It works as follows:
-* ```experiments/benchmark_1.py```: on the given dataset we fine-tune the given model on 7 learning rates and 6 seeded data splits (42 fine-tunings in total). Then we choose that learning rate that minimizes an averaged (on 6 data splits) validation loss. The result is the averaged value of test metric (metric computed on the test dataset, e.g. test loss) for the chosen learning rate.
 
-Running a benchmark is essentialy the same as running any other script form experiments/ module. So for instance to benchmark vanilla MAT model (without pretraining) on BBB dataset using GPU 0, we simply type:
+* ```experiments/benchmark_1.py```: on the given dataset we fine-tune the given model on 7 learning rates and 6 seeded
+  data splits (42 fine-tunings in total). Then we choose that learning rate that minimizes an averaged (on 6 data
+  splits) validation loss. The result is the averaged value of test metric (metric computed on the test dataset, e.g.
+  test loss) for the chosen learning rate.
+
+Running a benchmark is essentialy the same as running any other script form experiments/ module. So for instance to
+benchmark vanilla MAT model (without pretraining) on BBB dataset using GPU 0, we simply type:
 
 ```
 python -m experiments.benchmark_1 /
@@ -158,7 +248,8 @@ python -m experiments.benchmark_1 /
        --train.gpus [0]
 ```
 
-However, the above script will only perform 42 fine-tunings without computing the final benchmark result. To compute it we need to type:
+However, the above script will only perform 42 fine-tunings without computing the final benchmark result. To compute it
+we need to type:
 
 ```
 python -m experiments.benchmark_1 --results_only /
@@ -166,8 +257,13 @@ python -m experiments.benchmark_1 --results_only /
        -m mat
 ```
 
-The above script won't perform any fine-tuning, but will only compute the benchmark result. If we had neptune enabled in ```experiments/configs/setup.gin``` (it is enabled by default), all data necessary to compute the result will be fetched from the neptune server.
+The above script won't perform any fine-tuning, but will only compute the benchmark result. If we had neptune enabled
+in ```experiments/configs/setup.gin``` (it is enabled by default), all data necessary to compute the result will be
+fetched from the neptune server.
 
-## Installation
+## Benchmark results
 
-TODO
+We performed the benchmark described in "Benchmarking" as ```experiments/benchmark_1.py``` for various models
+architectures and pretraining tasks. Here are the results:
+
+// TODO

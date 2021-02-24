@@ -10,8 +10,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.huggingmolecules.configuration.configuration_mat import MatConfig
-from src.huggingmolecules.featurization.featurization_mat import MatBatchEncoding, MatFeaturizer
+from ..configuration.configuration_mat import MatConfig
+from ..featurization.featurization_mat import MatBatchEncoding, MatFeaturizer
 from .models_api import PretrainedModelBase
 from .models_common_utils import MultiHeadedAttention, PositionwiseFeedForward, Embedding, Encoder, Generator
 

@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from sklearn.metrics import pairwise_distances
 
-from src.huggingmolecules import PatConfig
+from ..configuration import PatConfig
 from .featurization_api import PretrainedFeaturizerMixin, RecursiveToDeviceMixin
 from .featurization_common_utils import stack_y
 from .featurization_mat_utils import add_dummy_node, build_position_matrix, build_atom_features_matrix, \

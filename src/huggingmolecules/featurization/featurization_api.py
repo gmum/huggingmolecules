@@ -4,7 +4,7 @@ from typing import TypeVar
 import torch
 from torch.utils.data import DataLoader
 
-from src.huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
+from ..configuration.configuration_api import PretrainedConfigMixin
 
 
 class BatchEncodingProtocol(Protocol):

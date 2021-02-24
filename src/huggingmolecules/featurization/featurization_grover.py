@@ -4,7 +4,7 @@ from typing import *
 import torch
 from rdkit import Chem
 
-from src.huggingmolecules import GroverConfig
+from ..configuration import GroverConfig
 from .featurization_api import RecursiveToDeviceMixin, PretrainedFeaturizerMixin
 from .featurization_common_utils import stack_y
 from .featurization_grover_utils import build_atom_features, build_bond_features_and_mappings
