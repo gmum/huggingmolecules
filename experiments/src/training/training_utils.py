@@ -86,7 +86,7 @@ def get_task(name: str):
 def get_all_hyperparams(model: PretrainedModelBase):
     gin_str = get_formatted_config_str(excluded=['neptune', 'optuna', 'macro', 'benchmark'])
     params = parse_gin_str(gin_str)
-    for k, v in model.get_config().get_dict().items():
+    for k, v in model.get_config().to_dict().items():
         params[f'model.{k}'] = v
     return params
 

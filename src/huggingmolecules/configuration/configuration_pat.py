@@ -2,8 +2,8 @@ from dataclasses import dataclass
 
 from .configuration_api import PretrainedConfigMixin
 
-PAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING = {
-    'pat_test': './pretrained/pat/configs/pat_test.json',
+PAT_CONFIG_ARCH = {
+    'pat_test': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/pat/configs/pat_test.json',
 }
 
 
@@ -32,4 +32,4 @@ class PatConfig(PretrainedConfigMixin):
 
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name: str):
-        return PAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING.get(pretrained_name, None)
+        return PAT_CONFIG_ARCH.get(pretrained_name, None)

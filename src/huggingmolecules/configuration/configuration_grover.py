@@ -2,9 +2,9 @@ from dataclasses import dataclass
 
 from .configuration_api import PretrainedConfigMixin
 
-GROVER_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING = {
-    'grover_base': './pretrained/grover/grover_base_config.json',
-    'grover_large': './pretrained/grover/grover_large_config.json'
+GROVER_CONFIG_ARCH = {
+    'grover_base': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/grover/grover_base_config.json',
+    'grover_large': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/grover/grover_large_config.json'
 }
 
 
@@ -39,4 +39,4 @@ class GroverConfig(PretrainedConfigMixin):
 
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name: str):
-        return GROVER_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING.get(pretrained_name, None)
+        return GROVER_CONFIG_ARCH.get(pretrained_name, None)

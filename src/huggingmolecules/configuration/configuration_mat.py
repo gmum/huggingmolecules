@@ -2,10 +2,10 @@ from dataclasses import dataclass
 
 from .configuration_api import PretrainedConfigMixin
 
-MAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING = {
-    'mat_masking_200k': './pretrained/mat/configs/mat_model_config.json',
-    'mat_masking_2M': './pretrained/mat/configs/mat_model_config.json',
-    'mat_masking_20M': './pretrained/mat/configs/mat_model_config.json'
+MAT_CONFIG_ARCH = {
+    'mat_masking_200k': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/mat/configs/mat_model_config.json',
+    'mat_masking_2M': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/mat/configs/mat_model_config.json',
+    'mat_masking_20M': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/mat/configs/mat_model_config.json'
 }
 
 
@@ -32,4 +32,4 @@ class MatConfig(PretrainedConfigMixin):
 
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name: str):
-        return MAT_PRETRAINED_NAME_TO_CONFIG_ARCH_MAPPING.get(pretrained_name, None)
+        return MAT_CONFIG_ARCH.get(pretrained_name, None)
