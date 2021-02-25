@@ -49,7 +49,7 @@ class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverB
         self.bond_fdim = config.d_bond + config.d_atom
 
     @classmethod
-    def get_config_cls(cls):
+    def _get_config_cls(cls):
         return GroverConfig
 
     def _encode_smiles(self, smiles: str, y: Optional[float]) -> GroverMoleculeEncoding:

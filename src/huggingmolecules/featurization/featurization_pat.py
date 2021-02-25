@@ -38,7 +38,7 @@ class PatBatchEncoding(RecursiveToDeviceMixin):
 
 class PatFeaturizer(PretrainedFeaturizerMixin[PatMoleculeEncoding, PatBatchEncoding, PatConfig]):
     @classmethod
-    def get_config_cls(cls):
+    def _get_config_cls(cls):
         return PatConfig
 
     def _encode_smiles(self, smiles: str, y: Optional[float]) -> PatMoleculeEncoding:

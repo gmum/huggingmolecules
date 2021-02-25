@@ -33,7 +33,7 @@ class MatBatchEncoding(RecursiveToDeviceMixin):
 
 class MatFeaturizer(PretrainedFeaturizerMixin[MatMoleculeEncoding, MatBatchEncoding, MatConfig]):
     @classmethod
-    def get_config_cls(cls):
+    def _get_config_cls(cls):
         return MatConfig
 
     def _encode_smiles(self, smiles: str, y: Optional[float]) -> MatMoleculeEncoding:

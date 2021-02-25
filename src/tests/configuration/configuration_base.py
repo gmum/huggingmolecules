@@ -1,12 +1,13 @@
 import os
 import random
 import tempfile
+from typing import Type
 
 from huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
 
 
 class ConfigurationArchTestBase:
-    config_cls: PretrainedConfigMixin
+    config_cls: Type[PretrainedConfigMixin]
     config_arch_dict: dict
 
     def test_parameters_coverage(self):
@@ -18,7 +19,7 @@ class ConfigurationArchTestBase:
 
 
 class ConfigurationApiTestBase:
-    config_cls: PretrainedConfigMixin
+    config_cls: Type[PretrainedConfigMixin]
     config_arch_dict: dict
 
     @property

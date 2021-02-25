@@ -30,7 +30,7 @@ class PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding, T_C
         batch = self._collate_encodings(encodings)
         return batch
 
-    def encode_smiles_list(self, smiles_list: List[str], y_list: Optional[List[float]]) -> List[T_MoleculeEncoding]:
+    def encode_smiles_list(self, smiles_list: List[str], y_list: Optional[List[float]] = None) -> List[T_MoleculeEncoding]:
         encodings = []
         if y_list is not None:
             assert len(smiles_list) == len(y_list)
@@ -53,13 +53,13 @@ class PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding, T_C
         raise NotImplementedError
 
     @classmethod
-    def get_config_cls(cls) -> Type[T_Config]:
+    def _get_config_cls(cls) -> Type[T_Config]:
         raise NotImplementedError
 
     @classmethod
     def from_pretrained(cls, pretrained_name: str) \
             -> "PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding, T_Config])":
-        config_cls = cls.get_config_cls()
+        config_cls = cls._get_config_cls()
         config = config_cls.from_pretrained(pretrained_name)
         return cls(config)
 
