@@ -76,6 +76,8 @@ Huggingmolecules currently provides the following architectures in the src/modul
 * MAT++
 * GROVER
 
+We also provide more experimental support for ChemBERTa and MolBERT. For ease of benchmarking, we include also wrapper for chemprop.
+
 Their impelementations are divided into three modules: configuration, featurization and models module. The relation
 between these modules is shown on the following examples based on the MAT model:
 
