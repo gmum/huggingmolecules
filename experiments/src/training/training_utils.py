@@ -64,11 +64,15 @@ def get_loss_fn(*, name, **kwargs):
 
 
 @gin.configurable('metric')
-def get_metric_cls(*, name: str):
+def get_metric_cls(*, name: str, direction: str):
     try:
         metric_cls = getattr(custom_metrics_module, name)
     except AttributeError:
         metric_cls = getattr(pl.metrics, name)
+    # if hasattr(metric_cls, 'direction'):
+    #     print(metric_cls.direction)
+    #     raise RuntimeError(f"Parameter 'direction' has been already define in class {metric_cls.__name__}.")
+    setattr(metric_cls, 'direction', direction)
     return metric_cls
 
 

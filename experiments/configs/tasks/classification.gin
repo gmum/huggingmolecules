@@ -2,3 +2,4 @@
 task.name = "classification"
 loss_fn.name = 'BCEWithLogitsLoss'
 metric.name = 'AUROC'
+metric.direction = 'maximize'
