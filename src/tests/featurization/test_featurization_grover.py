@@ -2,7 +2,7 @@ import unittest
 
 from huggingmolecules import GroverConfig, GroverFeaturizer
 from huggingmolecules.configuration.configuration_grover import GROVER_CONFIG_ARCH
-from tests.featurization.data.featurization_expected_grover import expected_batch, expected_encoded_smiles
+from tests.featurization.expected.featurization_expected_grover import expected_batch, expected_encoded_smiles
 from tests.featurization.featurization_base import FeaturizationApiTestBase
 
 

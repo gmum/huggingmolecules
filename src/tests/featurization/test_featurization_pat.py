@@ -2,7 +2,7 @@ import unittest
 
 from huggingmolecules import PatConfig, PatFeaturizer
 from huggingmolecules.configuration.configuration_pat import PAT_CONFIG_ARCH
-from tests.featurization.data.featurization_expected_pat import expected_batch, expected_encoded_smiles
+from tests.featurization.expected.featurization_expected_pat import expected_batch, expected_encoded_smiles
 from tests.featurization.featurization_base import FeaturizationApiTestBase
 
 
