@@ -69,19 +69,24 @@ The project consists of two main modules: src/ and experiments/.
   pytorch lightning for running various experiments. This module makes training, benchmarking and hyper-tuning of models
   flawless and easily extensible.
 
-## The src/ module
+## Supported models architectures
 
-Huggingmolecules currently provides the following architectures in the src/module:
+Huggingmolecules currently provides the following architectures:
 
 * MAT
 * MAT++
 * GROVER
 
-We also provide more experimental support for ChemBERTa and MolBERT. For ease of benchmarking, we include also wrapper
-for chemprop.
+For ease of benchmarking, we also include wrappers in the experiments/ module for the following architectures:
 
-Their impelementations are divided into three modules: configuration, featurization and models module. The relation
-between these modules is shown on the following examples based on the MAT model:
+* MolBERT
+* ChemBERTa
+* chemprop
+
+## The src/ module
+
+The implementations of the models in src/ module are divided into three modules: configuration, featurization and models
+module. The relation between these modules is shown on the following examples based on the MAT model:
 
 ### Configuration examples
 
@@ -213,23 +218,6 @@ python -m experiments.train /
        -m mat /
        --model.pretrained_name mat_masking_20M /
        --train.gpus [1]
-```
-
-### Other models
-
-In addition to the models implemented in the src/ module we provide few other models to use in the experiments/ module:
-
-* Chemprop
-* Molbert
-* Chemberta
-
-For instance to fine-tune the Chemprop model on the freesolv dataset using CPU, simply type:
-
-```
-python -m experiments.train /
-       -d freesolv / 
-       -m chemprop /
-       --train.gpus 0
 ```
 
 ### Benchmarking
