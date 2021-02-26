@@ -10,6 +10,6 @@ class ConfigurationMatApiTest(ConfigurationApiTestBase, unittest.TestCase):
     config_arch_dict = MAT_CONFIG_ARCH
 
 
-class ConfigurationMatArchTest(unittest.TestCase, ConfigurationArchTestBase):
+class ConfigurationMatArchTest(ConfigurationArchTestBase, unittest.TestCase):
     config_cls = MatConfig
     config_arch_dict = MAT_CONFIG_ARCH

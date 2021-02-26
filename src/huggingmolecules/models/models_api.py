@@ -1,4 +1,5 @@
-from typing import Generic
+import os
+from typing import Generic, List
 
 import torch
 import torch.nn as nn
@@ -47,12 +48,22 @@ class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):
         raise NotImplementedError
 
     @classmethod
-    def from_pretrained(cls, pretrained_name: str, task: str, **kwargs):
-        config_cls = cls.get_config_cls()
-        config = config_cls.from_pretrained(pretrained_name, **kwargs)
-        model = cls(config)
+    def from_pretrained(cls,
+                        pretrained_name: str, *,
+                        excluded: List[str] = None,
+                        config: T_Config = None):
         file_path = cls._get_arch_from_pretrained_name(pretrained_name)
-        model._load_pretrained_weights(file_path)
+        if not file_path:
+            file_path = pretrained_name
+            if not os.path.exists(pretrained_name):
+                raise FileNotFoundError(file_path)
+            if not config:
+                raise AttributeError('Set \'config\' attribute when using local path to weights.')
+        else:
+            config_cls = cls.get_config_cls()
+            config = config_cls.from_pretrained(pretrained_name)
+        model = cls(config)
+        model.load_weights(file_path, excluded=excluded)
         return model
 
     def init_weights(self, init_type: str):
@@ -65,33 +76,16 @@ class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):
                 else:
                     raise NotImplementedError()
 
-    def _load_pretrained_weights(self, file_path: str):
-        pretrained_state_dict = torch.load(file_path, map_location='cpu')
-        if 'state_dict' in pretrained_state_dict:
-            pretrained_state_dict = pretrained_state_dict['state_dict']
-        if 'model' in pretrained_state_dict:
-            pretrained_state_dict = pretrained_state_dict['model']
-        model_state_dict = self.state_dict()
-        for name, param in pretrained_state_dict.items():
-            if 'generator' in name:
-                continue
-            if isinstance(param, torch.nn.Parameter):
-                param = param.data
-            if name not in model_state_dict:
-                old_name = name
-                for size in [2, 3]:
-                    try:
-                        suff = '.'.join(name.split('.')[-size:])
-                        name = name.replace(suff, mapping[suff])
-                        break
-                    except KeyError:
-                        print(f'failed {suff}')
+    def _remove_excluded(self, dictionary: dict, *, excluded: List[str] = None):
+        excluded = excluded if excluded else []
+        return {k: v for k, v in dictionary.items() if all(k.split('.')[0] != p for p in excluded)}
 
-                print(f'{old_name} -> {name}')
-            model_state_dict[name].copy_(param)
+    def load_weights(self, file_path: str, *, excluded: List[str] = None):
+        state_dict = torch.load(file_path, map_location='cpu')
+        state_dict = self._remove_excluded(state_dict, excluded=excluded)
+        self.load_state_dict(state_dict, strict=False)
 
-    def load_weights(self, file_path: str):
-        state_dict = torch.load(file_path)
-        if 'state_dict' in state_dict:
-            state_dict = {k.replace("model.", "", 1): v for k, v in state_dict['state_dict'].items()}
-        self.load_state_dict(state_dict)
+    def save_weights(self, file_path: str, *, excluded: List[str] = None):
+        state_dict = self.state_dict()
+        state_dict = self._remove_excluded(state_dict, excluded=excluded)
+        torch.save(state_dict, file_path)

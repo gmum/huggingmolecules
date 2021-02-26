@@ -1,6 +1,7 @@
 import os
 import random
 import tempfile
+import unittest
 from typing import Type
 
 from huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
@@ -9,18 +10,26 @@ from huggingmolecules.configuration.configuration_api import PretrainedConfigMix
 class ConfigurationArchTestBase:
     config_cls: Type[PretrainedConfigMixin]
     config_arch_dict: dict
+    test: unittest.TestCase
+
+    def setUp(self):
+        self.test = self
 
     def test_parameters_coverage(self):
         config_first = self.config_cls()
         dict_first = config_first.to_dict()
         for pretrained_name in self.config_arch_dict.keys():
             dict_second = self.config_cls._load_dict_from_pretrained(pretrained_name)
-            assert dict_first.keys() == dict_second.keys()
+            self.test.assertEqual(dict_first.keys(), dict_second.keys())
 
 
 class ConfigurationApiTestBase:
     config_cls: Type[PretrainedConfigMixin]
     config_arch_dict: dict
+    test: unittest.TestCase
+
+    def setUp(self):
+        self.test = self
 
     @property
     def default_dict(self):
@@ -44,7 +53,7 @@ class ConfigurationApiTestBase:
             config_first.save(json_file_path)
             config_second = self.config_cls.from_pretrained(json_file_path)
 
-        assert config_first.to_dict() == config_second.to_dict()
+        self.test.assertEqual(config_first.to_dict(), config_second.to_dict())
 
     def test_from_pretrained(self):
         config_first = self.config_cls(**self.random_param())
@@ -55,7 +64,7 @@ class ConfigurationApiTestBase:
             config_second = self.config_cls.from_pretrained('existing_config')
             del self.config_arch_dict['existing_config']
 
-        assert config_first.to_dict() == config_second.to_dict()
+        self.test.assertEqual(config_first.to_dict(), config_second.to_dict())
 
     def test_from_pretrained_kwargs(self):
         param_1 = self.random_param()
@@ -72,4 +81,4 @@ class ConfigurationApiTestBase:
         expected.update(param_1)
         expected.update(param_2)
 
-        assert config_second.to_dict() == expected
+        self.test.assertEqual(config_second.to_dict(), expected)

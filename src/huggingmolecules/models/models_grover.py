@@ -19,16 +19,16 @@ from .models_common_utils import MultiHeadedAttention, PositionwiseFeedForward, 
 from .models_grover_utils import get_activation_function, select_neighbor_and_aggregate
 from ..featurization.featurization_grover import GroverBatchEncoding, GroverFeaturizer
 
-GROVER_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
-    'grover_base': './pretrained/grover/grover_base.pt',
-    'grover_large': './pretrained/grover/grover_large.pt'
+GROVER_MODEL_ARCH = {
+    'grover_base': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/grover/grover_base.pt2',
+    'grover_large': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/grover/grover_large.pt2'
 }
 
 
 class GroverModel(PretrainedModelBase[GroverBatchEncoding, GroverConfig]):
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
-        return GROVER_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING.get(pretrained_name, None)
+        return GROVER_MODEL_ARCH.get(pretrained_name, None)
 
     @classmethod
     def get_config_cls(cls):

@@ -15,11 +15,10 @@ from ..featurization.featurization_mat import MatBatchEncoding, MatFeaturizer
 from .models_api import PretrainedModelBase
 from .models_common_utils import MultiHeadedAttention, PositionwiseFeedForward, Embedding, Encoder, Generator
 
-MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
-    'mat_masking_2M_old': './pretrained/mat/weights/mat_masking_2M_old.pt',
-    'mat_masking_200k': './pretrained/mat/weights/mat_masking_200k.pt',
-    'mat_masking_2M': './pretrained/mat/weights/mat_masking_2M.pt',
-    'mat_masking_20M': './pretrained/mat/weights/mat_masking_20M.pt'
+MAT_MODEL_ARCH = {
+    'mat_masking_200k': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/mat/weights/mat_masking_200k.pt2',
+    'mat_masking_2M': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/mat/weights/mat_masking_2M.pt2',
+    'mat_masking_20M': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/mat/weights/mat_masking_20M.pt2'
 }
 
 
@@ -34,7 +33,7 @@ class MatModel(PretrainedModelBase[MatBatchEncoding, MatConfig]):
 
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name: str):
-        return MAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING.get(pretrained_name, None)
+        return MAT_MODEL_ARCH.get(pretrained_name, None)
 
     def __init__(self, config: MatConfig):
         super().__init__(config)

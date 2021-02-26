@@ -10,6 +10,6 @@ class ConfigurationGroverApiTest(ConfigurationApiTestBase, unittest.TestCase):
     config_arch_dict = GROVER_CONFIG_ARCH
 
 
-class ConfigurationGroverArchTest(unittest.TestCase, ConfigurationArchTestBase):
+class ConfigurationGroverArchTest(ConfigurationArchTestBase, unittest.TestCase):
     config_cls = GroverConfig
     config_arch_dict = GROVER_CONFIG_ARCH

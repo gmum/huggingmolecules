@@ -10,6 +10,6 @@ class ConfigurationPatApiTest(ConfigurationApiTestBase, unittest.TestCase):
     config_arch_dict = PAT_CONFIG_ARCH
 
 
-class ConfigurationPatArchTest(unittest.TestCase, ConfigurationArchTestBase):
+class ConfigurationPatArchTest(ConfigurationArchTestBase, unittest.TestCase):
     config_cls = PatConfig
     config_arch_dict = PAT_CONFIG_ARCH

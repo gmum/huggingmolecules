@@ -15,8 +15,8 @@ from .models_common_utils import PositionwiseFeedForward, MultiHeadedAttention, 
 from ..configuration import PatConfig
 from ..featurization.featurization_pat import PatBatchEncoding, PatFeaturizer
 
-PAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING = {
-    'pat_test': './pretrained/pat/weights/pat_test.pt',
+PAT_MODEL_ARCH = {
+    'pat_test': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/pat/weights/pat_test.pt2',
 }
 
 
@@ -31,7 +31,7 @@ class PatModel(PretrainedModelBase[PatBatchEncoding, PatConfig]):
 
     @classmethod
     def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
-        return PAT_PRETRAINED_NAME_TO_WEIGHTS_ARCH_MAPPING.get(pretrained_name, None)
+        return PAT_MODEL_ARCH.get(pretrained_name, None)
 
     def __init__(self, config: PatConfig):
         super().__init__(config)
