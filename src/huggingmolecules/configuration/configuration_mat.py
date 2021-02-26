@@ -31,5 +31,5 @@ class MatConfig(PretrainedConfigMixin):
     generator_n_outputs: int = 1
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name: str):
+    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
         return MAT_CONFIG_ARCH.get(pretrained_name, None)

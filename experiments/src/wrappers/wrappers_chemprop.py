@@ -1,26 +1,23 @@
 from dataclasses import dataclass
-from typing import Tuple, List, Optional, Type
+from typing import Tuple, List, Optional, Any
 
 import numpy as np
 import torch
-from chemprop.args import TrainArgs
-from chemprop.data import MoleculeDatapoint
-from chemprop.features import MolGraph, BatchMolGraph
-from chemprop.models import MoleculeModel
 
 from src.huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin, RecursiveToDeviceMixin
+from src.huggingmolecules.featurization.featurization_common_utils import stack_y_list
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 @dataclass
 class ChempropConfig(PretrainedConfigMixin):
-    d_model: int = 1  # for better NoamLRScheduler control
+    features_generators: List[str] = None
 
 
 @dataclass
 class ChempropBatchEncoding(RecursiveToDeviceMixin):
-    batch_mol_graph: BatchMolGraph
+    batch_mol_graph: Any
     batch_features: Optional[List[torch.Tensor]]
     y: torch.FloatTensor
     batch_size: int
@@ -30,38 +27,38 @@ class ChempropBatchEncoding(RecursiveToDeviceMixin):
 
 
 class ChempropFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChempropBatchEncoding, ChempropConfig]):
-    def __init__(self, config: ChempropConfig, features_generator: Optional[List[str]] = None):
+    def __init__(self, config: ChempropConfig):
         super().__init__(config)
-        self.features_generator = features_generator
+        self.features_generators = config.features_generators
+        print(self.features_generators)
 
-    def _collate_encodings(self, encodings: List[Tuple[MolGraph, Optional[np.array], float]]) -> ChempropBatchEncoding:
-        batch_mol_graph = BatchMolGraph([e[0] for e in encodings])
-        batch_features = [torch.tensor(e[1]).float() for e in encodings] if encodings[0][1] is not None else None
-        y_list = [torch.tensor(e[2]).float() for e in encodings]
-        return ChempropBatchEncoding(batch_mol_graph,
-                                     batch_features,
-                                     torch.stack(y_list).float().view(-1, 1),
-                                     len(y_list))
+    def _collate_encodings(self, encodings: List[Tuple[Any, Optional[np.array], float]]) -> ChempropBatchEncoding:
+        import chemprop
+        mol_graph_list, features_list, y_list = zip(*encodings)
+        batch_mol_graph = chemprop.features.BatchMolGraph(mol_graph_list)
+        batch_features = \
+            [torch.tensor(f).float() for f in features_list] if any(f is None for f in features_list) else None
+        return ChempropBatchEncoding(batch_mol_graph=batch_mol_graph,
+                                     batch_features=batch_features,
+                                     y=stack_y_list(y_list),
+                                     batch_size=len(y_list))
 
-    def _encode_smiles(self, smiles: str, y: Optional[float]) -> Tuple[MolGraph, np.array, float]:
-        datapoint = MoleculeDatapoint([smiles], features_generator=self.features_generator)
-        mol_graph = MolGraph(datapoint.mol[0])
+    def _encode_smiles(self, smiles: str, y: Optional[float]) -> Tuple[Any, np.array, float]:
+        import chemprop
+        datapoint = chemprop.data.MoleculeDatapoint([smiles], features_generator=self.features_generators)
+        mol_graph = chemprop.features.MolGraph(datapoint.mol[0])
         features = datapoint.features
         return mol_graph, features, y
 
-    @classmethod
-    def from_pretrained(cls, pretrained_name: str):
-        config = ChempropConfig()
-        if pretrained_name == 'vanilla':
-            return cls(config)
-        else:
-            return cls(config, pretrained_name.split("+"))
-
 
 class ChempropModelWrapper(PretrainedModelBase):
-    def __init__(self, model):
-        super().__init__(ChempropConfig())
-        self.model = model
+    def __init__(self, config):
+        import chemprop
+        super().__init__(config)
+        args = chemprop.args.TrainArgs()
+        args.parse_args(args=["--data_path", "non_existent", "--dataset_type", 'regression'])
+        args.task_names = ["whatever"]
+        self.model = chemprop.models.MoleculeModel(args)
 
     @classmethod
     def get_featurizer_cls(cls):
@@ -76,11 +73,3 @@ class ChempropModelWrapper(PretrainedModelBase):
 
     def parameters(self, **kwargs):
         return self.model.parameters(**kwargs)
-
-    @classmethod
-    def from_pretrained(cls, pretrained_name: str, task: str, **kwargs):
-        args = TrainArgs()
-        args.parse_args(args=["--data_path", "non_existent", "--dataset_type", task])
-        args.task_names = ["whatever"]  # taks_num must be > 0
-        model = MoleculeModel(args)
-        return cls(model)

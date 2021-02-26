@@ -1,27 +1,23 @@
 import os
 import random
 import tempfile
-import unittest
 from typing import Type, List
 
 import numpy as np
 
 from huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
 from huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
-from tests.utils.utils import assert_arrays_almost_equals, assert_encoding_almost_equals
+from tests.common.api import AbstractTestCase
+from tests.common.utils import assert_arrays_almost_equals, assert_encoding_almost_equals
 
 
-class FeaturizationApiTestBase:
+class FeaturizationApiTestBase(AbstractTestCase):
     config_cls: Type[PretrainedConfigMixin]
     featurizer_cls: Type[PretrainedFeaturizerMixin]
     config_arch_dict: dict
     smiles_list: List[str] = ['C/C=C/C', '[C]=O']
     expected_encoded_smiles: dict
     expected_batch: dict
-    test: unittest.TestCase
-
-    def setUp(self):
-        self.test = self
 
     def get_random_arch_key(self):
         return random.choice(list(self.config_arch_dict.keys()))

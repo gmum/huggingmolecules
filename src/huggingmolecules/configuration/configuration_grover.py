@@ -38,5 +38,5 @@ class GroverConfig(PretrainedConfigMixin):
     readout_n_outputs: int = 1
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name: str):
+    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
         return GROVER_CONFIG_ARCH.get(pretrained_name, None)

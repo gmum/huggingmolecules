@@ -23,9 +23,9 @@ def train_model(*,
                 num_workers: int = 0,
                 cache_encodings: bool = True):
     if not model:
-        gin_model = GinModel(task=get_task())
-        model = gin_model.get_model()
-        featurizer = gin_model.get_featurizer()
+        gin_model = GinModel()
+        model = gin_model.produce_model()
+        featurizer = gin_model.produce_featurizer()
 
     study_name = get_default_name()
     save_path = os.path.join(root_path, study_name)

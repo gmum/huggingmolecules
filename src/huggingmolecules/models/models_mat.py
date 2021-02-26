@@ -4,6 +4,7 @@ https://github.com/ardigen/MAT/blob/master/src/transformer.py
 """
 
 import math
+from typing import Type
 
 import numpy as np
 import torch
@@ -24,15 +25,15 @@ MAT_MODEL_ARCH = {
 
 class MatModel(PretrainedModelBase[MatBatchEncoding, MatConfig]):
     @classmethod
-    def get_config_cls(cls):
+    def get_config_cls(cls) -> Type[MatConfig]:
         return MatConfig
 
     @classmethod
-    def get_featurizer_cls(cls):
+    def get_featurizer_cls(cls) -> Type[MatFeaturizer]:
         return MatFeaturizer
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name: str):
+    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
         return MAT_MODEL_ARCH.get(pretrained_name, None)
 
     def __init__(self, config: MatConfig):

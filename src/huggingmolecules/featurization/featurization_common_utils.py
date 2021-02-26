@@ -16,7 +16,11 @@ def one_hot_vector(value: int, choices: List[int], extra_category: bool = False)
 
 
 def stack_y(encodings: List[T_BatchEncoding]):
-    if any(e.y is None for e in encodings):
+    return stack_y_list([e.y for e in encodings])
+
+
+def stack_y_list(y_list: List[float]):
+    if any(y is None for y in y_list):
         return None
     else:
-        return torch.stack([torch.tensor(e.y).float() for e in encodings]).unsqueeze(1)
+        return torch.stack([torch.tensor(y).float() for y in y_list]).unsqueeze(1)

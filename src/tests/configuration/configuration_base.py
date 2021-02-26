@@ -1,38 +1,17 @@
 import os
 import random
 import tempfile
-import unittest
 from typing import Type
 
 from huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
+from tests.common.api import AbstractTestCase
 
 
-class ConfigurationArchTestBase:
+class ConfigurationApiTestBase(AbstractTestCase):
     config_cls: Type[PretrainedConfigMixin]
     config_arch_dict: dict
-    test: unittest.TestCase
 
-    def setUp(self):
-        self.test = self
-
-    def test_parameters_coverage(self):
-        config_first = self.config_cls()
-        dict_first = config_first.to_dict()
-        for pretrained_name in self.config_arch_dict.keys():
-            dict_second = self.config_cls._load_dict_from_pretrained(pretrained_name)
-            self.test.assertEqual(dict_first.keys(), dict_second.keys())
-
-
-class ConfigurationApiTestBase:
-    config_cls: Type[PretrainedConfigMixin]
-    config_arch_dict: dict
-    test: unittest.TestCase
-
-    def setUp(self):
-        self.test = self
-
-    @property
-    def default_dict(self):
+    def get_default_dict(self):
         return self.config_cls().to_dict()
 
     def random_param(self):
@@ -42,7 +21,7 @@ class ConfigurationApiTestBase:
     def test_set_value_in_constructor(self):
         param = self.random_param()
         config = self.config_cls(**param)
-        expected = self.default_dict
+        expected = self.get_default_dict()
         expected.update(param)
         assert config.to_dict() == expected
 
@@ -77,7 +56,7 @@ class ConfigurationApiTestBase:
             config_second = self.config_cls.from_pretrained('existing_config', **param_2)
             del self.config_arch_dict['existing_config']
 
-        expected = self.default_dict
+        expected = self.get_default_dict()
         expected.update(param_1)
         expected.update(param_2)
 

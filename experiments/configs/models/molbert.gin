@@ -1,7 +1,7 @@
 # ==============================================================================
 model.cls_name = 'MolbertModelWrapper'
 model.pretrained_name = './pretrained/molbert_100epochs/checkpoints/last.ckpt'
-MolbertFeaturizer.max_size = 400
+model.max_size = 400
 
 # ==============================================================================
 optimizer.name = 'Adam'

@@ -1,24 +1,23 @@
 import os
+import random
 import tempfile
 import unittest
 from typing import Type, List
 
-import torch
-
 from huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
 from huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from huggingmolecules.models.models_api import PretrainedModelBase
-from tests.utils.utils import assert_dicts_almost_equals, assert_negate, get_excluded_params
-import random
+from tests.common.api import AbstractTestCase
+from tests.common.utils import assert_dicts_almost_equals, assert_negate, get_excluded_params
 
-class ModelsApiTestBase:
+
+class ModelsApiTestBase(AbstractTestCase):
     config_cls: Type[PretrainedConfigMixin]
     model_cls: Type[PretrainedModelBase]
     head_layers: List[str]
-    test: unittest.TestCase
 
     def setUp(self):
-        self.test = self
+        super().setUp()
         self.config = self.config_cls()
         self.model = self.model_cls(self.config)
         self.excluded_params = get_excluded_params(self.model, self.head_layers)
@@ -76,25 +75,7 @@ class ModelsApiTestBase:
         assert_negate(lambda: assert_dicts_almost_equals(self.model.state_dict(), model_second.state_dict()))
 
 
-class ModelsArchTestBase:
-    model_cls: Type[PretrainedModelBase]
-    model_arch_dict: dict
-    head_layers: List[str]
-
-    def test_pretrained_arch(self):
-        for pretrained_name in self.model_arch_dict.keys():
-            model = self.model_cls.from_pretrained(pretrained_name)
-            weights_path = self.model_cls._get_arch_from_pretrained_name(pretrained_name)
-
-            pretrained_params_set = set(torch.load(weights_path, map_location='cpu').keys())
-            model_params_set = set(model.state_dict().keys())
-            excluded_params_set = set(get_excluded_params(model, self.head_layers))
-
-            assert pretrained_params_set.isdisjoint(excluded_params_set)
-            assert pretrained_params_set.union(excluded_params_set) == model_params_set
-
-
-class ModelsForwardTestBase:
+class ModelsForwardTestBase(AbstractTestCase):
     model_cls: Type[PretrainedModelBase]
     featurizer_cls: Type[PretrainedFeaturizerMixin]
     config_cls: Type[PretrainedConfigMixin]
@@ -102,7 +83,7 @@ class ModelsForwardTestBase:
     test: unittest.TestCase
 
     def setUp(self):
-        self.test = self
+        super().setUp()
         self.config = self.config_cls()
         self.featurizer = self.featurizer_cls(self.config)
         self.model = self.model_cls(self.config)

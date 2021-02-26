@@ -1,6 +1,6 @@
 # ==============================================================================
 model.cls_name = 'MatModel'
-model.pretrained_name = 'mat_masking_200k'
+model.pretrained_name = 'mat_masking_20M'
 
 # ==============================================================================
 optimizer.name = 'Adam'

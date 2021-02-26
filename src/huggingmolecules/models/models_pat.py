@@ -4,6 +4,7 @@ https://github.com/ardigen/MAT/blob/master/src/transformer.py
 """
 
 import math
+from typing import Type
 
 import numpy as np
 import torch
@@ -22,11 +23,11 @@ PAT_MODEL_ARCH = {
 
 class PatModel(PretrainedModelBase[PatBatchEncoding, PatConfig]):
     @classmethod
-    def get_config_cls(cls):
+    def get_config_cls(cls) -> Type[PatConfig]:
         return PatConfig
 
     @classmethod
-    def get_featurizer_cls(cls):
+    def get_featurizer_cls(cls) -> Type[PatFeaturizer]:
         return PatFeaturizer
 
     @classmethod

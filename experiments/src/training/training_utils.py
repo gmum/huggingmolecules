@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import pickle
-from typing import Tuple, List, Union, Literal, Type
+from typing import Tuple, List, Union, Type
 
 import gin
 import numpy as np
@@ -19,6 +19,7 @@ import experiments.src.training.training_metrics as custom_metrics_module
 import experiments.src.wrappers as wrappers
 import src.huggingmolecules.models as models
 from experiments.src.gin import get_formatted_config_str, parse_gin_str, get_default_name
+from src.huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 from .training_callbacks import NeptuneCompatibleCallback, \
@@ -169,14 +170,13 @@ def _get_data_split_csv(dataset_name: str,
     csv_path = os.path.join(dataset_path, f'{dataset_name.lower()}.csv')
     data = pd.read_csv(csv_path)
     data.insert(0, 'IDs', range(0, len(data)))
-    if split_method == 'random':
+    split_path = os.path.join(dataset_path, f'split-{split_method}-{split_seed}.npy')
+    if os.path.exists(split_path):
+        train_data, valid_data, test_data = _split_data_from_file(data, split_path)
+    elif split_method == 'random':
         train_data, valid_data, test_data = _split_data_random(data, split_frac, split_seed)
     else:
-        if split_seed <= 5:
-            split_path = os.path.join(dataset_path, f'split-random-{split_seed}.npy')
-            train_data, valid_data, test_data = _split_data_from_file(data, split_path)
-        else:
-            train_data, valid_data, test_data = _split_data_random(data, split_frac, split_seed)
+        raise NotImplementedError()
 
     return {
         'train': {'IDs': train_data['IDs'].to_list(),
@@ -308,35 +308,34 @@ class GinModel:
     def __init__(self,
                  cls_name: str,
                  pretrained_name: str,
-                 task: Literal["regression", "classification"],
                  **kwargs):
         self.cls_name = cls_name
         self.pretrained_name = pretrained_name
-        self.task = task
         self.kwargs = kwargs if kwargs else {}
+        self.model_cls = self._get_model_cls()
+        self.config_cls = self.model_cls.get_config_cls()
+        self.featurizer_cls = self.model_cls.get_featurizer_cls()
 
-    def get_model_cls(self) -> Type[PretrainedModelBase]:
+    def produce_model(self) -> PretrainedModelBase:
+        config = self.produce_config()
+        if self.pretrained_name:
+            return self.model_cls.from_pretrained(self.pretrained_name, config=config)
+        else:
+            return self.model_cls(config)
+
+    def produce_featurizer(self) -> PretrainedFeaturizerMixin:
+        config = self.produce_config()
+        return self.featurizer_cls(config)
+
+    def produce_config(self) -> PretrainedConfigMixin:
+        if self.pretrained_name:
+            return self.config_cls.from_pretrained(self.pretrained_name, **self.kwargs)
+        else:
+            return self.config_cls(**self.kwargs)
+
+    def _get_model_cls(self) -> Type[PretrainedModelBase]:
         try:
             model_cls = getattr(models, self.cls_name)
         except AttributeError:
             model_cls = getattr(wrappers, self.cls_name)
         return model_cls
-
-    def get_model(self):
-        model_cls = self.get_model_cls()
-        if self.pretrained_name is not None:
-            return model_cls.from_pretrained(self.pretrained_name, self.task, **self.kwargs)
-        else:
-            config_cls = model_cls.get_config_cls()
-            config = config_cls()
-            return model_cls(config)
-
-    def get_featurizer(self) -> PretrainedFeaturizerMixin:
-        model_cls = self.get_model_cls()
-        featurizer_cls = model_cls.get_featurizer_cls()
-        if self.pretrained_name is not None:
-            return featurizer_cls.from_pretrained(self.pretrained_name)
-        else:
-            config_cls = model_cls.get_config_cls()
-            config = config_cls()
-            return featurizer_cls(config)

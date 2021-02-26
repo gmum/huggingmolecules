@@ -1,10 +1,10 @@
 import os
-from typing import Generic, List
+from typing import Generic, List, Type, Any
 
 import torch
 import torch.nn as nn
 
-from ..featurization.featurization_api import T_BatchEncoding, T_Config
+from ..featurization.featurization_api import T_BatchEncoding, T_Config, PretrainedFeaturizerMixin
 
 mapping = {
     'norm.a_2': 'norm.weight',
@@ -27,10 +27,7 @@ mapping = {
 class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):
     def __init__(self, config: T_Config):
         super().__init__()
-        self._config = config
-
-    def get_config(self) -> T_Config:
-        return self._config
+        self.config = config
 
     def forward(self, batch: T_BatchEncoding):
         raise NotImplementedError
@@ -40,18 +37,18 @@ class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):
         raise NotImplementedError
 
     @classmethod
-    def get_config_cls(cls):
+    def get_config_cls(cls) -> Type[T_Config]:
         raise NotImplementedError
 
     @classmethod
-    def get_featurizer_cls(cls):
+    def get_featurizer_cls(cls) -> Type[PretrainedFeaturizerMixin[Any, T_BatchEncoding, T_Config]]:
         raise NotImplementedError
 
     @classmethod
     def from_pretrained(cls,
                         pretrained_name: str, *,
                         excluded: List[str] = None,
-                        config: T_Config = None):
+                        config: T_Config = None) -> "PretrainedModelBase[T_BatchEncoding, T_Config]":
         file_path = cls._get_arch_from_pretrained_name(pretrained_name)
         if not file_path:
             file_path = pretrained_name
@@ -59,7 +56,7 @@ class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):
                 raise FileNotFoundError(file_path)
             if not config:
                 raise AttributeError('Set \'config\' attribute when using local path to weights.')
-        else:
+        if not config:
             config_cls = cls.get_config_cls()
             config = config_cls.from_pretrained(pretrained_name)
         model = cls(config)

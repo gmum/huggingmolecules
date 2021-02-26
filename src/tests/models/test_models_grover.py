@@ -1,20 +1,13 @@
-import unittest
 import random
+import unittest
 
 from huggingmolecules import GroverModel, GroverConfig, GroverFeaturizer
-from huggingmolecules.models.models_grover import GROVER_MODEL_ARCH
-from tests.models.models_base import ModelsApiTestBase, ModelsArchTestBase, ModelsForwardTestBase
+from tests.models.models_base import ModelsApiTestBase, ModelsForwardTestBase
 
 
 class ModelsGroverApiTest(ModelsApiTestBase, unittest.TestCase):
     config_cls = GroverConfig
     model_cls = GroverModel
-    head_layers = ['readout']
-
-
-class ModelsGroverArchTest(unittest.TestCase, ModelsArchTestBase):
-    model_cls = GroverModel
-    model_arch_dict = GROVER_MODEL_ARCH
     head_layers = ['readout']
 
 

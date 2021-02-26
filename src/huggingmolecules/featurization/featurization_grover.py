@@ -4,10 +4,10 @@ from typing import *
 import torch
 from rdkit import Chem
 
-from ..configuration import GroverConfig
 from .featurization_api import RecursiveToDeviceMixin, PretrainedFeaturizerMixin
 from .featurization_common_utils import stack_y
 from .featurization_grover_utils import build_atom_features, build_bond_features_and_mappings
+from ..configuration import GroverConfig
 
 
 @dataclass
@@ -43,14 +43,14 @@ class GroverBatchEncoding(RecursiveToDeviceMixin):
 
 
 class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverBatchEncoding, GroverConfig]):
+    @classmethod
+    def _get_config_cls(cls) -> Type[GroverConfig]:
+        return GroverConfig
+
     def __init__(self, config: GroverConfig):
         super().__init__(config)
         self.atom_fdim = config.d_atom
         self.bond_fdim = config.d_bond + config.d_atom
-
-    @classmethod
-    def _get_config_cls(cls):
-        return GroverConfig
 
     def _encode_smiles(self, smiles: str, y: Optional[float]) -> GroverMoleculeEncoding:
         mol = Chem.MolFromSmiles(smiles)

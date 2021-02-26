@@ -5,7 +5,7 @@ https://github.com/tencent-ailab/grover/main/grover/grover/layers.py
 """
 
 import math
-from typing import Union, Dict
+from typing import Union, Dict, Type
 
 import numpy as np
 import scipy.stats as stats
@@ -31,11 +31,11 @@ class GroverModel(PretrainedModelBase[GroverBatchEncoding, GroverConfig]):
         return GROVER_MODEL_ARCH.get(pretrained_name, None)
 
     @classmethod
-    def get_config_cls(cls):
+    def get_config_cls(cls) -> Type[GroverConfig]:
         return GroverConfig
 
     @classmethod
-    def get_featurizer_cls(cls):
+    def get_featurizer_cls(cls) -> Type[GroverFeaturizer]:
         return GroverFeaturizer
 
     def __init__(self, config: GroverConfig):

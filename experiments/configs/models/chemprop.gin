@@ -1,6 +1,7 @@
 # ==============================================================================
 model.cls_name = 'ChempropModelWrapper'
-model.pretrained_name = 'vanilla'
+model.pretrained_name = None
+model.features_generators = ['morgan_count']
 
 # ==============================================================================
 optimizer.name = 'Adam'
@@ -13,4 +14,5 @@ NoamLRScheduler.model_size = 1
 
 # ==============================================================================
 train.batch_size = 32
-train.num_epochs = 20
+train.num_epochs = 100
+train.cache_encodings = False

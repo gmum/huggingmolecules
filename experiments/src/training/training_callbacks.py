@@ -130,7 +130,7 @@ class ModelConfigSaver(NeptuneCompatibleCallback):
         self.target_name = target_name
 
     def on_train_start(self, trainer, pl_module):
-        config = pl_module.model.get_config()
+        config = pl_module.model.config
         target_path = os.path.join(trainer.default_root_dir, self.target_name)
         config.save(target_path)
         if self.neptune:
