@@ -30,7 +30,8 @@ class PretrainedFeaturizerMixin(Generic[T_MoleculeEncoding, T_BatchEncoding, T_C
         batch = self._collate_encodings(encodings)
         return batch
 
-    def encode_smiles_list(self, smiles_list: List[str], y_list: Optional[List[float]] = None) -> List[T_MoleculeEncoding]:
+    def encode_smiles_list(self, smiles_list: List[str], y_list: Optional[List[float]] = None) -> List[
+        T_MoleculeEncoding]:
         encodings = []
         if y_list is not None:
             assert len(smiles_list) == len(y_list)

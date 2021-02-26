@@ -6,7 +6,8 @@ and give easy access to state-of-the-art pre-trained models.
 
 ## Quick tour
 
-To quickly fine-tune a model on a dataset using pytorch lightning package follow the below example based on the MAT model and the freesolv dataset:
+To quickly fine-tune a model on a dataset using pytorch lightning package follow the below example based on the MAT
+model and the freesolv dataset:
 
 ```python
 from huggingmolecules import MatModel, MatFeaturizer
@@ -76,7 +77,8 @@ Huggingmolecules currently provides the following architectures in the src/modul
 * MAT++
 * GROVER
 
-We also provide more experimental support for ChemBERTa and MolBERT. For ease of benchmarking, we include also wrapper for chemprop.
+We also provide more experimental support for ChemBERTa and MolBERT. For ease of benchmarking, we include also wrapper
+for chemprop.
 
 Their impelementations are divided into three modules: configuration, featurization and models module. The relation
 between these modules is shown on the following examples based on the MAT model:

@@ -11,10 +11,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..configuration.configuration_mat import MatConfig
-from ..featurization.featurization_mat import MatBatchEncoding, MatFeaturizer
 from .models_api import PretrainedModelBase
 from .models_common_utils import MultiHeadedAttention, PositionwiseFeedForward, Embedding, Encoder, Generator
+from ..configuration.configuration_mat import MatConfig
+from ..featurization.featurization_mat import MatBatchEncoding, MatFeaturizer
 
 MAT_MODEL_ARCH = {
     'mat_masking_200k': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/mat/weights/mat_masking_200k.pt2',

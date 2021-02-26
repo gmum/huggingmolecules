@@ -4,11 +4,11 @@ from typing import *
 import torch
 from sklearn.metrics import pairwise_distances
 
-from ..configuration import MatConfig
 from .featurization_api import PretrainedFeaturizerMixin, RecursiveToDeviceMixin
 from .featurization_common_utils import stack_y
 from .featurization_mat_utils import add_dummy_node, build_position_matrix, build_atom_features_matrix, \
     get_mol_from_smiles, build_adjacency_matrix, pad_sequence
+from ..configuration import MatConfig
 
 
 @dataclass

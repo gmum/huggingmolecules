@@ -68,7 +68,7 @@ def initialize_weights(model: nn.Module, distinct_init=False, model_idx=0):
     :param model: An nn.Module.
     """
     init_fns = [nn.init.kaiming_normal_, nn.init.kaiming_uniform_,
-               nn.init.xavier_normal_, nn.init.xavier_uniform_]
+                nn.init.xavier_normal_, nn.init.xavier_uniform_]
     for param in model.parameters():
         if param.dim() == 1:
             nn.init.constant_(param, 0)
