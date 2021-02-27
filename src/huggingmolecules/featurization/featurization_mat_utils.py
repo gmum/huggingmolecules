@@ -45,7 +45,6 @@ def add_dummy_node(*, node_features=None, adj_matrix=None, dist_matrix=None, bon
     if dist_matrix is not None:
         m = np.full((dist_matrix.shape[0] + 1, dist_matrix.shape[1] + 1), 1e6)
         m[1:, 1:] = dist_matrix
-        m[0, 0] = 0
         dist_matrix = m
     if bond_features is not None:
         m = np.zeros((bond_features.shape[0], bond_features.shape[1] + 1, bond_features.shape[2] + 1))
