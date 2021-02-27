@@ -1,21 +1,25 @@
 import json
 import os
 
+from ..downloading.downloading_utils import from_cache
+
 
 class PretrainedConfigMixin:
     def __init__(self, **kwargs):
         pass
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
+    def _get_archive_dict(cls) -> dict:
         raise NotImplementedError
 
     @classmethod
     def _load_dict_from_pretrained(cls, pretrained_name: str):
-        if os.path.exists(pretrained_name):
+        archive_dict = cls._get_archive_dict()
+        file_path = from_cache(pretrained_name, archive_dict, 'json')
+        if not file_path:
             file_path = pretrained_name
-        else:
-            file_path = cls._get_arch_from_pretrained_name(pretrained_name)
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(file_path)
 
         with open(file_path, 'r') as fp:
             param_dict: dict = json.load(fp)

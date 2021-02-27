@@ -3,7 +3,7 @@ import unittest
 from huggingmolecules import MatConfig, MatModel
 from huggingmolecules.configuration.configuration_mat import MAT_CONFIG_ARCH
 from huggingmolecules.models.models_mat import MAT_MODEL_ARCH
-from tests.archives.archives_base import ConfigurationArchTestBase, ModelsArchTestBase
+from tests.downloading.downloading_base import ConfigurationArchTestBase, ModelsArchTestBase
 
 
 class ConfigurationMatArchTest(ConfigurationArchTestBase, unittest.TestCase):

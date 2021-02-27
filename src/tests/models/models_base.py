@@ -80,7 +80,6 @@ class ModelsForwardTestBase(AbstractTestCase):
     featurizer_cls: Type[PretrainedFeaturizerMixin]
     config_cls: Type[PretrainedConfigMixin]
     smiles_list = ['C/C=C/C', '[C]=O', 'CC(=O)O', 'C1CC1']
-    test: unittest.TestCase
 
     def setUp(self):
         super().setUp()

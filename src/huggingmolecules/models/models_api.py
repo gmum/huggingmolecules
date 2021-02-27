@@ -4,24 +4,8 @@ from typing import Generic, List, Type, Any
 import torch
 import torch.nn as nn
 
+from ..downloading.downloading_utils import from_cache
 from ..featurization.featurization_api import T_BatchEncoding, T_Config, PretrainedFeaturizerMixin
-
-mapping = {
-    'norm.a_2': 'norm.weight',
-    'norm.b_2': 'norm.bias',
-    'W_1.weight': 'linears.0.weight',
-    'W_1.bias': 'linears.0.bias',
-    'W_2.weight': 'linears.1.weight',
-    'W_2.bias': 'linears.1.bias',
-    'linears.0.weight': 'linear_layers.0.weight',
-    'linears.0.bias': 'linear_layers.0.bias',
-    'linears.1.weight': 'linear_layers.1.weight',
-    'linears.1.bias': 'linear_layers.1.bias',
-    'linears.2.weight': 'linear_layers.2.weight',
-    'linears.2.bias': 'linear_layers.2.bias',
-    'linears.3.weight': 'output_linear.weight',
-    'linears.3.bias': 'output_linear.bias',
-}
 
 
 class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):
@@ -33,7 +17,7 @@ class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):
         raise NotImplementedError
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
+    def _get_archive_dict(cls) -> dict:
         raise NotImplementedError
 
     @classmethod
@@ -49,7 +33,8 @@ class PretrainedModelBase(nn.Module, Generic[T_BatchEncoding, T_Config]):
                         pretrained_name: str, *,
                         excluded: List[str] = None,
                         config: T_Config = None) -> "PretrainedModelBase[T_BatchEncoding, T_Config]":
-        file_path = cls._get_arch_from_pretrained_name(pretrained_name)
+        archive_dict = cls._get_archive_dict()
+        file_path = from_cache(pretrained_name, archive_dict, 'pt')
         if not file_path:
             file_path = pretrained_name
             if not os.path.exists(pretrained_name):

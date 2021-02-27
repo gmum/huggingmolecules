@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from .configuration_api import PretrainedConfigMixin
 
 PAT_CONFIG_ARCH = {
-    'pat_test': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/pat/configs/pat_test.json',
+    'pat_test': 'https://drive.google.com/uc?id=1sOwain-qlE17ayA1A9EF_-FIcqwqXr8M'
 }
 
 
@@ -31,5 +31,5 @@ class PatConfig(PretrainedConfigMixin):
     generator_d_outputs: int = 1
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
-        return PAT_CONFIG_ARCH.get(pretrained_name, None)
+    def _get_archive_dict(cls) -> dict:
+        return PAT_CONFIG_ARCH

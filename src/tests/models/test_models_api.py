@@ -11,10 +11,6 @@ class MockedConfig(PretrainedConfigMixin):
     d_model = 10
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
-        pass
-
-    @classmethod
     def from_pretrained(cls, pretrained_name: str, **kwargs):
         return cls()
 
@@ -34,8 +30,8 @@ class MockedModel(PretrainedModelBase):
         return self.generator(self.decoder(self.encoder))
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
-        return MOCKED_MODEL_ARCH.get(pretrained_name, None)
+    def _get_archive_dict(cls) -> dict:
+        return MOCKED_MODEL_ARCH
 
     @classmethod
     def get_config_cls(cls):

@@ -20,15 +20,15 @@ from ..configuration import GroverConfig
 from ..featurization.featurization_grover import GroverBatchEncoding, GroverFeaturizer
 
 GROVER_MODEL_ARCH = {
-    'grover_base': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/grover/grover_base.pt2',
-    'grover_large': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/grover/grover_large.pt2'
+    'grover_base': 'https://drive.google.com/uc?id=1ZD2JbS8BU1xMgKONESANBxGJjzbVmsbc',
+    'grover_large': 'https://drive.google.com/uc?id=1eQfPPWghmaq-dvWNO-bhom1UsovKn2h5'
 }
 
 
 class GroverModel(PretrainedModelBase[GroverBatchEncoding, GroverConfig]):
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
-        return GROVER_MODEL_ARCH.get(pretrained_name, None)
+    def _get_archive_dict(cls) -> dict:
+        return GROVER_MODEL_ARCH
 
     @classmethod
     def get_config_cls(cls) -> Type[GroverConfig]:
@@ -105,7 +105,6 @@ class GroverModel(PretrainedModelBase[GroverBatchEncoding, GroverConfig]):
         _, _, _, _, _, a_scope, _, _ = batch.get_components()
 
         output = self.grover(batch)
-
         mol_atom_from_bond_output = self.readout(output["atom_from_bond"], a_scope)
         mol_atom_from_atom_output = self.readout(output["atom_from_atom"], a_scope)
 

@@ -17,9 +17,9 @@ from ..configuration.configuration_mat import MatConfig
 from ..featurization.featurization_mat import MatBatchEncoding, MatFeaturizer
 
 MAT_MODEL_ARCH = {
-    'mat_masking_200k': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/mat/weights/mat_masking_200k.pt2',
-    'mat_masking_2M': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/mat/weights/mat_masking_2M.pt2',
-    'mat_masking_20M': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/mat/weights/mat_masking_20M.pt2'
+    'mat_masking_200k': 'https://drive.google.com/uc?id=1HXBpPYRvFAKN3CGhKlS6EYkStX1r_6kk',
+    'mat_masking_2M': 'https://drive.google.com/uc?id=1qUyyqKHJZLIrLDSVcoLHo8X5P5dBzf8w',
+    'mat_masking_20M': 'https://drive.google.com/uc?id=1A6RSrCrUTXE37roud4Zf05Zrtpgq9kvr'
 }
 
 
@@ -33,8 +33,8 @@ class MatModel(PretrainedModelBase[MatBatchEncoding, MatConfig]):
         return MatFeaturizer
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
-        return MAT_MODEL_ARCH.get(pretrained_name, None)
+    def _get_archive_dict(cls) -> dict:
+        return MAT_MODEL_ARCH
 
     def __init__(self, config: MatConfig):
         super().__init__(config)

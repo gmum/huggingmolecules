@@ -16,8 +16,8 @@ class MockedConfig(PretrainedConfigMixin):
     none_val: int = None
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
-        return MOCKED_CONFIG_ARCH.get(pretrained_name, None)
+    def _get_archive_dict(cls) -> dict:
+        return MOCKED_CONFIG_ARCH
 
 
 class ConfigurationApiTest(ConfigurationApiTestBase, unittest.TestCase):
@@ -33,4 +33,4 @@ class ConfigurationApiTest(ConfigurationApiTestBase, unittest.TestCase):
             'str_val': 'whatever',
             'none_val': None
         }
-        assert config.to_dict() == expected
+        self.test.assertEqual(config.to_dict(), expected)

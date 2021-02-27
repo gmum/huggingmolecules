@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from .configuration_api import PretrainedConfigMixin
 
 GROVER_CONFIG_ARCH = {
-    'grover_base': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/grover/grover_base_config.json',
-    'grover_large': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/grover/grover_large_config.json'
+    'grover_base': 'https://drive.google.com/uc?id=1OIlk1iwlUu57YHGNiyWXEWjwECnh2MDI',
+    'grover_large': 'https://drive.google.com/uc?id=1r_-4ROF3da-oBTYktiqp-pEhkLI4pccS'
 }
 
 
@@ -38,5 +38,5 @@ class GroverConfig(PretrainedConfigMixin):
     readout_n_outputs: int = 1
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
-        return GROVER_CONFIG_ARCH.get(pretrained_name, None)
+    def _get_archive_dict(cls) -> dict:
+        return GROVER_CONFIG_ARCH

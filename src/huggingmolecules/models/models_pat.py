@@ -17,7 +17,7 @@ from ..configuration import PatConfig
 from ..featurization.featurization_pat import PatBatchEncoding, PatFeaturizer
 
 PAT_MODEL_ARCH = {
-    'pat_test': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/pat/weights/pat_test.pt2',
+    'pat_test': 'https://drive.google.com/uc?id=1hQzufXRDG9tp9FolRbOrvFxRyuLiQ9ZA'
 }
 
 
@@ -31,8 +31,8 @@ class PatModel(PretrainedModelBase[PatBatchEncoding, PatConfig]):
         return PatFeaturizer
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
-        return PAT_MODEL_ARCH.get(pretrained_name, None)
+    def _get_archive_dict(cls) -> dict:
+        return PAT_MODEL_ARCH
 
     def __init__(self, config: PatConfig):
         super().__init__(config)

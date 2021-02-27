@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from .configuration_api import PretrainedConfigMixin
 
 MAT_CONFIG_ARCH = {
-    'mat_masking_200k': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/mat/configs/mat_model_config.json',
-    'mat_masking_2M': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/mat/configs/mat_model_config.json',
-    'mat_masking_20M': '/home/panjan/Desktop/GMUM/huggingmolecules/pretrained/mat/configs/mat_model_config.json'
+    'mat_masking_200k': 'https://drive.google.com/uc?id=1XBCOKhZutkDhSgAafnngj_Q096nJ5ncQ',
+    'mat_masking_2M': 'https://drive.google.com/uc?id=1XBCOKhZutkDhSgAafnngj_Q096nJ5ncQ',
+    'mat_masking_20M': 'https://drive.google.com/uc?id=1XBCOKhZutkDhSgAafnngj_Q096nJ5ncQ'
 }
 
 
@@ -31,5 +31,5 @@ class MatConfig(PretrainedConfigMixin):
     generator_n_outputs: int = 1
 
     @classmethod
-    def _get_arch_from_pretrained_name(cls, pretrained_name: str) -> str:
-        return MAT_CONFIG_ARCH.get(pretrained_name, None)
+    def _get_archive_dict(cls) -> dict:
+        return MAT_CONFIG_ARCH
