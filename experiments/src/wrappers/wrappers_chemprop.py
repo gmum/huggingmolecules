@@ -9,6 +9,11 @@ from src.huggingmolecules.featurization.featurization_api import PretrainedFeatu
 from src.huggingmolecules.featurization.featurization_common_utils import stack_y_list
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 
+try:
+    import chemprop
+except ImportError:
+    raise ImportError('Please install chemprop v.1.1.0 (pip install chemprop==1.1.0) '
+                      'from https://github.com/chemprop/chemprop to use ChempropModelWrapper.')
 
 @dataclass
 class ChempropConfig(PretrainedConfigMixin):
@@ -33,7 +38,6 @@ class ChempropFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChempropB
         print(self.features_generators)
 
     def _collate_encodings(self, encodings: List[Tuple[Any, Optional[np.array], float]]) -> ChempropBatchEncoding:
-        import chemprop
         mol_graph_list, features_list, y_list = zip(*encodings)
         batch_mol_graph = chemprop.features.BatchMolGraph(mol_graph_list)
         batch_features = \
@@ -44,7 +48,6 @@ class ChempropFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChempropB
                                      batch_size=len(y_list))
 
     def _encode_smiles(self, smiles: str, y: Optional[float]) -> Tuple[Any, np.array, float]:
-        import chemprop
         datapoint = chemprop.data.MoleculeDatapoint([smiles], features_generator=self.features_generators)
         mol_graph = chemprop.features.MolGraph(datapoint.mol[0])
         features = datapoint.features
@@ -53,7 +56,6 @@ class ChempropFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChempropB
 
 class ChempropModelWrapper(PretrainedModelBase):
     def __init__(self, config):
-        import chemprop
         super().__init__(config)
         args = chemprop.args.TrainArgs()
         args.parse_args(args=["--data_path", "non_existent", "--dataset_type", 'regression'])

@@ -10,6 +10,12 @@ from src.huggingmolecules.featurization.featurization_api import PretrainedFeatu
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
+try:
+    import molbert
+except ImportError:
+    raise ImportError('Please install molbert from the fork https://github.com/panpiort8/MolBERT '
+                      'to use MolbertModelWrapper.')
+
 @dataclass
 class MolbertConfig(PretrainedConfigMixin):
     max_size: int = 512
@@ -106,7 +112,6 @@ class MolbertModelWrapper(PretrainedModelBase[MolbertBatchEncoding, MolbertConfi
                         pretrained_name: str, *,
                         excluded: List[str] = None,
                         config: MolbertConfig = None) -> "MolbertModelWrapper":
-        from molbert.apps.finetune import FinetuneSmilesMolbertApp
         if not config:
             config = MolbertConfig()
 
@@ -131,6 +136,12 @@ class MolbertModelWrapper(PretrainedModelBase[MolbertBatchEncoding, MolbertConfi
         )
 
         raw_args = raw_args_str.split(" ")
-        args = FinetuneSmilesMolbertApp().parse_args(args=raw_args)
-        model = FinetuneSmilesMolbertApp().get_model(args)
+        from molbert.apps.finetune import FinetuneSmilesMolbertApp
+        try:
+            args = FinetuneSmilesMolbertApp().parse_args(args=raw_args)
+            model = FinetuneSmilesMolbertApp().get_model(args)
+        except FileNotFoundError as error:
+            print(error)
+            raise RuntimeError('Please follow README.md from fork https://github.com/panpiort8/MolBERT '
+                               'to download the pretrained MolBERT model')
         return cls(model, config)

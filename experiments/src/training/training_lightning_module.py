@@ -1,7 +1,9 @@
-from typing import Optional
+from typing import Optional, Callable, Dict, Type
 
 import pytorch_lightning as pl
 import torch
+from pytorch_lightning.metrics import Metric
+from torch import Tensor
 
 from experiments.src.training.training_metrics import BatchWeightedLoss
 from src.huggingmolecules.featurization.featurization_api import BatchEncodingProtocol
@@ -9,7 +11,11 @@ from src.huggingmolecules.models.models_api import PretrainedModelBase
 
 
 class TrainingModule(pl.LightningModule):
-    def __init__(self, model: PretrainedModelBase, *, loss_fn, optimizer, metric_cls):
+    def __init__(self,
+                 model: PretrainedModelBase, *,
+                 loss_fn: Callable[[Tensor, Tensor], Tensor],
+                 optimizer: torch.optim.Optimizer,
+                 metric_cls: Type[Metric]):
         super().__init__()
         self.model = model
         self.loss_fn = loss_fn
@@ -28,7 +34,7 @@ class TrainingModule(pl.LightningModule):
     def forward(self, batch: BatchEncodingProtocol):
         return self.model.forward(batch)
 
-    def _step(self, mode: str, batch: BatchEncodingProtocol, batch_idx: int):
+    def _step(self, mode: str, batch: BatchEncodingProtocol, batch_idx: int) -> Dict[str, torch.Tensor]:
         output = self.forward(batch)
         loss = self.loss_fn(output, batch.y)
         preds = torch.mean(torch.stack(output), dim=0) if isinstance(output, tuple) else output
@@ -41,13 +47,13 @@ class TrainingModule(pl.LightningModule):
 
         return {'loss': loss, 'output': output}
 
-    def training_step(self, batch: BatchEncodingProtocol, batch_idx: int):
+    def training_step(self, batch: BatchEncodingProtocol, batch_idx: int) -> torch.Tensor:
         return self._step('train', batch, batch_idx)['loss']
 
     def on_validation_epoch_start(self) -> None:
         self.outputs['valid'] = []
 
-    def validation_step(self, batch: BatchEncodingProtocol, batch_idx: int):
+    def validation_step(self, batch: BatchEncodingProtocol, batch_idx: int) -> torch.Tensor:
         outputs = self._step('valid', batch, batch_idx)
         self.outputs['valid'].append(outputs['output'])
         return outputs['loss']
@@ -55,10 +61,10 @@ class TrainingModule(pl.LightningModule):
     def on_test_epoch_start(self) -> None:
         self.outputs['test'] = []
 
-    def test_step(self, batch: BatchEncodingProtocol, batch_idx: int):
+    def test_step(self, batch: BatchEncodingProtocol, batch_idx: int) -> torch.Tensor:
         outputs = self._step('test', batch, batch_idx)
         self.outputs['test'].append(outputs['output'])
         return outputs['loss']
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> torch.optim.Optimizer:
         return self.optimizer

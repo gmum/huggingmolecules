@@ -9,6 +9,11 @@ from src.huggingmolecules.featurization.featurization_api import PretrainedFeatu
 from src.huggingmolecules.featurization.featurization_common_utils import stack_y_list
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 
+try:
+    import transformers
+except ImportError:
+    raise ImportError('Please install transformers (pip install transformers) '
+                      'from https://github.com/huggingface/transformers to use ChembertaModelWrapper.')
 
 @dataclass
 class ChembertaConfig(PretrainedConfigMixin):
@@ -31,7 +36,6 @@ class ChembertaBatchEncoding(RecursiveToDeviceMixin):
 
 class ChembertaFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChembertaBatchEncoding, ChembertaConfig]):
     def __init__(self, config: ChembertaConfig):
-        import transformers
         super().__init__(config)
         self.tokenizer = transformers.AutoTokenizer.from_pretrained(config.pretrained_name)
 
@@ -72,7 +76,6 @@ class ChembertaModelWrapper(PretrainedModelBase):
                         pretrained_name: str, *,
                         excluded: List[str] = None,
                         config: ChembertaConfig = None) -> "ChembertaModelWrapper":
-        import transformers
         model = transformers.AutoModelForSequenceClassification.from_pretrained(pretrained_name, num_labels=1)
         if not config:
             config = ChembertaConfig()

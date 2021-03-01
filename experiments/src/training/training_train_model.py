@@ -58,7 +58,7 @@ def train_model(*,
     train_loader, val_loader, test_loader = get_data_loaders(featurizer,
                                                              batch_size=batch_size,
                                                              num_workers=num_workers,
-                                                             cache=cache_encodings)
+                                                             cache_encodings=cache_encodings)
 
     trainer.fit(pl_module,
                 train_dataloader=train_loader,

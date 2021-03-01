@@ -104,7 +104,7 @@ config = MatConfig.from_pretrained('mat_masking_20M')
 config = MatConfig.from_pretrained('mat_masking_20M', init_type='normal')
 
 # Saving the pre-defined config with previous modification:
-config.save('mat_masking_20M_normal.json')
+config.save_to_cache('mat_masking_20M_normal.json')
 
 # Restoring the previously saved config:
 config = MatConfig.from_pretrained('mat_masking_20M_normal.json')
@@ -175,9 +175,19 @@ It's recommended to run experiments from the source code. For the moment there a
 * ```experiments/tune_hyper.py``` - for hyper-parameters tuning with optuna package
 * ```experiments/benchmark_1.py``` - for benchmarking based on hyper-parameters tuning
 
-### Additional dependencies
+### Requirements
 
-// TODO
+In addition to dependencies defined in the src/ module, the experiments/ module goes along with few others. To install them, run:
+
+```pip install -r experiments/requirements.txt```
+
+The following packages are crucial for functioning of the experiments/ module:
+* pytorch lightning
+* optuna
+* gin-config
+* TDC
+
+In addition, it's recommended to install neptune package and enable it in ```experiments/configs/setup.gin``` file.
 
 ### Running scripts:
 
@@ -250,7 +260,7 @@ python -m experiments.benchmark_1 --results_only /
 ```
 
 The above script won't perform any fine-tuning, but will only compute the benchmark result. If we had neptune enabled
-in ```experiments/configs/setup.gin``` (it is enabled by default), all data necessary to compute the result will be
+in ```experiments/configs/setup.gin```, all data necessary to compute the result will be
 fetched from the neptune server.
 
 ## Benchmark results

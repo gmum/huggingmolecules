@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 import gin
 
@@ -79,7 +79,7 @@ def get_formatted_config_str(excluded: Optional[List[str]] = None):
     return gin.config._config_str(config_map)
 
 
-def parse_gin_str(gin_str):
+def parse_gin_str(gin_str: str) -> Dict[str, Any]:
     gin_dict = {}
     parser = gin.config.config_parser.ConfigParser(gin_str, gin.config.ParserDelegate())
     for statement in parser:
@@ -94,7 +94,7 @@ def get_default_name(prefix: str = "",
                      task_name: Optional[str] = None,
                      dataset_name: Optional[str] = None,
                      assay_name: Optional[str] = None,
-                     full_name: Optional[str] = None):
+                     full_name: Optional[str] = None) -> str:
     if full_name:
         return full_name
     prefix = f'{prefix}_' if len(prefix) > 0 else ""

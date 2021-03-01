@@ -3,18 +3,22 @@ import itertools
 import logging
 import os
 import pickle
-from itertools import chain, combinations
-from typing import List, Optional, Tuple
+import tempfile
+from typing import List, Optional, Tuple, Any, Dict
 
+import filelock
 import gin
 import pandas as pd
-import pytorch_lightning as pl
 import torch
 
-from experiments.src.gin import CONFIGS_ROOT
+from experiments.src.gin import CONFIGS_ROOT, parse_gin_str
 from experiments.src.gin import get_default_name
-from experiments.src.training.training_utils import get_loss_fn, get_metric_cls, get_data_split
-from experiments.src.wrappers.wrappers_molbert import MolbertFeaturizer
+from experiments.src.training.training_utils import get_data_split
+from experiments.src.wrappers.wrappers_molbert import MolbertFeaturizer, MolbertConfig
+from src.huggingmolecules.downloading.downloading_utils import HUGGINGMOLECULES_CACHE
+
+default_cache_dir = os.path.join(HUGGINGMOLECULES_CACHE, 'benchmark_results')
+HUGGINGMOLECULES_BENCHMARK_CACHE = os.getenv("HUGGINGMOLECULES_BENCHMARK_CACHE", default_cache_dir)
 
 
 class EnsembleElement:
@@ -26,71 +30,80 @@ class EnsembleElement:
     def __repr__(self):
         return f'{self.name}{self.params}'
 
-    def _cache_repr(self):
+    @property
+    def cache_filename(self):
         params = '_'.join(f'{k}_{v}' for k, v in sorted(self.params.items()))
         return f'{self.name}_{params}_cached'
 
-    def save(self, cache_dir: str):
-        file_path = os.path.join(cache_dir, self._cache_repr())
-        with open(file_path, 'wb') as fp:
-            pickle.dump(self.outputs, fp)
+    @property
+    def cache_dir(self):
+        return os.path.expanduser(HUGGINGMOLECULES_BENCHMARK_CACHE)
 
-    def load(self, cache_dir: str):
-        logging.info(f'Loading {self} from cache')
-        file_path = os.path.join(cache_dir, self._cache_repr())
-        with open(file_path, 'rb') as fp:
-            self.outputs = pickle.load(fp)
+    @property
+    def cache_path(self):
+        file_path = os.path.join(self.cache_dir, self.cache_filename)
+        return os.path.expanduser(file_path)
 
-    def is_cached(self, cache_dir: str):
-        logging.info(f'Caching {self}')
-        file_path = os.path.join(cache_dir, self._cache_repr())
-        return os.path.exists(file_path)
+    @property
+    def lock_path(self):
+        return f'{self.cache_path}.lock'
 
-    def remove_cache(self, cache_dir: str):
-        file_path = os.path.join(cache_dir, self._cache_repr())
-        os.remove(file_path)
+    def save_to_cache(self):
+        logging.info(f'Caching {self}...')
+        os.makedirs(self.cache_dir, exist_ok=True)
+        with filelock.FileLock(self.lock_path):
+            with open(self.cache_path, 'wb') as fp:
+                pickle.dump(self.outputs, fp)
 
+    def load_from_cache(self):
+        logging.info(f'Loading {self} from cache...')
+        with filelock.FileLock(self.lock_path):
+            with open(self.cache_path, 'rb') as fp:
+                self.outputs = pickle.load(fp)
 
-def get_names_list(prefix_list: Optional[List[str]],
-                   models_names_list: Optional[List[str]]):
-    models_names_list = models_names_list if models_names_list else [None]
-    prefix_list = prefix_list if prefix_list else [None]
+    def is_cached(self):
+        return os.path.exists(self.cache_path)
 
-    names_list = []
-    for prefix, model in itertools.zip_longest(prefix_list, models_names_list):
-        if model:
-            gin_path = os.path.join(CONFIGS_ROOT, 'models', f'{model}.gin')
-            with gin.unlock_config():
-                gin.parse_config_file(gin_path)
-        prefix = prefix if prefix else gin.query_parameter('name.prefix')
-        name = get_default_name(prefix=prefix)
-        names_list.append(name)
-
-    return names_list
+    def remove_cache(self):
+        with filelock.FileLock(self.lock_path):
+            os.remove(self.cache_path)
 
 
-def get_params_dict():
-    params_dict: dict = gin.query_parameter('optuna.params')
-    return {k: v.__deepcopy__(None) if isinstance(v, gin.config.ConfigurableReference) else v
-            for k, v in params_dict.items()}
+# fetching data
+
+def fetch_data(names_list: List[str]) -> Tuple[List[EnsembleElement], dict]:
+    loaded, missing = _load_data_from_cache(names_list)
+    if len(missing) > 0:
+        if gin.query_parameter('train.use_neptune'):
+            _fetch_data_from_neptune(missing)
+        else:
+            _fetch_data_locally(missing)
+        for model in missing:
+            model.save_to_cache()
+
+    models_list = loaded + missing
+    check_models_list(models_list)
+
+    if any('MolbertModelWrapper' in item for item in names_list):
+        if not all('MolbertModelWrapper' in item for item in names_list):
+            raise NotImplementedError('Ensembling molbert with other models is not implemented yet.')
+        targets = _load_targets_for_molbert(models_list)
+    else:
+        targets = _load_targets()
+    return models_list, targets
 
 
-def get_params_product_list(params_dict):
-    params_dict = {k: list(map(lambda x: (k, x), v)) for k, v in params_dict.items()}
-    return [dict(params) for params in itertools.product(*params_dict.values())]
-
-
-def load_data_from_cache(names_list, cache_dir):
+def _load_data_from_cache(names_list):
     params_dict = get_params_dict()
     params_dict.pop('data.split_seed')
-    hps_list = get_params_product_list(params_dict)
+    hps_list = _get_params_product_list(params_dict)
     loaded = []
     missing = []
     for name in names_list:
         for hps in hps_list:
             model = EnsembleElement(name, hps)
-            if model.is_cached(cache_dir):
-                model.load(cache_dir)
+            if model.is_cached():
+                model.load_from_cache()
                 loaded.append(model)
             else:
                 missing.append(model)
@@ -98,60 +111,17 @@ def load_data_from_cache(names_list, cache_dir):
     return loaded, missing
 
 
-def load_targets():
-    targets = {'valid': {}, 'test': {}}
-    seed_list = get_params_dict()['data.split_seed']
-    for seed in seed_list:
-        data = get_data_split(split_seed=seed)
-        targets['valid'][seed] = torch.tensor(data['valid']['Y']).float()
-        targets['test'][seed] = torch.tensor(data['test']['Y']).float()
-    return targets
+class _UnpicklerCPU(pickle.Unpickler):
+    def find_class(self, module, name):
+        if module == 'torch.storage' and name == '_load_from_bytes':
+            return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
+        else:
+            return super().find_class(module, name)
 
 
-def load_targets_for_molbert(models_list):
-    targets = {'valid': {}, 'test': {}}
-    seed_list = get_params_dict()['data.split_seed']
-    featurizer = MolbertFeaturizer(None)
-    for seed in seed_list:
-        data = get_data_split(split_seed=seed)
-        targets['valid'][seed] = featurizer(data['valid']['X'], data['valid']['Y']).y.view(-1)
+# fetching data from neptune
 
-        batch = featurizer(data['test']['X'], data['test']['Y'])
-        test_y = batch.y.view(-1)
-        invalid_y = batch.invalid_y
-        if invalid_y.shape[0] > 0:
-            print(f'Missing {invalid_y.shape[0]} molecules from test set')
-            major = torch.mean(test_y)
-            test_y = torch.cat([test_y, torch.tensor(invalid_y).float()])
-            for model in models_list:
-                if 'MolbertModelWrapper' in model.name:
-                    output = model.outputs['test'][seed]
-                    model.outputs['test'][seed] = torch.cat([output, major.expand_as(invalid_y)])
-
-        targets['test'][seed] = test_y
-
-    return targets
-
-
-def fetch_data(names_list: List[str], cache_dir: str) -> Tuple[List[EnsembleElement], dict]:
-    os.makedirs(cache_dir, exist_ok=True)
-    loaded, missing = load_data_from_cache(names_list, cache_dir)
-    if len(missing) > 0:
-        fetch_data_from_neptune(missing)
-        for model in missing:
-            model.save(cache_dir)
-
-    models_list = loaded + missing
-    check_models_list(models_list, cache_dir)
-
-    if any('MolbertModelWrapper' in item for item in names_list):
-        targets = load_targets_for_molbert(models_list)
-    else:
-        targets = load_targets()
-    return models_list, targets
-
-
-def fetch_data_from_neptune(models_list: List[EnsembleElement]) -> None:
+def _fetch_data_from_neptune(models_list: List[EnsembleElement]) -> None:
     import neptune
     user_name = gin.query_parameter('neptune.user_name')
     project_name = gin.query_parameter('neptune.project_name')
@@ -185,34 +155,112 @@ def fetch_data_from_neptune(models_list: List[EnsembleElement]) -> None:
         for idx, row in group.iterrows():
             seed = row['parameter_data.split_seed']
             neptune_id = row['id']
-            model.outputs['valid'][seed] = get_output_from_artifact(project=project, id=neptune_id,
-                                                                    artifact_name='valid_output.pickle')
-            model.outputs['test'][seed] = get_output_from_artifact(project=project, id=neptune_id,
-                                                                   artifact_name='test_output.pickle')
+            model.outputs['valid'][seed] = _fetch_output_from_neptune(project=project, id=neptune_id,
+                                                                      artifact_name='valid_output.pickle')
+            model.outputs['test'][seed] = _fetch_output_from_neptune(project=project, id=neptune_id,
+                                                                     artifact_name='test_output.pickle')
 
 
-class UnpicklerCPU(pickle.Unpickler):
-    def find_class(self, module, name):
-        if module == 'torch.storage' and name == '_load_from_bytes':
-            return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
-        else:
-            return super().find_class(module, name)
-
-
-def get_output_from_artifact(*, project, id: str, artifact_name: str):
-    tmp_path = '/tmp/huggingmolecules_experiments/'
+def _fetch_output_from_neptune(*, project, id: str, artifact_name: str) -> Any:
     try:
-        experiment = project.get_experiments(id=id)[0]
-        experiment.download_artifact(artifact_name, tmp_path)
-        with open(os.path.join(tmp_path, artifact_name), 'rb') as fp:
-            output = UnpicklerCPU(fp).load()
-        os.system(f'rm -rf {tmp_path}')
+        with tempfile.TemporaryDirectory() as tmp:
+            experiment = project.get_experiments(id=id)[0]
+            experiment.download_artifact(artifact_name, tmp)
+            output = _fetch_output_locally(os.path.join(tmp, artifact_name))
     except Exception as e:
         raise RuntimeError(f'Downloading artifacts failed on {id}. Exception: {e}')
     return output
 
 
-def check_models_list(models_list: List[EnsembleElement], cache_dir: str):
+# fetching data locally
+
+def _fetch_output_locally(output_path: str) -> Any:
+    with open(output_path, 'rb') as fp:
+        return _UnpicklerCPU(fp).load()
+
+
+def _fetch_data_locally(models_list: List[EnsembleElement]) -> None:
+    data_dict = {}
+    for model_name in set(model.name for model in models_list):
+        data_dict.update(_fetch_data_dict_locally(model_name))
+
+    for model in models_list:
+        seed_list = get_params_dict()['data.split_seed']
+        for seed in seed_list:
+            params = {k: v for k, v in model.params.items()}
+            params.update({'name': model.name, 'data.split_seed': seed})
+            outputs = data_dict[frozenset(params.items())]
+            model.outputs['valid'][seed] = outputs['valid']
+            model.outputs['test'][seed] = outputs['test']
+
+
+def _fetch_data_dict_locally(model_name: str) -> Dict[frozenset, dict]:
+    data_dict = {}
+    params_dict = get_params_dict()
+    root_path = gin.query_parameter('optuna.root_path')
+    save_path = os.path.join(root_path, model_name)
+    for path in os.listdir(save_path):
+        trial_path = os.path.join(save_path, path)
+        if os.path.isdir(trial_path):
+            experiment_path = os.path.join(trial_path, model_name)
+
+            gin_path = os.path.join(experiment_path, "gin-config-essential.txt")
+            with open(gin_path, 'r') as fp:
+                gin_str = fp.read()
+            gin_dict = parse_gin_str(gin_str)
+            params = {k: v for k, v in gin_dict.items() if k in params_dict.keys()}
+            params.update({'name': model_name})
+
+            outputs = {
+                'valid': _fetch_output_locally(os.path.join(experiment_path, 'valid_output.pickle')),
+                'test': _fetch_output_locally(os.path.join(experiment_path, 'test_output.pickle'))
+            }
+
+            data_dict[frozenset(params.items())] = outputs
+
+    return data_dict
+
+
+# loading targets
+
+def _load_targets() -> Dict[str, Dict[int, torch.FloatTensor]]:
+    targets = {'valid': {}, 'test': {}}
+    seed_list = get_params_dict()['data.split_seed']
+    for seed in seed_list:
+        data = get_data_split(split_seed=seed)
+        targets['valid'][seed] = torch.tensor(data['valid']['Y']).float()
+        targets['test'][seed] = torch.tensor(data['test']['Y']).float()
+    return targets
+
+
+def _load_targets_for_molbert(models_list: List[EnsembleElement]) -> Dict[str, Dict[int, torch.FloatTensor]]:
+    targets = {'valid': {}, 'test': {}}
+    seed_list = get_params_dict()['data.split_seed']
+    featurizer = MolbertFeaturizer(MolbertConfig())
+    for seed in seed_list:
+        data = get_data_split(split_seed=seed)
+        targets['valid'][seed] = featurizer(data['valid']['X'], data['valid']['Y']).y.view(-1)
+
+        batch = featurizer(data['test']['X'], data['test']['Y'])
+        test_y = batch.y.view(-1)
+        invalid_y = batch.invalid_y
+        if invalid_y.shape[0] > 0:
+            print(f'Missing {invalid_y.shape[0]} molecules from test set')
+            major = torch.mean(test_y)
+            test_y = torch.cat([test_y, torch.tensor(invalid_y).float()])
+            for model in models_list:
+                if 'MolbertModelWrapper' in model.name:
+                    output = model.outputs['test'][seed]
+                    model.outputs['test'][seed] = torch.cat([output, major.expand_as(invalid_y)])
+
+        targets['test'][seed] = test_y
+
+    return targets
+
+
+# helpers
+
+def check_models_list(models_list: List[EnsembleElement]) -> None:
     missing = False
     seed_list = get_params_dict()['data.split_seed']
     for model in models_list:
@@ -221,120 +269,35 @@ def check_models_list(models_list: List[EnsembleElement], cache_dir: str):
                 if seed not in model.outputs[phase]:
                     missing = True
                     logging.error(f"Model {model} lacks outputs['{phase}'][{seed}].")
-                    if model.is_cached(cache_dir):
-                        model.remove_cache(cache_dir)
+                    if model.is_cached():
+                        model.remove_cache()
     assert not missing
 
 
-# Evaluation
+def get_names_list(prefix_list: Optional[List[str]],
+                   models_names_list: Optional[List[str]]) -> List[str]:
+    models_names_list = models_names_list if models_names_list else [None]
+    prefix_list = prefix_list if prefix_list else [None]
 
-def pick_best_ensemble(models_list: List[EnsembleElement], *, targets, max_size, names_list, method):
-    if method == 'brute':
-        return pick_best_ensemble_brute(models_list, targets=targets, max_size=max_size)
-    elif method == 'greedy':
-        return pick_best_ensemble_greedy(models_list, targets=targets, max_size=max_size)
-    elif method == 'all':
-        if not max_size:
-            return models_list
-        size = max_size // len(names_list)
-        split = {k: [model for model in models_list if model.name == k][:size] for k in names_list}
-        return [model for sublist in split.values() for model in sublist]
-    else:
-        raise NotImplementedError
+    names_list = []
+    for prefix, model in itertools.zip_longest(prefix_list, models_names_list):
+        if model:
+            gin_path = os.path.join(CONFIGS_ROOT, 'models', f'{model}.gin')
+            with gin.unlock_config():
+                gin.parse_config_file(gin_path)
+        prefix = prefix if prefix else gin.query_parameter('name.prefix')
+        name = get_default_name(prefix=prefix)
+        names_list.append(name)
 
-
-def pick_best_ensemble_greedy(models_list: List[EnsembleElement], *,
-                              targets,
-                              max_size: Optional[int] = None):
-    n = max_size if max_size else len(models_list)
-
-    metric_fn = get_metric_cls()()
-    agg_fn = min if metric_fn.direction == 'minimize' else max
-
-    ensemble = []
-    losses = []
-    best_loss = float('inf')
-    for i in range(n):
-        for idx, model in enumerate(models_list):
-            ensemble.append(model)
-            valid_loss, std = evaluate_ensemble(ensemble, targets=targets, phase='valid', metric_fn=metric_fn)
-            losses.append((valid_loss, idx))
-            ensemble.pop()
-        curr_best_loss, curr_best_idx = agg_fn(losses)
-        if agg_fn(best_loss, curr_best_loss) and curr_best_loss != best_loss:
-            ensemble.append(models_list[curr_best_idx])
-            models_list.pop(curr_best_idx)
-            best_loss = curr_best_loss
-        else:
-            break
-
-    return ensemble
+    return names_list
 
 
-def pick_best_ensemble_brute(models_list: List[EnsembleElement], *,
-                             targets,
-                             max_size: Optional[int] = None):
-    def powerset(iterable):
-        s = list(iterable)
-        return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
-
-    metric_fn = get_metric_cls()()
-    agg_fn = min if metric_fn.direction == 'minimize' else max
-
-    max_size = max_size if max_size else len(models_list)
-    ensembles_list = [e for e in powerset(models_list) if 0 < len(e) <= max_size]
-
-    results = []
-    for ensemble in ensembles_list:
-        valid_loss, _ = evaluate_ensemble(ensemble, targets=targets, phase='valid', metric_fn=metric_fn)
-        results.append((valid_loss, ensemble))
-
-    best_valid_loss, best_ensemble = agg_fn(results)
-    return best_ensemble
+def get_params_dict() -> Dict[str, Any]:
+    params_dict: dict = gin.query_parameter('optuna.params')
+    return {k: v.__deepcopy__(None) if isinstance(v, gin.config.ConfigurableReference) else v
+            for k, v in params_dict.items()}
 
 
-def evaluate_ensemble(ensemble: List[EnsembleElement], *,
-                      targets: dict,
-                      phase: str,
-                      metric_fn: callable):
-    results = []
-    for seed in targets[phase].keys():
-        outputs = [e.outputs[phase][seed] for e in ensemble]
-        if isinstance(metric_fn, pl.metrics.Metric):
-            outputs = [torch.mean(torch.stack(output), dim=0)
-                       if isinstance(output, (tuple, list))
-                       else output for output in outputs]
-
-        mean_output = outputs[0] if len(outputs) < 2 else torch.mean(torch.stack(outputs), dim=0)
-        res = metric_fn(mean_output, targets[phase][seed])
-        results.append(res)
-
-    results = torch.stack(results)
-    mean = float(torch.mean(results))
-    std = float(torch.std(results))
-    return mean, std
-
-
-# Printing
-
-def print_results(ensemble, targets):
-    print(f'Best ensemble:')
-    for model in ensemble:
-        print(f'  {model}')
-
-    loss_fn = get_loss_fn()
-    metric_cls = get_metric_cls()
-    metric_name = metric_cls.__name__.lower()
-
-    results = []
-    for name, metric, phase in [('valid_loss', loss_fn, 'valid'),
-                                ('test_loss', loss_fn, 'test'),
-                                (f'valid_{metric_name}', metric_cls(), 'valid'),
-                                (f'test_{metric_name}', metric_cls(), 'test')]:
-        mean, std = evaluate_ensemble(ensemble, targets=targets, phase=phase, metric_fn=metric)
-        results.append((name, mean, std))
-
-    results = pd.DataFrame(results, columns=['name', 'mean', 'std'])
-    print(results.groupby(['name']).agg({'mean': 'max', 'std': 'max'}))
-    print()
-    print(f'Result: {round(mean, 3):.3f} \u00B1 {round(std, 3):.3f}')
+def _get_params_product_list(params_dict) -> List[dict]:
+    params_dict = {k: list(map(lambda x: (k, x), v)) for k, v in params_dict.items()}
+    return [dict(params) for params in itertools.product(*params_dict.values())]

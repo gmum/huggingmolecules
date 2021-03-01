@@ -9,9 +9,9 @@ from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 from experiments.src.gin import get_formatted_config_str
+from src.huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
 
 
-# TODO can be replaced with trainer.experiment call
 class NeptuneCompatibleCallback(Callback):
     def __init__(self):
         super(NeptuneCompatibleCallback, self).__init__()
@@ -130,7 +130,7 @@ class ModelConfigSaver(NeptuneCompatibleCallback):
         self.target_name = target_name
 
     def on_train_start(self, trainer, pl_module):
-        config = pl_module.model.config
+        config: PretrainedConfigMixin = pl_module.model.config
         target_path = os.path.join(trainer.default_root_dir, self.target_name)
         config.save(target_path)
         if self.neptune:

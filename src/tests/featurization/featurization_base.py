@@ -33,7 +33,7 @@ class FeaturizationApiTestBase(AbstractTestCase):
         config = self.config_cls.from_pretrained(self.get_random_arch_key())
         with tempfile.TemporaryDirectory() as tmp:
             json_path = os.path.join(tmp, 'config.json')
-            config.save(json_path)
+            config.save_to_cache(json_path)
             featurizer = self.featurizer_cls.from_pretrained(json_path)
 
         self.test.assertEqual(config.to_dict(), featurizer.config.to_dict())

@@ -121,12 +121,18 @@ class WeightRemoverGroupBy(WeightRemoverCallbackBase):
         return params_dict
 
 
-def enqueue_failed_trials(study):
+def enqueue_failed_trials(study, retry_not_completed: bool):
     import optuna
     params_set = set(tuple(trial.params) for trial in study.get_trials()
                      if trial.state == optuna.trial.TrialState.COMPLETE)
+
+    if retry_not_completed:
+        condition = lambda trial: trial.state != optuna.trial.TrialState.COMPLETE
+    else:
+        condition = lambda trial: trial.state == optuna.trial.TrialState.FAIL
+
     for trial in study.get_trials():
-        if trial.state == optuna.trial.TrialState.FAIL and tuple(trial.params) not in params_set:
+        if condition(trial) and tuple(trial.params) not in params_set:
             params_set.add(tuple(trial.params))
             study.enqueue_trial(trial.params)
 

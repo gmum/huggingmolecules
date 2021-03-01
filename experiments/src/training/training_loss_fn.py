@@ -5,8 +5,8 @@ from torch.nn import functional as F
 
 
 class RMSELoss:
-    def __call__(self, input, target):
-        return torch.sqrt(F.mse_loss(input, target))
+    def __call__(self, preds: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        return torch.sqrt(F.mse_loss(preds, target))
 
 
 class GroverLoss:
@@ -22,7 +22,7 @@ class GroverLoss:
         self.dist_loss = nn.MSELoss()
         self.dist_coff = dist_coff
 
-    def __call__(self, preds, target):
+    def __call__(self, preds: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         pred_1, pred_2 = preds
         dist_loss = self.dist_loss(torch.sigmoid(pred_1), torch.sigmoid(pred_2))
         pred_loss_1 = self.pred_loss(pred_1, target)

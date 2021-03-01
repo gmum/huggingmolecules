@@ -23,7 +23,8 @@ def tune_hyper(*,
                sampler_name: str = 'TPESampler',
                storage: Optional[str] = None,
                resume: bool = False,
-               weight_remover: Optional[str] = None):
+               weight_remover: Optional[str] = None,
+               retry_not_completed: bool = False):
     import optuna
 
     study_name = get_default_name()
@@ -37,7 +38,7 @@ def tune_hyper(*,
                                 direction=direction)
 
     if resume:
-        enqueue_failed_trials(study)
+        enqueue_failed_trials(study, retry_not_completed)
 
     save_path = os.path.join(root_path, study_name)
     objective = Objective(model,
