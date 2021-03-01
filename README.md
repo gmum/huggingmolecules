@@ -1,7 +1,7 @@
 # Huggingmolecules
 
-We envision models that are pretrained a vast range of domain-relevant tasks to become the backbone of drug discovery,
-and in the long run other applications of predictive modeling to chemistry. This repository aims to further this vision
+We envision models that are pre-trained on a vast range of domain-relevant tasks to become the backbone of the drug discovery
+and, in the long run, other applications of predictive modeling to chemistry. This repository aims to further this vision
 and give easy access to state-of-the-art pre-trained models.
 
 ## Quick tour
@@ -61,31 +61,32 @@ pip install -e ./src
 
 ## Project Structure
 
-The project consists of two main modules: src/ and experiments/.
+The project consists of two main modules: src/ and experiments/ modules:
 
 * The src/ module contains abstract interfaces for pre-trained models along with their implementations based on pytorch
   library. This module makes configuring, downloading and running existing models easy and out-of-the-box.
-* The experiments/ module makes use of abstract interfaces defined in src/ module and implements scripts based on
+* The experiments/ module makes use of abstract interfaces defined in the src/ module and implements scripts based on
   pytorch lightning for running various experiments. This module makes training, benchmarking and hyper-tuning of models
   flawless and easily extensible.
 
 ## Supported models architectures
 
-Huggingmolecules currently provides the following architectures:
+Huggingmolecules currently provides the following models architectures:
 
-* MAT
-* MAT++
-* GROVER
+* [MAT](https://github.com/ardigen/MAT)
+* [MAT++]()
+* [GROVER](https://github.com/tencent-ailab/grover)
 
-For ease of benchmarking, we also include wrappers in the experiments/ module for the following architectures:
+For ease of benchmarking, we also include wrappers in the experiments/ module for three other models architectures:
 
-* MolBERT
-* ChemBERTa
-* chemprop
+* [chemprop](https://github.com/chemprop/chemprop)
+* [ChemBERTa](https://github.com/seyonechithrananda/bert-loves-chemistry)
+* [MolBERT](https://github.com/BenevolentAI/MolBERT)
+
 
 ## The src/ module
 
-The implementations of the models in src/ module are divided into three modules: configuration, featurization and models
+The implementations of the models in the src/ module are divided into three modules: configuration, featurization and models
 module. The relation between these modules is shown on the following examples based on the MAT model:
 
 ### Configuration examples
@@ -93,20 +94,20 @@ module. The relation between these modules is shown on the following examples ba
 ```python
 from huggingmolecules import MatConfig
 
-# The config with default parameters values, 
+# Build the config with default parameters values, 
 # except 'd_model' parameter, which is set to 1200:
 config = MatConfig(d_model=1200)
 
-# The pre-defined config:
+# Build the pre-defined config:
 config = MatConfig.from_pretrained('mat_masking_20M')
 
-# The pre-defined config with 'init_type' parameter set to 'normal':
+# Build the pre-defined config with 'init_type' parameter set to 'normal':
 config = MatConfig.from_pretrained('mat_masking_20M', init_type='normal')
 
-# Saving the pre-defined config with previous modification:
+# Save the pre-defined config with the previous modification:
 config.save_to_cache('mat_masking_20M_normal.json')
 
-# Restoring the previously saved config:
+# Restore the previously saved config:
 config = MatConfig.from_pretrained('mat_masking_20M_normal.json')
 ```
 
@@ -115,14 +116,14 @@ config = MatConfig.from_pretrained('mat_masking_20M_normal.json')
 ```python
 from huggingmolecules import MatConfig, MatFeaturizer
 
-# Building the featurizer with pre-defined config:
+# Build the featurizer with pre-defined config:
 config = MatConfig.from_pretrained('mat_masking_20M')
 featurizer = MatFeaturizer(config)
 
-# Building the featurizer in one line:
+# Build the featurizer in one line:
 featurizer = MatFeaturizer.from_pretrained('mat_masking_20M')
 
-# Encoding (featurizing) the batch of two SMILES strings: 
+# Encode (featurize) the batch of two SMILES strings: 
 batch = featurizer(['C/C=C/C', '[C]=O'])
 ```
 
@@ -131,36 +132,36 @@ batch = featurizer(['C/C=C/C', '[C]=O'])
 ```python
 from huggingmolecules import MatConfig, MatFeaturizer, MatModel
 
-# Building the model with pre-defined config:
+# Build the model with the pre-defined config:
 config = MatConfig.from_pretrained('mat_masking_20M')
 model = MatModel(config)
 
-# Loading pre-trained weights 
-# (which doesn't include the last layer aka head of the model)
+# Load the pre-trained weights 
+# (which do not include the last layer of the model)
 model.load_weights('mat_masking_20M')
 
-# Building the model and loading pre-trained weights in one line:
+# Build the model and load the pre-trained weights in one line:
 model = MatModel.from_pretrained('mat_masking_20M')
 
-# Encoding (featurizing) the batch of two SMILES strings: 
+# Encode (featurize) the batch of two SMILES strings: 
 featurizer = MatFeaturizer.from_pretrained('mat_masking_20M')
 batch = featurizer(['C/C=C/C', '[C]=O'])
 
-# Feeding the model with encoded batch:
+# Feed the model with the encoded batch:
 output = model(batch)
 
-# Saving weights of the model (usually after the fine-tuning process):
+# Save the weights of the model (usually after the fine-tuning process):
 model.save_weights('tuned_mat_masking_20M.pt')
 
-# Loading the previously saved weights
-# (which now includes the last layer of the model):
+# Load the previously saved weights
+# (which now includes all layers of the model):
 model.load_weights('tuned_mat_masking_20M.pt')
 
-# Loading the previously saved weights, but without 
+# Load the previously saved weights, but without 
 # the last layer of the model ('generator' in the case of the 'MatModel')
 model.load_weights('tuned_mat_masking_20M.pt', excluded=['generator'])
 
-# Building the model and loading previously saved weights:
+# Build the model and load the previously saved weights:
 config = MatConfig.from_pretrained('mat_masking_20M')
 model = MatModel.from_pretrained('tuned_mat_masking_20M.pt',
                                  excluded=['generator'],
@@ -169,12 +170,6 @@ model = MatModel.from_pretrained('tuned_mat_masking_20M.pt',
 
 ## The experiments/ module
 
-It's recommended to run experiments from the source code. For the moment there are three scripts implemented:
-
-* ```experiments/train.py``` - for training with pytorch lightning package
-* ```experiments/tune_hyper.py``` - for hyper-parameters tuning with optuna package
-* ```experiments/benchmark_1.py``` - for benchmarking based on hyper-parameters tuning
-
 ### Requirements
 
 In addition to dependencies defined in the src/ module, the experiments/ module goes along with few others. To install them, run:
@@ -182,14 +177,21 @@ In addition to dependencies defined in the src/ module, the experiments/ module 
 ```pip install -r experiments/requirements.txt```
 
 The following packages are crucial for functioning of the experiments/ module:
-* pytorch lightning
-* optuna
-* gin-config
-* TDC
+* [pytorch lightning](https://github.com/PyTorchLightning/pytorch-lightning)
+* [optuna](https://github.com/optuna/optuna)
+* [gin-config](https://github.com/google/gin-config)
+* [TDC](https://github.com/mims-harvard/TDC)
 
-In addition, it's recommended to install neptune package and enable it in ```experiments/configs/setup.gin``` file.
+In addition, we recommend installing neptune package and enable using neptune option it in ```experiments/configs/setup.gin``` file.
 
 ### Running scripts:
+
+We recommend running experiments scripts from the source code. 
+For the moment there are three scripts implemented:
+
+* ```experiments/train.py``` - for training with pytorch lightning package
+* ```experiments/tune_hyper.py``` - for hyper-parameters tuning with optuna package
+* ```experiments/benchmark_1.py``` - for benchmarking based on hyper-parameters tuning
 
 In general running scripts can be done with the following syntax:
 
@@ -239,7 +241,7 @@ For the moment there is one benchmark available. It works as follows:
   splits) validation loss. The result is the averaged value of test metric (metric computed on the test dataset, e.g.
   test loss) for the chosen learning rate.
 
-Running a benchmark is essentialy the same as running any other script form experiments/ module. So for instance to
+Running a benchmark is essentially the same as running any other script form experiments/ module. So for instance to
 benchmark vanilla MAT model (without pretraining) on BBB dataset using GPU 0, we simply type:
 
 ```
@@ -265,7 +267,7 @@ fetched from the neptune server.
 
 ## Benchmark results
 
-We performed the benchmark described in "Benchmarking" as ```experiments/benchmark_1.py``` for various models
-architectures and pretraining tasks. Here are the results:
+We performed the benchmark described in [Benchmarking](#benchmarking) as ```experiments/benchmark_1.py``` for various models
+architectures and pretraining tasks. Here are our results:
 
 // TODO
