@@ -1,4 +1,4 @@
-from typing import List, Iterable
+from typing import List, Iterable, Optional
 
 import torch
 
@@ -15,11 +15,11 @@ def one_hot_vector(value: int, choices: List[int], extra_category: bool = False)
     return encoding
 
 
-def stack_y(encodings: List[T_BatchEncoding]):
+def stack_y(encodings: List[T_BatchEncoding]) -> Optional[torch.FloatTensor]:
     return stack_y_list([e.y for e in encodings])
 
 
-def stack_y_list(y_list: List[float]):
+def stack_y_list(y_list: List[float]) -> Optional[torch.FloatTensor]:
     if any(y is None for y in y_list):
         return None
     else:
