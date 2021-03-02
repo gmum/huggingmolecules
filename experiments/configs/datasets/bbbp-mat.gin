@@ -2,9 +2,11 @@ include 'experiments/configs/tasks/classification.gin'
 
 # ==============================================================================
 data.task_name = 'ADME'
-data.dataset_name = 'BBB_Martins'
+data.dataset_name = 'bbbp'
+data.dataset_path = './data/bbbp'
+data.split_method = 'scaffold'
 
 # ==============================================================================
 # For benchmark only:
 # ==============================================================================
-seeds = [38435, 86810, 28404, 29029, 73033, 83377]
+seeds = [0, 1, 2, 3, 4, 5]

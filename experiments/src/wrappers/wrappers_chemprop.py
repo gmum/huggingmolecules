@@ -17,7 +17,9 @@ except ImportError:
 
 @dataclass
 class ChempropConfig(PretrainedConfigMixin):
+    d_model: int = 300
     features_generators: List[str] = None
+    depth: int = 3
 
 
 @dataclass
@@ -35,7 +37,6 @@ class ChempropFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChempropB
     def __init__(self, config: ChempropConfig):
         super().__init__(config)
         self.features_generators = config.features_generators
-        print(self.features_generators)
 
     def _collate_encodings(self, encodings: List[Tuple[Any, Optional[np.array], float]]) -> ChempropBatchEncoding:
         mol_graph_list, features_list, y_list = zip(*encodings)
@@ -55,11 +56,13 @@ class ChempropFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], ChempropB
 
 
 class ChempropModelWrapper(PretrainedModelBase):
-    def __init__(self, config):
+    def __init__(self, config: ChempropConfig):
         super().__init__(config)
         args = chemprop.args.TrainArgs()
         args.parse_args(args=["--data_path", "non_existent", "--dataset_type", 'regression'])
         args.task_names = ["whatever"]
+        args.depth = config.depth
+        args.hidden_size = config.d_model
         self.model = chemprop.models.MoleculeModel(args)
 
     @classmethod
