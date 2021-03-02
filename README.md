@@ -48,11 +48,15 @@ output = pl_module.model(batch)
 
 ## Installation
 
-Create your conda environment first:
+Create your conda environment and install rdkit package:
 
-```conda create -y -n -q huggingmolecules python=3.8.5 -c rdkit rdkit=2020.09.1```
+```
+conda create -n huggingmolecules python=3.8.5
+conda activate huggingmolecules
+conda install -c conda-forge rdkit==2020.09.1
+```
 
-Then install the package by running the following commands from the cloned directory:
+Then install the package from the cloned directory:
 
 ```
 conda activate huggingmolecules
