@@ -1,6 +1,6 @@
 # ==============================================================================
-train.use_neptune = True
-neptune.user_name = 'panpiotr8'
+train.use_neptune = False
+neptune.user_name = 'neptune_username'
 
 # ==============================================================================
 train.num_workers = 4
