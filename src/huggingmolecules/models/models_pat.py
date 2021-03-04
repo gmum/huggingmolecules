@@ -98,14 +98,14 @@ class BesselBasisLayerEnvelope(nn.Module):
         self.sqrt_cutoff = np.sqrt(2. / cutoff)
         self.inv_cutoff = 1. / cutoff
         self.envelope = Envelope(exponent=exponent)
-
-        self.frequencies = np.pi * torch.arange(1, num_radial + 1).float()
+        self.num_radial = num_radial
 
     def forward(self, inputs):
         inputs = inputs.unsqueeze(-1) + 1e-6
         d_scaled = inputs * self.inv_cutoff
         d_cutoff = self.envelope(d_scaled)
-        return (d_cutoff * torch.sin(self.frequencies * d_scaled)).permute(0, 3, 1, 2)
+        frequencies = np.pi * torch.arange(1, self.num_radial + 1, device=inputs.device).float()
+        return (d_cutoff * torch.sin(frequencies * d_scaled)).permute(0, 3, 1, 2)
 
 
 class Envelope(nn.Module):
