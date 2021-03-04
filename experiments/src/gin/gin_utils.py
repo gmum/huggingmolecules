@@ -6,9 +6,17 @@ import gin
 
 CONFIGS_ROOT = os.path.join('experiments', 'configs')
 
+
+def eval_or_str(x):
+    try:
+        return eval(x)
+    except NameError:
+        return str(x)
+
+
 additional_args = {
     'name.prefix': {'type': str},
-    'model.pretrained_name': {'type': str},
+    'model.pretrained_name': {'type': eval_or_str},
     'train.gpus': {'type': eval},
     'train.num_epochs': {'type': int},
     'benchmark.ensemble_max_size': {'type': int},
