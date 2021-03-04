@@ -122,14 +122,14 @@ class WeightRemoverGroupBy(WeightRemoverCallbackBase):
 
 
 def enqueue_failed_trials(study, retry_not_completed: bool):
-    import optuna
+    from optuna.trial import TrialState
     params_set = set(tuple(trial.params) for trial in study.get_trials()
-                     if trial.state == optuna.trial.TrialState.COMPLETE)
+                     if trial.state == TrialState.COMPLETE)
 
     if retry_not_completed:
-        condition = lambda trial: trial.state != optuna.trial.TrialState.COMPLETE
+        condition = lambda trial: trial.state not in [TrialState.COMPLETE, TrialState.WAITING]
     else:
-        condition = lambda trial: trial.state == optuna.trial.TrialState.FAIL
+        condition = lambda trial: trial.state == TrialState.FAIL
 
     for trial in study.get_trials():
         if condition(trial) and tuple(trial.params) not in params_set:
