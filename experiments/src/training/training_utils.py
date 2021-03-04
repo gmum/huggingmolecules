@@ -247,11 +247,14 @@ def _get_data_split_tdc(task_name: str,
     split = data.get_split(method=split_method, seed=split_seed, frac=split_frac)
 
     return {
-        'train': {'IDs': split['train']['Drug_ID'].to_list(), 'X': split['train']['Drug'].to_list(),
+        'train': {'IDs': split['train']['Drug_ID'].to_list(),
+                  'X': split['train']['Drug'].to_list(),
                   'Y': split['train']['Y'].to_numpy()},
-        'valid': {'IDs': split['valid']['Drug_ID'].to_list(), 'X': split['valid']['Drug'].to_list(),
+        'valid': {'IDs': split['valid']['Drug_ID'].to_list(),
+                  'X': split['valid']['Drug'].to_list(),
                   'Y': split['valid']['Y'].to_numpy()},
-        'test': {'IDs': split['test']['Drug_ID'].to_list(), 'X': split['test']['Drug'].to_list(),
+        'test': {'IDs': split['test']['Drug_ID'].to_list(),
+                 'X': split['test']['Drug'].to_list(),
                  'Y': split['test']['Y'].to_numpy()},
     }
 
@@ -263,9 +266,11 @@ def _get_data_split_csv(dataset_name: str,
                         split_frac: Tuple[float, float, float],
                         split_seed: Union[int, str]) -> Split:
     split_seed = 1234 if split_seed == "benchmark" else split_seed
+
     csv_path = os.path.join(dataset_path, f'{dataset_name.lower()}.csv')
     data = pd.read_csv(csv_path)
     data.insert(0, 'IDs', range(0, len(data)))
+
     split_path = os.path.join(dataset_path, f'split-{split_method}-{split_seed}.npy')
     if os.path.exists(split_path):
         train_data, valid_data, test_data = _split_data_from_file(data, split_path)
