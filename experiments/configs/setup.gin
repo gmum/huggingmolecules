@@ -3,4 +3,4 @@ train.use_neptune = False
 neptune.user_name = 'neptune_username'
 
 # ==============================================================================
-train.num_workers = 4
+train.num_workers = 0
