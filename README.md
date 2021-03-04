@@ -187,8 +187,19 @@ The following packages are crucial for functioning of the experiments/ module:
 * [gin-config](https://github.com/google/gin-config)
 * [TDC](https://github.com/mims-harvard/TDC)
 
-In addition, we recommend installing the neptune package and enable using neptune option in
-the ```experiments/configs/setup.gin``` file.
+### Neptune.ai
+
+In addition, we recommend installing the neptune.ai package:
+
+1. Sign up to neptune.ai at https://neptune.ai/.
+
+1. Get your Neptune API token (see
+   [getting-started](https://docs.neptune.ai/getting-started/quick-starts/hello-world.html) for help).
+1. Export your Neptune API token to ```NEPTUNE_API_TOKEN``` environment variable.
+1. Install neptune-client: 
+```pip install neptune-client```.
+1. Enable neptune.ai in the ```experiments/configs/setup.gin``` file.
+1. Update ```neptune.project_name``` parameters in ```experiments/configs/bases/*.gin``` files.
 
 ### Running scripts:
 
