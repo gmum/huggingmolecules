@@ -2,6 +2,7 @@ stderr
 cached
 targets.py
 smiles_stats.py
+run.py
 
 # shell scripts
 *.sh
