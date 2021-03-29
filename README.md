@@ -1,5 +1,7 @@
 # HuggingMolecules
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 We envision models that are pre-trained on a vast range of domain-relevant tasks to become the backbone of the drug
 discovery and, in the long run, other applications of predictive modeling to chemistry. This repository aims to further
 this vision and give easy access to state-of-the-art pre-trained models.
