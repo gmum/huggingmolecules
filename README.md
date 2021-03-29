@@ -1,4 +1,4 @@
-# Huggingmolecules
+# HuggingMolecules
 
 We envision models that are pre-trained on a vast range of domain-relevant tasks to become the backbone of the drug
 discovery and, in the long run, other applications of predictive modeling to chemistry. This repository aims to further
