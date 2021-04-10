@@ -13,28 +13,28 @@ import torch.nn.functional as F
 
 from .models_api import PretrainedModelBase
 from .models_common_utils import PositionwiseFeedForward, MultiHeadedAttention, Embedding, Encoder, Generator
-from ..configuration import PatConfig
-from ..featurization.featurization_pat import PatBatchEncoding, PatFeaturizer
+from ..configuration import MatppConfig
+from ..featurization.featurization_matpp import MatppBatchEncoding, MatppFeaturizer
 
-PAT_MODEL_ARCH = {
-    'pat_test': 'https://drive.google.com/uc?id=1hQzufXRDG9tp9FolRbOrvFxRyuLiQ9ZA'
+MATPP_MODEL_ARCH = {
+    'matpp_test': 'https://drive.google.com/uc?id=1hQzufXRDG9tp9FolRbOrvFxRyuLiQ9ZA'
 }
 
 
-class PatModel(PretrainedModelBase[PatBatchEncoding, PatConfig]):
+class MatppModel(PretrainedModelBase[MatppBatchEncoding, MatppConfig]):
     @classmethod
-    def get_config_cls(cls) -> Type[PatConfig]:
-        return PatConfig
+    def get_config_cls(cls) -> Type[MatppConfig]:
+        return MatppConfig
 
     @classmethod
-    def get_featurizer_cls(cls) -> Type[PatFeaturizer]:
-        return PatFeaturizer
+    def get_featurizer_cls(cls) -> Type[MatppFeaturizer]:
+        return MatppFeaturizer
 
     @classmethod
     def _get_archive_dict(cls) -> dict:
-        return PAT_MODEL_ARCH
+        return MATPP_MODEL_ARCH
 
-    def __init__(self, config: PatConfig):
+    def __init__(self, config: MatppConfig):
         super().__init__(config)
 
         # Embedding
@@ -48,7 +48,7 @@ class PatModel(PretrainedModelBase[PatBatchEncoding, PatConfig]):
                                                  exponent=config.envelope_exponent)
 
         # Encoder
-        attention = PatAttention(config)
+        attention = MatppAttention(config)
         sa_layer = MultiHeadedAttention(h=config.encoder_n_attn_heads,
                                         d_model=config.d_model,
                                         dropout=config.dropout,
@@ -74,7 +74,7 @@ class PatModel(PretrainedModelBase[PatBatchEncoding, PatConfig]):
         # Initialization
         self.init_weights(config.init_type)
 
-    def forward(self, batch: PatBatchEncoding):
+    def forward(self, batch: MatppBatchEncoding):
         batch_mask = torch.sum(torch.abs(batch.node_features), dim=-1) != 0
         embedded = self.src_embed(batch.node_features)
         distances_matrix = self.dist_rbf(batch.distance_matrix)
@@ -132,13 +132,13 @@ class Envelope(nn.Module):
 
 # Attention
 
-class PatAttention(nn.Module):
-    def __init__(self, config: PatConfig):
+class MatppAttention(nn.Module):
+    def __init__(self, config: MatppConfig):
         super().__init__()
         d_k = config.d_model // config.encoder_n_attn_heads
 
-        self.relative_K = PatEdgeFeaturesLayer(config)
-        self.relative_V = PatEdgeFeaturesLayer(config)
+        self.relative_K = MatppEdgeFeaturesLayer(config)
+        self.relative_V = MatppEdgeFeaturesLayer(config)
 
         self.relative_u = nn.Parameter(torch.empty(1, config.encoder_n_attn_heads, 1, d_k))
         self.relative_v = nn.Parameter(torch.empty(1, config.encoder_n_attn_heads, 1, d_k, 1))
@@ -174,9 +174,9 @@ class PatAttention(nn.Module):
         return atoms_features, p_attn
 
 
-class PatEdgeFeaturesLayer(nn.Module):
-    def __init__(self, config: PatConfig):
-        super(PatEdgeFeaturesLayer, self).__init__()
+class MatppEdgeFeaturesLayer(nn.Module):
+    def __init__(self, config: MatppConfig):
+        super(MatppEdgeFeaturesLayer, self).__init__()
         self.d_k = config.d_model // config.encoder_n_attn_heads
         self.h = config.encoder_n_attn_heads
 

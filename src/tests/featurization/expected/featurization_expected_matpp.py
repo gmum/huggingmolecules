@@ -1,10 +1,10 @@
 from numpy.ma import array
 from torch import FloatTensor
 
-from huggingmolecules.featurization.featurization_pat import PatBatchEncoding, PatMoleculeEncoding
+from huggingmolecules.featurization.featurization_matpp import MatppBatchEncoding, MatppMoleculeEncoding
 
 expected_encoded_smiles = [
-    PatMoleculeEncoding(
+    MatppMoleculeEncoding(
         node_features=array([[0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
                               0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
                              [0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0.,
@@ -103,7 +103,7 @@ expected_encoded_smiles = [
                                 [1., 0., 0., 0., 0.],
                                 [1., 0., 0., 0., 0.]]]),
         y=None),
-    PatMoleculeEncoding(
+    MatppMoleculeEncoding(
         node_features=array([[0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
                               0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
                              [0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., 0.,
@@ -168,7 +168,7 @@ expected_encoded_smiles = [
                                 [1., 0., 0.],
                                 [1., 0., 0.]]]), y=None)]
 
-expected_batch = PatBatchEncoding(
+expected_batch = MatppBatchEncoding(
     node_features=FloatTensor([[[0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
                                  0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
                                 [0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0.,

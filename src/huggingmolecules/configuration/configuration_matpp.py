@@ -2,13 +2,13 @@ from dataclasses import dataclass
 
 from .configuration_api import PretrainedConfigMixin
 
-PAT_CONFIG_ARCH = {
-    'pat_test': 'https://drive.google.com/uc?id=1sOwain-qlE17ayA1A9EF_-FIcqwqXr8M'
+MATPP_CONFIG_ARCH = {
+    'matpp_test': 'https://drive.google.com/uc?id=1sOwain-qlE17ayA1A9EF_-FIcqwqXr8M'
 }
 
 
 @dataclass
-class PatConfig(PretrainedConfigMixin):
+class MatppConfig(PretrainedConfigMixin):
     d_atom: int = 37
     d_edge: int = 40
     d_model: int = 1024
@@ -32,4 +32,4 @@ class PatConfig(PretrainedConfigMixin):
 
     @classmethod
     def _get_archive_dict(cls) -> dict:
-        return PAT_CONFIG_ARCH
+        return MATPP_CONFIG_ARCH

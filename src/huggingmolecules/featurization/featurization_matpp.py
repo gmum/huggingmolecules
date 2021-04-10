@@ -9,13 +9,13 @@ from .featurization_api import PretrainedFeaturizerMixin, RecursiveToDeviceMixin
 from .featurization_common_utils import stack_y
 from .featurization_mat_utils import add_dummy_node, build_position_matrix, build_atom_features_matrix, \
     get_mol_from_smiles, build_adjacency_matrix, pad_sequence
-from .featurization_pat_utils import build_bond_features_matrix, \
+from .featurization_matpp_utils import build_bond_features_matrix, \
     build_relative_matrix, add_mask_feature
-from ..configuration import PatConfig
+from ..configuration import MatppConfig
 
 
 @dataclass
-class PatMoleculeEncoding:
+class MatppMoleculeEncoding:
     node_features: np.ndarray
     bond_features: np.ndarray
     distance_matrix: np.ndarray
@@ -24,7 +24,7 @@ class PatMoleculeEncoding:
 
 
 @dataclass
-class PatBatchEncoding(RecursiveToDeviceMixin):
+class MatppBatchEncoding(RecursiveToDeviceMixin):
     node_features: torch.FloatTensor
     bond_features: torch.FloatTensor
     relative_matrix: torch.FloatTensor
@@ -36,12 +36,12 @@ class PatBatchEncoding(RecursiveToDeviceMixin):
         return self.batch_size
 
 
-class PatFeaturizer(PretrainedFeaturizerMixin[PatMoleculeEncoding, PatBatchEncoding, PatConfig]):
+class MatppFeaturizer(PretrainedFeaturizerMixin[MatppMoleculeEncoding, MatppBatchEncoding, MatppConfig]):
     @classmethod
-    def _get_config_cls(cls) -> Type[PatConfig]:
-        return PatConfig
+    def _get_config_cls(cls) -> Type[MatppConfig]:
+        return MatppConfig
 
-    def _encode_smiles(self, smiles: str, y: Optional[float]) -> PatMoleculeEncoding:
+    def _encode_smiles(self, smiles: str, y: Optional[float]) -> MatppMoleculeEncoding:
         mol = get_mol_from_smiles(smiles)
 
         node_features = build_atom_features_matrix(mol)
@@ -58,21 +58,21 @@ class PatFeaturizer(PretrainedFeaturizerMixin[PatMoleculeEncoding, PatBatchEncod
 
         bond_features, node_features = add_mask_feature(bond_features, node_features)
 
-        return PatMoleculeEncoding(node_features=node_features,
-                                   bond_features=bond_features,
-                                   distance_matrix=dist_matrix,
-                                   relative_matrix=relative_matrix,
-                                   y=y)
+        return MatppMoleculeEncoding(node_features=node_features,
+                                     bond_features=bond_features,
+                                     distance_matrix=dist_matrix,
+                                     relative_matrix=relative_matrix,
+                                     y=y)
 
-    def _collate_encodings(self, encodings: List[PatMoleculeEncoding]) -> PatBatchEncoding:
+    def _collate_encodings(self, encodings: List[MatppMoleculeEncoding]) -> MatppBatchEncoding:
         node_features = pad_sequence([torch.tensor(e.node_features).float() for e in encodings])
         dist_matrix = pad_sequence([torch.tensor(e.distance_matrix).float() for e in encodings])
         bond_features = pad_sequence([torch.tensor(e.bond_features).float() for e in encodings])
         relative_matrix = pad_sequence([torch.tensor(e.relative_matrix).float() for e in encodings])
 
-        return PatBatchEncoding(node_features=node_features,
-                                bond_features=bond_features,
-                                relative_matrix=relative_matrix,
-                                distance_matrix=dist_matrix,
-                                y=stack_y(encodings),
-                                batch_size=len(encodings))
+        return MatppBatchEncoding(node_features=node_features,
+                                  bond_features=bond_features,
+                                  relative_matrix=relative_matrix,
+                                  distance_matrix=dist_matrix,
+                                  y=stack_y(encodings),
+                                  batch_size=len(encodings))
