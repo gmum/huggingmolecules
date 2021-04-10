@@ -121,43 +121,55 @@ class _UnpicklerCPU(pickle.Unpickler):
 
 # fetching data from neptune
 
-def _fetch_data_from_neptune(models_list: List[EnsembleElement]) -> None:
+def get_neptune_project() -> Any:
     import neptune
     user_name = gin.query_parameter('neptune.user_name')
     project_name = gin.query_parameter('neptune.project_name')
     project = neptune.init(f'{user_name}/{project_name}')
+    return project
+
+
+def fetch_dataframe_from_neptune(neptune_project: Any, names_list: List[str],
+                                 force_fetch_all: bool = False) -> pd.DataFrame:
+    if not force_fetch_all:
+        df_list = [neptune_project.get_leaderboard(state='succeeded', tag=name) for name in names_list]
+        force_fetch_all = any(df.empty for df in df_list)
+        df = pd.concat(df_list)
+
+    if force_fetch_all:
+        df = neptune_project.get_leaderboard(state='succeeded')
+        df = df[df['name'].isin(set(names_list))]
 
     params_dict = get_params_dict()
-    hps_dict = {k: v for k, v in params_dict.items() if k != 'data.split_seed'}
-
-    datas = [project.get_leaderboard(state='succeeded', tag=model.name) for model in models_list]
-    if all(not data.empty for data in datas):
-        data = pd.concat(datas)
-    else:
-        data = project.get_leaderboard(state='succeeded')
-        data = data[data['name'].isin(set(model.name for model in models_list))]
-
-    colums = ['id', 'name'] + [f'parameter_{p}' for p in params_dict]
-    data = data[colums]
-
     for param_name, param_value in params_dict.items():
         dtype = type(param_value[0])
         param_name_pd = f'parameter_{param_name}'
-        data[param_name_pd] = data[param_name_pd].astype(dtype) if dtype != int else data[param_name_pd].astype(
+        df[param_name_pd] = df[param_name_pd].astype(dtype) if dtype != int else df[param_name_pd].astype(
             float).astype(int)
+
+    return df
+
+
+def _fetch_data_from_neptune(models_list: List[EnsembleElement]) -> None:
+    neptune_project = get_neptune_project()
+    names_list = [model.name for model in models_list]
+    df = fetch_dataframe_from_neptune(neptune_project, names_list)
+
+    columns = ['id', 'name'] + [f'parameter_{p}' for p in get_params_dict()]
+    data = df[columns]
 
     for model in models_list:
         group = data[data['name'] == model.name]
-        for param_name in hps_dict:
+        for param_name in get_hps_dict():
             val = model.params[param_name]
             group = group[group[f'parameter_{param_name}'] == val]
 
         for idx, row in group.iterrows():
             seed = row['parameter_data.split_seed']
             neptune_id = row['id']
-            model.outputs['valid'][seed] = _fetch_output_from_neptune(project=project, id=neptune_id,
+            model.outputs['valid'][seed] = _fetch_output_from_neptune(project=neptune_project, id=neptune_id,
                                                                       artifact_name='valid_output.pickle')
-            model.outputs['test'][seed] = _fetch_output_from_neptune(project=project, id=neptune_id,
+            model.outputs['test'][seed] = _fetch_output_from_neptune(project=neptune_project, id=neptune_id,
                                                                      artifact_name='test_output.pickle')
 
 
@@ -290,6 +302,11 @@ def get_names_list(prefix_list: Optional[List[str]],
         names_list.append(name)
 
     return names_list
+
+
+def get_hps_dict() -> Dict[str, Any]:
+    params_dict = get_params_dict()
+    return {k: v for k, v in params_dict.items() if k != 'data.split_seed'}
 
 
 def get_params_dict() -> Dict[str, Any]:

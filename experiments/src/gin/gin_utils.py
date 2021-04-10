@@ -22,7 +22,13 @@ additional_args = {
     'benchmark.ensemble_max_size': {'type': int},
     'benchmark.ensemble_pick_method': {'type': str},
     'benchmark.prefix_list': {'type': str, 'nargs': '+'},
-    'benchmark.models_names_list': {'type': str, 'nargs': '+'}
+    'benchmark.models_names_list': {'type': str, 'nargs': '+'},
+    'model.features_generators': {'type': str, 'nargs': '+'},
+    'model.d_model': {'type': int},
+    'model.encoder_n_layers': {'type': int},
+    'model.encoder_n_attn_heads': {'type': int},
+    'model.depth': {'type': int},
+    'model.encoder_n_blocks': {'type': int},
 }
 
 

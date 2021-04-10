@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import Tuple, List, Optional, Union, Type
+from typing import Tuple, List, Optional, Union, Type, Any
 
 import numpy as np
 import torch
@@ -49,29 +49,19 @@ class MolbertFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], MolbertBat
         from molbert.utils.featurizer.molfeaturizer import SmilesIndexFeaturizer
         self.tokenizer = SmilesIndexFeaturizer.bert_smiles_index_featurizer(config.max_size)
 
-    def _collate_encodings(self, encodings: List[Tuple[np.ndarray, float]]) -> MolbertBatchEncoding:
-        smiles_list, y_list = zip(*encodings)
-        y = np.array(y_list)
-        smiles = np.array(smiles_list)
+    def _collate_encodings(self, encodings: List[Tuple[Any, Any, float]]) -> MolbertBatchEncoding:
+        features_list, valid_list, y_list = zip(*encodings)
 
-        features, valid = self.tokenizer.transform(smiles_list)
+        features = np.vstack(features_list)
+        valid = np.hstack(valid_list)
+        y = np.array(y_list, dtype=float)
+
         valid_features = features[valid]
         valid_y = y[valid]
-
-        invalid = np.logical_not(valid)
-        invalid_y = y[invalid]
-        if np.sum(invalid) > 0:
-            invalid_smiles = smiles[invalid]
-            features, valid = self._unsalt_smiles(invalid_smiles)
-
-            if np.sum(valid) > 0:
-                valid_features = np.concatenate([valid_features, features[valid]])
-                valid_y = np.concatenate([valid_y, invalid_y[valid]])
-
-            invalid_y = invalid_y[np.logical_not(valid)]
+        invalid_y = y[np.logical_not(valid)]
 
         features = torch.tensor(valid_features)
-        y = torch.tensor(valid_y).float().view(-1, 1)
+        valid_y = torch.tensor(valid_y).view(-1, 1)
         invalid_y = torch.tensor(invalid_y).float()
         attention_mask = torch.tensor(np.zeros_like(features))
         attention_mask[features != 0] = 1
@@ -79,12 +69,13 @@ class MolbertFeaturizer(PretrainedFeaturizerMixin[Tuple[dict, float], MolbertBat
         data = {'input_ids': features, 'attention_mask': attention_mask, 'token_type_ids': type_ids}
 
         return MolbertBatchEncoding(data=data,
-                                    y=y,
+                                    y=valid_y,
                                     invalid_y=invalid_y,
                                     batch_size=len(valid_features))
 
-    def _encode_smiles(self, smiles: str, y: Optional[float]) -> Tuple[Union[np.ndarray, str], float]:
-        return smiles, y
+    def _encode_smiles(self, smiles: str, y: Optional[float]) -> Tuple[Any, Any, float]:
+        indices_array, valid = self.tokenizer.transform_single(smiles)
+        return indices_array, valid, y
 
 
 class MolbertModelWrapper(PretrainedModelBase[MolbertBatchEncoding, MolbertConfig]):

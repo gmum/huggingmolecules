@@ -30,8 +30,8 @@ def pick_best_ensemble(models_list: List[EnsembleElement], *,
         raise NotImplementedError
 
 
-def print_results(ensemble: List[EnsembleElement],
-                  targets: dict):
+def _print_benchmark_1_results(ensemble: List[EnsembleElement],
+                               targets: dict):
     print(f'Best ensemble:')
     for model in ensemble:
         print(f'  {model}')
