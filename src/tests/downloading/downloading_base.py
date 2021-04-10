@@ -1,7 +1,6 @@
 from typing import Type, List
 
 import torch
-
 from huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
 from huggingmolecules.downloading.downloading_utils import get_cache_filepath
 from huggingmolecules.models.models_api import PretrainedModelBase

@@ -16,7 +16,7 @@ class GroverMoleculeEncoding:
     f_bonds: list
     a2b: list
     b2a: list
-    b2revb: list
+    b2revb: List
     n_atoms: int
     n_bonds: int
     y: Optional[float]

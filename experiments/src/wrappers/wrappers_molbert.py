@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import Tuple, List, Optional, Union, Type, Any
+from typing import Tuple, List, Optional, Type, Any
 
 import numpy as np
 import torch
@@ -9,12 +9,12 @@ from src.huggingmolecules.configuration.configuration_api import PretrainedConfi
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin, RecursiveToDeviceMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 
-
 try:
     import molbert
 except ImportError:
     raise ImportError('Please install molbert from the fork https://github.com/panpiort8/MolBERT '
                       'to use MolbertModelWrapper.')
+
 
 @dataclass
 class MolbertConfig(PretrainedConfigMixin):

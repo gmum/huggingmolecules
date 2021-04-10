@@ -1,6 +1,5 @@
-from torch import LongTensor, FloatTensor
-
 from huggingmolecules.featurization.featurization_grover import GroverMoleculeEncoding, GroverBatchEncoding
+from torch import LongTensor, FloatTensor
 
 expected_encoded_smiles = [
     GroverMoleculeEncoding(

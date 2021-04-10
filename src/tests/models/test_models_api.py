@@ -1,10 +1,9 @@
 import unittest
 
-from torch import nn
-
 from huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
 from huggingmolecules.models.models_api import PretrainedModelBase
 from tests.models.models_base import ModelsApiTestBase
+from torch import nn
 
 
 class MockedConfig(PretrainedConfigMixin):

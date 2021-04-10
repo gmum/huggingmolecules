@@ -57,7 +57,7 @@ def add_dummy_node(*, node_features: np.ndarray = None,
     return node_features, adj_matrix, dist_matrix, bond_features
 
 
-def build_position_matrix(molecule: Mol) -> np.array:
+def build_position_matrix(molecule: Mol) -> np.ndarray:
     conf = molecule.GetConformer()
     return np.array(
         [
@@ -102,7 +102,7 @@ def get_mol_from_smiles(smiles: str) -> Mol:
     return mol
 
 
-def build_adjacency_matrix(molecule: Mol) -> np.array:
+def build_adjacency_matrix(molecule: Mol) -> np.ndarray:
     adj_matrix = np.eye(molecule.GetNumAtoms())
 
     for bond in molecule.GetBonds():

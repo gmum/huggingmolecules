@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import *
 
+import numpy as np
 import torch
 from sklearn.metrics import pairwise_distances
 
@@ -13,10 +14,10 @@ from ..configuration import MatConfig
 
 @dataclass
 class MatMoleculeEncoding:
-    node_features: torch.FloatTensor
-    adjacency_matrix: torch.FloatTensor
-    distance_matrix: torch.FloatTensor
-    y: Optional[torch.FloatTensor]
+    node_features: np.ndarray
+    adjacency_matrix: np.ndarray
+    distance_matrix: np.ndarray
+    y: Optional[float]
 
 
 @dataclass

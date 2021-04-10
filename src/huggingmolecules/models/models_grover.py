@@ -14,8 +14,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .models_api import PretrainedModelBase
-from .models_common_utils import MultiHeadedAttention, PositionwiseFeedForward, SublayerConnection
-from .models_grover_utils import get_activation_function, select_neighbor_and_aggregate
+from .models_common_utils import MultiHeadedAttention, PositionwiseFeedForward, SublayerConnection, \
+    get_activation_function
+from .models_grover_utils import select_neighbor_and_aggregate
 from ..configuration import GroverConfig
 from ..featurization.featurization_grover import GroverBatchEncoding, GroverFeaturizer
 

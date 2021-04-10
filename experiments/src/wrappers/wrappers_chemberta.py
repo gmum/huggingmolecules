@@ -15,6 +15,7 @@ except ImportError:
     raise ImportError('Please install transformers (pip install transformers) '
                       'from https://github.com/huggingface/transformers to use ChembertaModelWrapper.')
 
+
 @dataclass
 class ChembertaConfig(PretrainedConfigMixin):
     pretrained_name: str = None

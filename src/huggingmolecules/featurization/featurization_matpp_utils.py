@@ -1,10 +1,12 @@
+from typing import Tuple
+
 import numpy as np
-from rdkit.Chem import Mol
+from rdkit.Chem import Mol, Bond
 
 from .featurization_common_utils import one_hot_vector
 
 
-def get_bond_features(bond) -> np.ndarray:
+def get_bond_features(bond: Bond) -> np.ndarray:
     attributes = []
     attributes += one_hot_vector(bond.GetBondTypeAsDouble(), [1.0, 1.5, 2.0, 3.0])
     attributes.append(bond.GetIsAromatic())
@@ -14,9 +16,9 @@ def get_bond_features(bond) -> np.ndarray:
     return np.array(attributes, dtype=np.float32)
 
 
-def floyd_warshall(adj, INF=999):
+def floyd_warshall(adj: np.ndarray, inf: float = 999.0) -> np.ndarray:
     n_nodes = adj.shape[0]
-    dist = INF * np.ones((n_nodes, n_nodes))
+    dist = inf * np.ones((n_nodes, n_nodes))
     dist[adj == 1] = 1
     np.fill_diagonal(dist, 0)
 
@@ -28,19 +30,19 @@ def floyd_warshall(adj, INF=999):
     return dist
 
 
-def get_relational_array(order_matrix, max_order=4, INF=999):
+def get_relational_array(order_matrix: np.ndarray, max_order: int = 4, inf: float = 999.0) -> np.ndarray:
     relational_mat = np.zeros((max_order + 2, *order_matrix.shape))
 
     for i in range(max_order):
         relational_mat[i][order_matrix == i] = 1
 
-    relational_mat[max_order][(order_matrix >= max_order) & (order_matrix < INF)] = 1
-    relational_mat[max_order + 1][order_matrix == INF] = 1  # additional dim for dummy node
+    relational_mat[max_order][(order_matrix >= max_order) & (order_matrix < inf)] = 1
+    relational_mat[max_order + 1][order_matrix == inf] = 1  # additional dim for dummy node
 
     return relational_mat
 
 
-def build_bond_features_matrix(molecule: Mol) -> np.array:
+def build_bond_features_matrix(molecule: Mol) -> np.ndarray:
     bond_matrix = np.zeros((7, molecule.GetNumAtoms(), molecule.GetNumAtoms()))
 
     for bond in molecule.GetBonds():
@@ -53,14 +55,14 @@ def build_bond_features_matrix(molecule: Mol) -> np.array:
     return bond_matrix
 
 
-def build_relative_matrix(adj_matrix) -> np.array:
+def build_relative_matrix(adj_matrix: np.ndarray) -> np.ndarray:
     order_matrix = floyd_warshall(adj_matrix)
     relative_mat = get_relational_array(order_matrix, max_order=4)
 
     return relative_mat
 
 
-def add_mask_feature(bond_features, node_features):
+def add_mask_feature(bond_features: np.ndarray, node_features: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     m = np.zeros((node_features.shape[0], node_features.shape[1] + 1))
     m[:, 1:] = node_features
     node_features = m

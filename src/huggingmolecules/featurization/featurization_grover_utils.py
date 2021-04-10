@@ -3,7 +3,7 @@ This implementation is adapted from
 https://github.com/tencent-ailab/grover/main/grover/data/molgraph.py
 """
 
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Any
 
 from rdkit import Chem
 
@@ -61,7 +61,7 @@ def get_bond_features(bond: Chem.rdchem.Bond) -> List[Union[bool, int, float]]:
     return features
 
 
-def build_atom_features(mol: Chem.Mol):
+def build_atom_features(mol: Chem.Mol) -> List[Any]:
     hydrogen_donor = Chem.MolFromSmarts("[$([N;!H0;v3,v4&+1]),$([O,S;H1;+0]),n&H1&+0]")
     hydrogen_acceptor = Chem.MolFromSmarts(
         "[$([O,S;H1;v2;!$(*-*=[O,N,P,S])]),$([O,S;H0;v2]),$([O,S;-]),$([N;v3;!$(N-*=[O,N,P,S])]),"

@@ -15,6 +15,7 @@ except ImportError:
     raise ImportError('Please install chemprop v.1.1.0 (pip install chemprop==1.1.0) '
                       'from https://github.com/chemprop/chemprop to use ChempropModelWrapper.')
 
+
 @dataclass
 class ChempropConfig(PretrainedConfigMixin):
     d_model: int = 300

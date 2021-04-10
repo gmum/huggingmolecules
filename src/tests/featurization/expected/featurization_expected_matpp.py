@@ -1,7 +1,6 @@
+from huggingmolecules.featurization.featurization_matpp import MatppBatchEncoding, MatppMoleculeEncoding
 from numpy.ma import array
 from torch import FloatTensor
-
-from huggingmolecules.featurization.featurization_matpp import MatppBatchEncoding, MatppMoleculeEncoding
 
 expected_encoded_smiles = [
     MatppMoleculeEncoding(

@@ -176,15 +176,17 @@ model = MatModel.from_pretrained('tuned_mat_masking_20M.pt',
 ### Running tests
 
 To run base tests for src/ module, type:
+
 ```
 pytest src/ --ignore=src/tests/downloading/
 ```
 
-To additionally run tests for downloading module (which will download all models to your local computer and therefore may be slow), type:
+To additionally run tests for downloading module (which will download all models to your local computer and therefore
+may be slow), type:
+
 ```
 pytest src/tests/downloading
 ```
-
 
 ## The experiments/ module
 
@@ -325,14 +327,14 @@ Chemprop      | 1.061 ± 0.168 | 0.446 ± 0.064 | 0.628 ± 0.339 | 74.831 ± 4.7
 Chemprop 2d <sup>1</sup>  | 1.038 ± 0.235 | 0.454 ± 0.049 | 0.628 ± 0.336 | 77.912 ± 10.231
 Chemprop mc <sup>2</sup> | 0.995 ± 0.136 | 0.438 ± 0.053 | **0.627 ± 0.337** | 75.575 ± 4.683
 
- <sup>1</sup> chemprop with additional *rdkit_2d_normalized* features generator  
- <sup>2</sup> chemprop with additional *morgan_count* features generator
- 
+<sup>1</sup> chemprop with additional *rdkit_2d_normalized* features generator  
+<sup>2</sup> chemprop with additional *morgan_count* features generator
+
 ### Classification
 
 We used ROC AUC as the metric.
 
-model | HIA | Bioavailability | PPBR | Tox21 (NR-AR) | BBBP 
+model | HIA | Bioavailability | PPBR | Tox21 (NR-AR) | BBBP
 --- | :---: | :---: | :---: | :---: | :---:
 MAT 200k      | **0.943 ± 0.015** |0.660 ± 0.052 | 0.896 ± 0.027 | 0.775 ± 0.035 | 0.709 ± 0.022
 MAT 2M        | 0.941 ± 0.013 | 0.712 ± 0.076 | **0.905 ± 0.019** | **0.779 ± 0.056** | 0.713 ± 0.022

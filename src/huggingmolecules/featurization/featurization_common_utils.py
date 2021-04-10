@@ -1,12 +1,13 @@
-from typing import List, Iterable, Optional
+from typing import List, Optional, Union
 
 import torch
 
 from .featurization_api import T_BatchEncoding
 
 
-def one_hot_vector(value: int, choices: List[int], extra_category: bool = False) -> Iterable:
-    """Converts a value to a one-hot vector based on options in lst"""
+def one_hot_vector(value: Union[float, int],
+                   choices: List[Union[float, int]],
+                   extra_category: bool = False) -> List[Union[float, int]]:
     encoding = [0] * len(choices)
     if extra_category:
         encoding.append(0)

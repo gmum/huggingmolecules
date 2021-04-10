@@ -4,7 +4,6 @@ import tempfile
 from typing import Type, List
 
 import numpy as np
-
 from huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
 from huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from tests.common.api import AbstractTestCase

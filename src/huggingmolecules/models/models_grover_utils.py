@@ -4,16 +4,6 @@ This implementation is adapted from
 https://github.com/chemprop/chemprop/blob/master/chemprop/nn_utils.py
 """
 import torch
-from torch import nn as nn
-
-
-def param_count(model: nn.Module) -> int:
-    """
-    Determines number of trainable parameters.
-    :param model: An nn.Module.
-    :return: The number of trainable parameters.
-    """
-    return sum(param.numel() for param in model.parameters() if param.requires_grad)
 
 
 def index_select_nd(source: torch.Tensor, index: torch.Tensor) -> torch.Tensor:
@@ -34,53 +24,6 @@ def index_select_nd(source: torch.Tensor, index: torch.Tensor) -> torch.Tensor:
     target = target.view(final_size)  # (num_atoms/num_bonds, max_num_bonds, hidden_size)
 
     return target
-
-
-def get_activation_function(activation: str) -> nn.Module:
-    """
-    Gets an activation function module given the name of the activation.
-
-    :param activation: The name of the activation function.
-    :return: The activation function module.
-    """
-    if activation == 'ReLU':
-        return nn.ReLU()
-    elif activation == 'LeakyReLU':
-        return nn.LeakyReLU(0.1)
-    elif activation == 'PReLU':
-        return nn.PReLU()
-    elif activation == 'tanh':
-        return nn.Tanh()
-    elif activation == 'SELU':
-        return nn.SELU()
-    elif activation == 'ELU':
-        return nn.ELU()
-    elif activation == "Linear":
-        return lambda x: x
-    else:
-        raise ValueError(f'Activation "{activation}" not supported.')
-
-
-def initialize_weights(model: nn.Module, distinct_init=False, model_idx=0):
-    """
-    Initializes the weights of a model in place.
-
-    :param model: An nn.Module.
-    """
-    init_fns = [nn.init.kaiming_normal_, nn.init.kaiming_uniform_,
-                nn.init.xavier_normal_, nn.init.xavier_uniform_]
-    for param in model.parameters():
-        if param.dim() == 1:
-            nn.init.constant_(param, 0)
-        else:
-            if distinct_init:
-                init_fn = init_fns[model_idx % 4]
-                if 'kaiming' in init_fn.__name__:
-                    init_fn(param, nonlinearity='relu')
-                else:
-                    init_fn(param)
-            else:
-                nn.init.xavier_normal_(param)
 
 
 def select_neighbor_and_aggregate(feature, index):

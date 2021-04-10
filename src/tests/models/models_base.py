@@ -1,7 +1,6 @@
 import os
 import random
 import tempfile
-import unittest
 from typing import Type, List
 
 from huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
