@@ -32,7 +32,10 @@ def pad_sequence(sequence: List[T_Tensor], dtype: torch.dtype = None) -> T_Tenso
     return torch.stack([pad_array(t, size=max_shape, dtype=dtype) for t in sequence])
 
 
-def add_dummy_node(*, node_features=None, adj_matrix=None, dist_matrix=None, bond_features=None):
+def add_dummy_node(*, node_features: np.ndarray = None,
+                   adj_matrix: np.ndarray = None,
+                   dist_matrix: np.ndarray = None,
+                   bond_features: np.ndarray = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     if node_features is not None:
         m = np.zeros((node_features.shape[0] + 1, node_features.shape[1] + 1))
         m[1:, 1:] = node_features
