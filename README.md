@@ -198,8 +198,8 @@ In addition, we recommend installing the neptune.ai package:
 1. Get your Neptune API token (see
    [getting-started](https://docs.neptune.ai/getting-started/quick-starts/hello-world.html) for help).
 1. Export your Neptune API token to ```NEPTUNE_API_TOKEN``` environment variable.
-1. Install neptune-client: 
-```pip install neptune-client```.
+1. Install neptune-client:
+   ```pip install neptune-client```.
 1. Enable neptune.ai in the ```experiments/configs/setup.gin``` file.
 1. Update ```neptune.project_name``` parameters in ```experiments/configs/bases/*.gin``` files.
 
@@ -261,13 +261,13 @@ implementation.
 
 For the moment there is one benchmark available. It works as follows:
 
-* ```experiments/benchmark_1.py```: on the given dataset we fine-tune the given model on 7 learning rates and 6 seeded
-  data splits (42 fine-tunings in total). Then we choose that learning rate that minimizes an averaged (on 6 data
-  splits) validation loss. The result is the averaged value of test metric (metric computed on the test dataset, e.g.
-  test loss) for the chosen learning rate.
+* ```experiments/benchmark_1.py```: on the given dataset we fine-tune the given model on 10 learning rates and 6 seeded
+  data splits (60 fine-tunings in total). Then we choose that learning rate that minimizes an averaged (on 6 data
+  splits) validation metric (metric computed on the validation dataset, e.g. RMSE). The result is the averaged value of
+  test metric for the chosen learning rate.
 
 Running a benchmark is essentially the same as running any other script from the experiments/ module. So for instance to
-benchmark the vanilla MAT model (without pre-training) on the Caco2 dataset using GPU 0, simply run:
+benchmark the vanilla MAT model (without pre-training) on the Caco-2 dataset using GPU 0, simply run:
 
 ```
 python -m experiments.benchmark_1 /
@@ -277,7 +277,7 @@ python -m experiments.benchmark_1 /
        --train.gpus [0]
 ```
 
-However, the above script will only perform 42 fine-tunings. It won't compute the final benchmark result. To do that wee
+However, the above script will only perform 60 fine-tunings. It won't compute the final benchmark result. To do that wee
 need to run:
 
 ```
@@ -292,7 +292,42 @@ server.
 
 ## Benchmark results
 
-We performed the benchmark described in [Benchmarking](#benchmarking) as ```experiments/benchmark_1.py``` for various
-models architectures and pre-training tasks. Here are our results:
+We performed the benchmark described in [Benchmarking](#Benchmarking) as ```experiments/benchmark_1.py``` for various
+models architectures and pre-training tasks.
 
-// TODO
+### Regression
+
+As the metric we used MAE for QM7 and RMSE for the rest of datasets.
+
+model | FreeSolv | Caco-2 | Clearance | QM7
+--- | :---: | :---: | :---: | :---: 
+MAT 200k      | 0.913 ± 0.196 | **0.405 ± 0.030** | 0.649 ± 0.341 | 87.578 ± 15.375
+MAT 2M        | 0.898 ± 0.165 | 0.471 ± 0.070 | 0.655 ± 0.327 | 81.557 ± 5.088
+MAT 20M       | **0.854 ± 0.197** | 0.432 ± 0.034 | 0.640 ± 0.335 | 81.797 ± 4.176
+Grover Base   | 0.917 ± 0.195 | 0.419 ± 0.029 | 0.629 ± 0.335 | **62.266 ± 3.578**
+Grover Large  | 0.950 ± 0.202 | 0.414 ± 0.041 | **0.627 ± 0.340** | 64.941 ± 3.616
+ChemBERTa     | 1.218 ± 0.245 | 0.430 ± 0.013 | 0.647 ± 0.314 | 177.242 ± 1.819
+MolBERT       | 1.027 ± 0.244 | 0.483 ± 0.056 | 0.633 ± 0.332 | 177.117 ± 1.799
+Chemprop      | 1.061 ± 0.168 | 0.446 ± 0.064 | 0.628 ± 0.339 | 74.831 ± 4.792
+Chemprop 2d <sup>1</sup>  | 1.038 ± 0.235 | 0.454 ± 0.049 | 0.628 ± 0.336 | 77.912 ± 10.231
+Chemprop mc <sup>2</sup> | 0.995 ± 0.136 | 0.438 ± 0.053 | **0.627 ± 0.337** | 75.575 ± 4.683
+
+ <sup>1</sup> chemprop with additional *rdkit_2d_normalized* features generator  
+ <sup>2</sup> chemprop with additional *morgan_count* features generator
+ 
+### Classification
+
+We used ROC AUC as the metric.
+
+model | HIA | Bioavailability | PPBR | Tox21 (NR-AR) | BBBP 
+--- | :---: | :---: | :---: | :---: | :---:
+MAT 200k      | **0.943 ± 0.015** |0.660 ± 0.052 | 0.896 ± 0.027 | 0.775 ± 0.035 | 0.709 ± 0.022
+MAT 2M        | 0.941 ± 0.013 | 0.712 ± 0.076 | **0.905 ± 0.019** | **0.779 ± 0.056** | 0.713 ± 0.022
+MAT 20M       | 0.935 ± 0.017 | 0.732 ± 0.082 | 0.891 ± 0.019 | **0.779 ± 0.056** | 0.735 ± 0.006
+Grover Base   | 0.931 ± 0.021| **0.750 ± 0.037** | 0.901 ± 0.036 | 0.750 ± 0.085 | 0.735 ± 0.006
+Grover Large  | 0.932 ± 0.023 | 0.747 ± 0.062 | 0.901 ± 0.033 | 0.757 ± 0.057 | 0.757 ± 0.057
+ChemBERTa     | 0.923 ± 0.032 | 0.666 ± 0.041 | 0.869 ± 0.032 | **0.779 ± 0.044** | 0.717 ± 0.009
+MolBERT       | 0.942 ± 0.011 | 0.737 ± 0.085 | 0.889 ± 0.039 | - | **0.742 ± 0.020**
+Chemprop      | 0.924 ± 0.069 | 0.724 ± 0.064 | 0.847 ± 0.052 | 0.766 ± 0.040 | 0.726 ± 0.008
+Chemprop 2d   | 0.923 ± 0.015 | 0.712 ± 0.067 | 0.874 ± 0.030 | 0.775 ± 0.041 | 0.724 ± 0.006
+Chemprop mc | 0.924 ± 0.082 | 0.740 ± 0.060 | 0.869 ± 0.033 | 0.772 ± 0.041 | 0.722 ± 0.008
