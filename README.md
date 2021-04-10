@@ -173,6 +173,19 @@ model = MatModel.from_pretrained('tuned_mat_masking_20M.pt',
                                  config=config)
 ```
 
+### Running tests
+
+To run base tests for src/ module, type:
+```
+pytest src/ --ignore=src/tests/downloading/
+```
+
+To additionally run tests for downloading module (which will download all models to your local computer and therefore may be slow), type:
+```
+pytest src/tests/downloading
+```
+
+
 ## The experiments/ module
 
 ### Requirements
