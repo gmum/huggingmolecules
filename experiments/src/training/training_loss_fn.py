@@ -1,12 +1,6 @@
 import gin
 import torch
 import torch.nn as nn
-from torch.nn import functional as F
-
-
-class RMSELoss:
-    def __call__(self, preds: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        return torch.sqrt(F.mse_loss(preds, target))
 
 
 class GroverLoss:

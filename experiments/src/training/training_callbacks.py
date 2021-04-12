@@ -6,7 +6,6 @@ from typing import List
 import gin
 import torch
 from pytorch_lightning import Callback
-from pytorch_lightning.callbacks import ModelCheckpoint
 
 from experiments.src.gin import get_formatted_config_str
 from src.huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
@@ -169,19 +168,3 @@ class ModelOutputSaver(NeptuneCompatibleCallback):
     def on_test_end(self, trainer, pl_module):
         self.save_outputs(trainer, pl_module, 'test')
         self.log_outputs(trainer, pl_module, 'test')
-
-
-@gin.configurable('ModelCheckpoint', blacklist=['filepath'])
-class ConfigurableModelCheckpoint(ModelCheckpoint):
-    def __init__(self, *,
-                 filepath,
-                 verbose=True,
-                 save_last=True,
-                 monitor='valid_loss',
-                 mode='min', **kwargs):
-        super().__init__(filepath=filepath,
-                         verbose=verbose,
-                         save_last=save_last,
-                         monitor=monitor,
-                         mode=mode,
-                         **kwargs)

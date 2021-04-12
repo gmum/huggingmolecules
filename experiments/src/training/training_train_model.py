@@ -1,10 +1,11 @@
 from typing import Optional
 
 from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 from .training_lightning_module import TrainingModule
 from .training_utils import *
-from .training_utils import get_custom_callbacks, _apply_neptune, evaluate_and_save_results
+from .training_utils import get_custom_callbacks, evaluate_and_save_results, _get_neptune_logger
 from ..gin import get_default_name
 
 
@@ -16,8 +17,9 @@ def train_model(*,
                 num_epochs: int,
                 gpus: List[int],
                 resume: bool = False,
+                save_checkpoints: bool = True,
                 use_neptune: bool = False,
-                evaluation: Optional[str] = None,
+                evaluate: bool = True,
                 custom_callbacks: Optional[List[str]] = None,
                 batch_size: int,
                 num_workers: int = 0,
@@ -34,19 +36,23 @@ def train_model(*,
     if not resume and os.path.exists(resume_path):
         raise IOError(f'Please clear {save_path} folder before running or pass train.resume=True')
 
-    callbacks = get_default_callbacks(save_path)
-    callbacks += get_custom_callbacks(custom_callbacks)
+    callbacks = get_default_callbacks() + get_custom_callbacks(custom_callbacks)
     loggers = get_default_loggers(save_path)
-
+    if save_checkpoints:
+        callbacks += [ModelCheckpoint(dirpath=save_path, save_last=True)]
     if use_neptune:
-        _apply_neptune(model, callbacks, loggers, neptune_experiment_name=study_name, neptune_description=save_path)
+        neptune_logger = _get_neptune_logger(model, experiment_name=study_name, description=save_path)
+        loggers += [neptune_logger]
+        for clb in callbacks:
+            if isinstance(clb, NeptuneCompatibleCallback):
+                clb.neptune = neptune_logger
 
     trainer = Trainer(default_root_dir=save_path,
                       max_epochs=num_epochs,
                       callbacks=callbacks,
+                      checkpoint_callback=save_checkpoints,
                       logger=loggers,
                       log_every_n_steps=1,
-                      checkpoint_callback=True,
                       resume_from_checkpoint=resume_path if resume else None,
                       gpus=gpus)
 
@@ -64,7 +70,7 @@ def train_model(*,
                 train_dataloader=train_loader,
                 val_dataloaders=val_loader)
 
-    if evaluation:
-        evaluate_and_save_results(trainer, test_loader, save_path, evaluation)
+    if evaluate:
+        evaluate_and_save_results(trainer, test_loader, save_path)
 
     return trainer

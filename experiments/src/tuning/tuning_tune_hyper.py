@@ -5,8 +5,8 @@ import gin
 
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
-from .tuning_utils import print_and_save_info, get_sampler, Objective, \
-    enqueue_failed_trials, get_weight_remover
+from .tuning_utils import get_sampler, Objective, \
+    enqueue_failed_trials, print_and_save_search_results, save_search_results
 from ..gin import get_default_name
 
 
@@ -16,15 +16,15 @@ def tune_hyper(*,
                featurizer: Optional[PretrainedFeaturizerMixin] = None,
                root_path: str,
                params: dict,
-               direction: str,
-               metric: str,
+               direction: str = 'minimize',
+               metric: str = 'valid_loss',
                n_trials: Optional[int] = None,
                timeout: Optional[float] = None,
                sampler_name: str = 'TPESampler',
                storage: Optional[str] = None,
                resume: bool = False,
-               weight_remover: Optional[str] = None,
-               retry_not_completed: bool = False):
+               retry_not_completed: bool = False,
+               print_and_save_results: bool = True):
     import optuna
 
     study_name = get_default_name()
@@ -47,10 +47,10 @@ def tune_hyper(*,
                           optuna_params=params,
                           metric=metric)
 
-    callbacks = [get_weight_remover(save_path)] if weight_remover else None
     study.optimize(objective,
                    n_trials=n_trials,
-                   timeout=timeout,
-                   callbacks=callbacks)
+                   timeout=timeout)
 
-    print_and_save_info(study, save_path, metric)
+    if print_and_save_results:
+        print_and_save_search_results(study, metric)
+        save_search_results(study, save_path)

@@ -102,6 +102,13 @@ def parse_gin_str(gin_str: str) -> Dict[str, Any]:
     return gin_dict
 
 
+def bind_parameters_from_dict(values_dict: Dict[str, Any]):
+    with gin.unlock_config():
+        for param, value in values_dict.items():
+            if not param.startswith('ignore.'):
+                gin.bind_parameter(param, value)
+
+
 @gin.configurable('name')
 def get_default_name(prefix: str = "",
                      model_name: Optional[str] = None,
@@ -121,8 +128,3 @@ def get_default_name(prefix: str = "",
     except ValueError:
         pass
     return f'{prefix}{model_name}_{task_name}_{dataset_name}'
-
-
-@gin.configurable('dummy')
-def dummy_function_just_for_dummy_gin_params(**kwargs):
-    pass

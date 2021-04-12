@@ -26,7 +26,7 @@ from src.huggingmolecules.downloading.downloading_utils import HUGGINGMOLECULES_
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 from .training_callbacks import NeptuneCompatibleCallback, \
-    GinConfigSaver, ModelConfigSaver, ConfigurableModelCheckpoint, ModelOutputSaver
+    GinConfigSaver, ModelConfigSaver, ModelOutputSaver
 
 default_cache_dir = os.path.join(HUGGINGMOLECULES_CACHE, 'encodings')
 HUGGINGMOLECULES_ENCODINGS_CACHE = os.getenv("HUGGINGMOLECULES_ENCODINGS_CACHE", default_cache_dir)
@@ -78,19 +78,13 @@ def get_default_loggers(save_path: str) -> List[pl_loggers.LightningLoggerBase]:
     return [pl_loggers.CSVLogger(save_path)]
 
 
-@gin.configurable('callbacks', blacklist=['save_path'])
-def get_default_callbacks(save_path: str, excluded: List[str] = None) -> List[Callback]:
-    checkpoint_callback = ConfigurableModelCheckpoint(filepath=os.path.join(save_path, "weights"))
+def get_default_callbacks() -> List[Callback]:
     gin_config_essential = GinConfigSaver(target_name="gin-config-essential.txt",
                                           excluded_namespaces=['neptune', 'optuna', 'macro', 'benchmark'])
-    callbacks = [checkpoint_callback,
-                 gin_config_essential,
-                 ModelConfigSaver(),
-                 GinConfigSaver(),
-                 ModelOutputSaver()]
-    excluded = excluded if excluded else []
-    callbacks = [clb for clb in callbacks if type(clb).__name__ not in excluded]
-    return callbacks
+    return [gin_config_essential,
+            ModelConfigSaver(),
+            GinConfigSaver(),
+            ModelOutputSaver()]
 
 
 def get_custom_callbacks(callbacks_names: List[str] = None) -> List[Callback]:
@@ -145,11 +139,11 @@ def get_all_hyperparams(model: PretrainedModelBase) -> Dict[str, Any]:
 
 
 @gin.configurable('neptune', blacklist=['model', 'experiment_name'])
-def _get_neptune(model: PretrainedModelBase, *,
-                 user_name: str,
-                 project_name: str,
-                 experiment_name: str,
-                 description: str):
+def _get_neptune_logger(model: PretrainedModelBase, *,
+                        user_name: str,
+                        project_name: str,
+                        experiment_name: str,
+                        description: str):
     from pytorch_lightning.loggers import NeptuneLogger
     neptune = NeptuneLogger(api_key=os.environ["NEPTUNE_API_TOKEN"],
                             project_name=f'{user_name}/{project_name}',
@@ -165,7 +159,7 @@ def _apply_neptune(model: PretrainedModelBase,
                    loggers: List[pl_loggers.LightningLoggerBase], *,
                    neptune_experiment_name: str,
                    neptune_description: str):
-    neptune = _get_neptune(model, experiment_name=neptune_experiment_name, description=neptune_description)
+    neptune = _get_neptune_logger(model, experiment_name=neptune_experiment_name, description=neptune_description)
     loggers += [neptune]
     for clb in callbacks:
         if isinstance(clb, NeptuneCompatibleCallback):
@@ -359,10 +353,8 @@ def _dump_encodings_to_cache(split: Split) -> None:
 # evaluation
 
 
-def evaluate_and_save_results(trainer: pl.Trainer, test_loader: DataLoader, save_path: str, evaluation: str) -> None:
-    logging.info(f'Running test evaluation for {evaluation} weights')
-    ckpt_path = 'best' if evaluation == 'best' else None
-    results = trainer.test(test_dataloaders=test_loader, ckpt_path=ckpt_path)
+def evaluate_and_save_results(trainer: pl.Trainer, test_loader: DataLoader, save_path: str) -> None:
+    results = trainer.test(test_dataloaders=test_loader, ckpt_path=None)
     logging.info(results)
     with open(os.path.join(save_path, "test_results.json"), "w") as f:
         json.dump(results, f)

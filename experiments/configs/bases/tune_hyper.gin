@@ -10,14 +10,7 @@ name.prefix = 'Tune'
 # ==============================================================================
 data.split_method = 'random'
 data.split_frac = [0.8, 0.1, 0.1]
-data.split_seed = 'benchmark'
-
-# ==============================================================================
-train.evaluation = 'last'
-
-# ==============================================================================
-optuna.weight_remover = 'keep_best_only'
-ModelCheckpoint.save_last = False
+data.split_seed = 1234
 
 # ==============================================================================
 optuna.sampler_name = 'GridSampler'
