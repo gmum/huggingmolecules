@@ -4,6 +4,7 @@ import pickle
 from typing import List
 
 import gin
+import pytorch_lightning as pl
 import torch
 from pytorch_lightning import Callback
 

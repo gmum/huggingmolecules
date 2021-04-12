@@ -75,7 +75,7 @@ class GinModel:
 
 
 def get_default_loggers(save_path: str) -> List[pl_loggers.LightningLoggerBase]:
-    return [pl_loggers.CSVLogger(save_path)]
+    return [pl_loggers.CSVLogger(save_path, name='csv_logs')]
 
 
 def get_default_callbacks() -> List[Callback]:
@@ -112,9 +112,6 @@ def get_metric_cls(*, name: str, direction: str) -> Type[Metric]:
         metric_cls = getattr(custom_metrics_module, name)
     except AttributeError:
         metric_cls = getattr(pl.metrics, name)
-    # if hasattr(metric_cls, 'direction'):
-    #     print(metric_cls.direction)
-    #     raise RuntimeError(f"Parameter 'direction' has been already define in class {metric_cls.__name__}.")
     setattr(metric_cls, 'direction', direction)
     return metric_cls
 
@@ -154,16 +151,11 @@ def _get_neptune_logger(model: PretrainedModelBase, *,
     return neptune
 
 
-def _apply_neptune(model: PretrainedModelBase,
-                   callbacks: List[Callback],
-                   loggers: List[pl_loggers.LightningLoggerBase], *,
-                   neptune_experiment_name: str,
-                   neptune_description: str):
-    neptune = _get_neptune_logger(model, experiment_name=neptune_experiment_name, description=neptune_description)
-    loggers += [neptune]
+def _apply_neptune_logger(neptune_logger, callbacks, loggers):
+    loggers += [neptune_logger]
     for clb in callbacks:
         if isinstance(clb, NeptuneCompatibleCallback):
-            clb.neptune = neptune
+            clb.neptune = neptune_logger
 
 
 # data
@@ -353,8 +345,8 @@ def _dump_encodings_to_cache(split: Split) -> None:
 # evaluation
 
 
-def evaluate_and_save_results(trainer: pl.Trainer, test_loader: DataLoader, save_path: str) -> None:
+def evaluate_and_save_results(trainer: pl.Trainer, test_loader: DataLoader, results_path: str):
     results = trainer.test(test_dataloaders=test_loader, ckpt_path=None)
     logging.info(results)
-    with open(os.path.join(save_path, "test_results.json"), "w") as f:
+    with open(results_path, "w") as f:
         json.dump(results, f)
