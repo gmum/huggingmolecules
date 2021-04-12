@@ -26,7 +26,7 @@ from src.huggingmolecules.downloading.downloading_utils import HUGGINGMOLECULES_
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 from .training_callbacks import NeptuneCompatibleCallback, \
-    GinConfigSaver, ModelConfigSaver, ModelOutputSaver
+    GinConfigSaver, ModelConfigSaver
 
 default_cache_dir = os.path.join(HUGGINGMOLECULES_CACHE, 'encodings')
 HUGGINGMOLECULES_ENCODINGS_CACHE = os.getenv("HUGGINGMOLECULES_ENCODINGS_CACHE", default_cache_dir)
@@ -83,8 +83,7 @@ def get_default_callbacks() -> List[Callback]:
                                           excluded_namespaces=['neptune', 'optuna', 'macro', 'benchmark'])
     return [gin_config_essential,
             ModelConfigSaver(),
-            GinConfigSaver(),
-            ModelOutputSaver()]
+            GinConfigSaver()]
 
 
 def get_custom_callbacks(callbacks_names: List[str] = None) -> List[Callback]:

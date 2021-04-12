@@ -1,11 +1,8 @@
 import logging
 import os
-import pickle
 from typing import List
 
 import gin
-import pytorch_lightning as pl
-import torch
 from pytorch_lightning import Callback
 
 from experiments.src.gin import get_formatted_config_str
@@ -135,37 +132,3 @@ class ModelConfigSaver(NeptuneCompatibleCallback):
         config.save(target_path)
         if self.neptune:
             self.neptune.log_artifact(target_path)
-
-
-class ModelOutputSaver(NeptuneCompatibleCallback):
-    def __init__(self, valid_target="valid_output.pickle", test_target="test_output.pickle"):
-        super().__init__()
-        self.target = {'valid': valid_target, 'test': test_target}
-
-    def save_outputs(self, trainer, pl_module, phase):
-        outputs = pl_module.outputs[phase]
-        if not isinstance(outputs[0], tuple):
-            outputs = torch.cat(outputs).view(-1).cpu()
-        else:
-            outputs = list(zip(*outputs))
-            for i in range(len(outputs)):
-                outputs[i] = torch.cat(outputs[i]).view(-1).cpu()
-
-        target_path = os.path.join(trainer.default_root_dir, self.target[phase])
-        with open(target_path, 'wb') as fp:
-            pickle.dump(outputs, fp)
-
-    def log_outputs(self, trainer, pl_module, phase):
-        target_path = os.path.join(trainer.default_root_dir, self.target[phase])
-        if self.neptune:
-            self.neptune.log_artifact(target_path)
-
-    def on_validation_end(self, trainer, pl_module):
-        self.save_outputs(trainer, pl_module, 'valid')
-
-    def on_fit_end(self, trainer, pl_module):
-        self.log_outputs(trainer, pl_module, 'valid')
-
-    def on_test_end(self, trainer, pl_module):
-        self.save_outputs(trainer, pl_module, 'test')
-        self.log_outputs(trainer, pl_module, 'test')
