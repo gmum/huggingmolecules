@@ -135,11 +135,11 @@ def get_all_hyperparams(model: PretrainedModelBase) -> Dict[str, Any]:
 
 
 @gin.configurable('neptune', blacklist=['model', 'experiment_name'])
-def _get_neptune_logger(model: PretrainedModelBase, *,
-                        user_name: str,
-                        project_name: str,
-                        experiment_name: str,
-                        description: str):
+def get_neptune_logger(model: PretrainedModelBase, *,
+                       user_name: str,
+                       project_name: str,
+                       experiment_name: str,
+                       description: str):
     from pytorch_lightning.loggers import NeptuneLogger
     neptune = NeptuneLogger(api_key=os.environ["NEPTUNE_API_TOKEN"],
                             project_name=f'{user_name}/{project_name}',
@@ -150,7 +150,7 @@ def _get_neptune_logger(model: PretrainedModelBase, *,
     return neptune
 
 
-def _apply_neptune_logger(neptune_logger, callbacks, loggers):
+def apply_neptune_logger(neptune_logger, callbacks, loggers):
     loggers += [neptune_logger]
     for clb in callbacks:
         if isinstance(clb, NeptuneCompatibleCallback):

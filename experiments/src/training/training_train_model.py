@@ -5,7 +5,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 
 from .training_lightning_module import TrainingModule
 from .training_utils import *
-from .training_utils import get_custom_callbacks, evaluate_and_save_results, _get_neptune_logger, _apply_neptune_logger
+from .training_utils import get_custom_callbacks, evaluate_and_save_results, get_neptune_logger, apply_neptune_logger
 from ..gin import get_default_name
 
 
@@ -41,8 +41,8 @@ def train_model(*,
     if save_checkpoints:
         callbacks += [ModelCheckpoint(dirpath=save_path, save_last=True)]
     if use_neptune:
-        neptune_logger = _get_neptune_logger(model, experiment_name=study_name, description=save_path)
-        _apply_neptune_logger(neptune_logger, callbacks, loggers)
+        neptune_logger = get_neptune_logger(model, experiment_name=study_name, description=save_path)
+        apply_neptune_logger(neptune_logger, callbacks, loggers)
 
     trainer = Trainer(default_root_dir=save_path,
                       max_epochs=num_epochs,
