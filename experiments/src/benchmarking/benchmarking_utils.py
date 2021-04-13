@@ -12,7 +12,7 @@ from experiments.src.gin import get_default_name, parse_gin_str
 from experiments.src.training.training_utils import get_metric_cls
 
 
-def get_results_dict():
+def get_grid_results_dict():
     results_dict = create_results_dict()
     study_name = get_default_name()
     if gin.query_parameter('train.use_neptune'):
@@ -100,7 +100,7 @@ def load_results_from_local(output_path: str) -> Any:
 
 # results check
 
-def check_results_dict(results_dict: Dict[frozenset, Dict[int, dict]]):
+def check_grid_results_dict(results_dict: Dict[frozenset, Dict[int, dict]]):
     any_missing_result = False
     for params, results in results_dict.items():
         for seed, result in results.items():
@@ -130,7 +130,7 @@ def _get_params_product_list(params_dict) -> List[dict]:
 
 # compute results
 
-def compute_results(results_dict):
+def compute_result(results_dict):
     metric_cls = get_metric_cls()
     metric_name = metric_cls.__name__.lower()
     agg_fn = min if metric_cls.direction == 'minimize' else max

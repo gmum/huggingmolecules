@@ -36,12 +36,12 @@ class DefaultValue:
     pass
 
 
-def apply_gin_config(*,
-                     base: str = None,
-                     dataset: str = None,
-                     model: str = None,
-                     configs_root: str = CONFIGS_ROOT,
-                     parser: Optional[argparse.ArgumentParser] = None) -> argparse.Namespace:
+def parse_gin_config_files(*,
+                           base: str = None,
+                           dataset: str = None,
+                           model: str = None,
+                           configs_root: str = CONFIGS_ROOT,
+                           parser: Optional[argparse.ArgumentParser] = None) -> argparse.Namespace:
     if not parser:
         parser = argparse.ArgumentParser()
 

@@ -222,14 +222,14 @@ In addition, we recommend installing the neptune.ai package:
 
 We recommend running experiments scripts from the source code. For the moment there are three scripts implemented:
 
-* ```experiments/train.py``` - for training with the pytorch lightning package
-* ```experiments/tune_hyper.py``` - for hyper-parameters tuning with the optuna package
-* ```experiments/benchmark.py``` - for benchmarking based on the hyper-parameters tuning
+* ```experiments/scripts/train.py``` - for training with the pytorch lightning package
+* ```experiments/scripts/tune_hyper.py``` - for hyper-parameters tuning with the optuna package
+* ```experiments/scripts/benchmark.py``` - for benchmarking based on the hyper-parameters tuning (grid-search)
 
 In general running scripts can be done with the following syntax:
 
 ```
-python -m experiments.<script_name> /
+python -m experiments.scripts.<script_name> /
        -d <dataset_name> / 
        -m <model_name> /
        -b <parameters_bindings>
@@ -249,7 +249,7 @@ So for instance, to fine-tune the MAT model (pre-trained on masking_20M task) on
 simply run:
 
 ```
-python -m experiments.train /
+python -m experiments.scripts.train /
        -d freesolv / 
        -m mat /
        -b model.pretrained_name=\"mat_masking_20M\"#train.gpus=[1]
@@ -258,7 +258,7 @@ python -m experiments.train /
 or equivalently:
 
 ```
-python -m experiments.train /
+python -m experiments.scripts.train /
        -d freesolv / 
        -m mat /
        --model.pretrained_name mat_masking_20M /
@@ -276,7 +276,7 @@ implementation.
 
 For the moment there is one benchmark available. It works as follows:
 
-* ```experiments/benchmark.py```: on the given dataset we fine-tune the given model on 10 learning rates and 6 seeded
+* ```experiments/scripts/benchmark.py```: on the given dataset we fine-tune the given model on 10 learning rates and 6 seeded
   data splits (60 fine-tunings in total). Then we choose that learning rate that minimizes an averaged (on 6 data
   splits) validation metric (metric computed on the validation dataset, e.g. RMSE). The result is the averaged value of
   test metric for the chosen learning rate.
@@ -285,7 +285,7 @@ Running a benchmark is essentially the same as running any other script from the
 benchmark the vanilla MAT model (without pre-training) on the Caco-2 dataset using GPU 0, simply run:
 
 ```
-python -m experiments.benchmark /
+python -m experiments.scripts.benchmark /
        -d caco2 / 
        -m mat /
        --model.pretrained_name None /
@@ -296,7 +296,7 @@ However, the above script will only perform 60 fine-tunings. It won't compute th
 need to run:
 
 ```
-python -m experiments.benchmark --results_only /
+python -m experiments.scripts.benchmark --results_only /
        -d caco2 / 
        -m mat
 ```
@@ -307,7 +307,7 @@ server.
 
 ## Benchmark results
 
-We performed the benchmark described in [Benchmarking](#Benchmarking) as ```experiments/benchmark.py``` for various
+We performed the benchmark described in [Benchmarking](#Benchmarking) as ```experiments/scripts/benchmark.py``` for various
 models architectures and pre-training tasks.
 
 ### Regression

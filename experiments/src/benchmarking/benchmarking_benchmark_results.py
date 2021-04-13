@@ -1,9 +1,9 @@
-from experiments.src.benchmarking.benchmarking_utils import get_results_dict, check_results_dict, compute_results, \
+from experiments.src.benchmarking.benchmarking_utils import get_grid_results_dict, check_grid_results_dict, compute_result, \
     print_results
 
 
-def benchmark_results():
-    results_dict = get_results_dict()
-    check_results_dict(results_dict)
-    results = compute_results(results_dict)
-    print_results(*results)
+def benchmark_result():
+    grid_results_dict = get_grid_results_dict()
+    check_grid_results_dict(grid_results_dict)
+    result = compute_result(grid_results_dict)
+    print_results(*result)
