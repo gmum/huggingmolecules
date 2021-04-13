@@ -3,7 +3,7 @@ import json
 import os
 from typing import Optional
 
-from experiments.src.gin import bind_parameters_from_dict
+from experiments.src.gin.gin_utils import bind_parameters_from_dict
 from experiments.src.training.training_train_model import train_model
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase

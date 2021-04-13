@@ -6,7 +6,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from .training_lightning_module import TrainingModule
 from .training_utils import *
 from .training_utils import get_custom_callbacks, evaluate_and_save_results, get_neptune_logger, apply_neptune_logger
-from ..gin import get_default_name
+from ..gin.gin_utils import get_default_experiment_name
 
 
 @gin.configurable('train', blacklist=['model', 'featurizer'])
@@ -29,7 +29,7 @@ def train_model(*,
         model = gin_model.produce_model()
         featurizer = gin_model.produce_featurizer()
 
-    study_name = get_default_name()
+    study_name = get_default_experiment_name()
     save_path = os.path.join(root_path, study_name)
 
     resume_path = os.path.join(save_path, 'last.ckpt')

@@ -20,13 +20,13 @@ import experiments.src.training.training_loss_fn as custom_loss_fn_module
 import experiments.src.training.training_metrics as custom_metrics_module
 import experiments.src.wrappers as experiments_wrappers
 import src.huggingmolecules.models as huggingmolecules_models
-from experiments.src.gin import get_formatted_config_str, parse_gin_str, get_default_name
 from src.huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
 from src.huggingmolecules.downloading.downloading_utils import HUGGINGMOLECULES_CACHE
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 from .training_callbacks import NeptuneCompatibleCallback, \
     GinConfigSaver, ModelConfigSaver
+from ..gin.gin_utils import get_formatted_config_str, parse_gin_str, get_default_experiment_name
 
 default_cache_dir = os.path.join(HUGGINGMOLECULES_CACHE, 'encodings')
 HUGGINGMOLECULES_ENCODINGS_CACHE = os.getenv("HUGGINGMOLECULES_ENCODINGS_CACHE", default_cache_dir)
@@ -302,7 +302,7 @@ def normalize_labels_inplace(split: Split) -> None:
 # caching
 
 def _get_encodings_cache_filepath() -> str:
-    filename = f'{get_default_name()}_cache'
+    filename = f'{get_default_experiment_name()}_cache'
     filepath = os.path.join(HUGGINGMOLECULES_ENCODINGS_CACHE, filename)
     return os.path.expanduser(filepath)
 

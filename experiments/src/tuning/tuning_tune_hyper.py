@@ -7,7 +7,7 @@ from src.huggingmolecules.featurization.featurization_api import PretrainedFeatu
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 from .tuning_utils import get_sampler, Objective, \
     enqueue_failed_trials, print_and_save_search_results
-from ..gin import get_default_name
+from ..gin.gin_utils import get_default_experiment_name
 
 
 @gin.configurable('optuna', blacklist=['model', 'featurizer'])
@@ -27,7 +27,7 @@ def tune_hyper(*,
                print_and_save_results: bool = True):
     import optuna
 
-    study_name = get_default_name()
+    study_name = get_default_experiment_name()
 
     sampler = get_sampler(sampler_name, params)
 

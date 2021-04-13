@@ -33,13 +33,13 @@ pl_module = TrainingModule(model,
                            metric_cls=MeanSquaredError,
                            optimizer=Adam(model.parameters()))
 
-# Build the data loader for freesolv dataset:
+# Build the data loader for the freesolv dataset:
 train_dataloader, _, _ = get_data_loaders(featurizer,
                                           batch_size=32,
                                           task_name='ADME',
                                           dataset_name='hydrationfreeenergy_freesolv')
 
-# Build the pytorch lightning trainer and fine-tune the module on train dataset:
+# Build the pytorch lightning trainer and fine-tune the module on the train dataset:
 trainer = Trainer(max_epochs=100)
 trainer.fit(pl_module, train_dataloader=train_dataloader)
 

@@ -5,7 +5,7 @@ from typing import List
 import gin
 from pytorch_lightning import Callback
 
-from experiments.src.gin import get_formatted_config_str
+from experiments.src.gin.gin_utils import get_formatted_config_str
 from src.huggingmolecules.configuration.configuration_api import PretrainedConfigMixin
 
 

@@ -9,7 +9,7 @@ import gin
 import numpy as np
 import pandas as pd
 
-from experiments.src.gin import get_default_name, parse_gin_str
+from experiments.src.gin import get_default_experiment_name, parse_gin_str
 from experiments.src.training.training_utils import get_metric_cls
 
 GridResultDict = Dict[frozenset, Dict[int, Dict[str, float]]]
@@ -17,7 +17,7 @@ GridResultDict = Dict[frozenset, Dict[int, Dict[str, float]]]
 
 def get_grid_results_dict() -> GridResultDict:
     grid_results_dict = create_grid_results_dict()
-    study_name = get_default_name()
+    study_name = get_default_experiment_name()
     if gin.query_parameter('train.use_neptune'):
         fetch_grid_results_dict_from_neptune(grid_results_dict, study_name)
     else:
