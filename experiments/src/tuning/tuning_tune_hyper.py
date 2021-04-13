@@ -6,7 +6,7 @@ import gin
 from src.huggingmolecules.featurization.featurization_api import PretrainedFeaturizerMixin
 from src.huggingmolecules.models.models_api import PretrainedModelBase
 from .tuning_utils import get_sampler, Objective, \
-    enqueue_failed_trials, print_and_save_search_results, save_search_results
+    enqueue_failed_trials, print_and_save_search_results
 from ..gin import get_default_name
 
 
@@ -52,5 +52,4 @@ def tune_hyper(*,
                    timeout=timeout)
 
     if print_and_save_results:
-        print_and_save_search_results(study, metric)
-        save_search_results(study, save_path)
+        print_and_save_search_results(study, metric, save_path)

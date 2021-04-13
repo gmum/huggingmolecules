@@ -23,7 +23,7 @@ class BatchWeightedLoss(Metric):
         self.add_state("all_loss", default=[])
         self.add_state("all_sizes", default=[])
 
-    def update(self, loss, batch_size) -> None:
+    def update(self, loss: torch.Tensor, batch_size: int) -> None:
         self.all_loss.append(loss)
         self.all_sizes.append(torch.tensor(batch_size, device=loss.device))
 

@@ -3,26 +3,29 @@ import json
 import logging
 import os
 import tempfile
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Tuple
 
 import gin
 import numpy as np
+import pandas as pd
 
 from experiments.src.gin import get_default_name, parse_gin_str
 from experiments.src.training.training_utils import get_metric_cls
 
+GridResultDict = Dict[frozenset, Dict[int, Dict[str, float]]]
 
-def get_grid_results_dict():
-    results_dict = create_results_dict()
+
+def get_grid_results_dict() -> GridResultDict:
+    grid_results_dict = create_grid_results_dict()
     study_name = get_default_name()
     if gin.query_parameter('train.use_neptune'):
-        fetch_results_dict_from_neptune(results_dict, study_name)
+        fetch_grid_results_dict_from_neptune(grid_results_dict, study_name)
     else:
-        fetch_results_dict_from_local(results_dict, study_name)
-    return results_dict
+        fetch_grid_results_dict_from_local(grid_results_dict, study_name)
+    return grid_results_dict
 
 
-def create_results_dict():
+def create_grid_results_dict() -> GridResultDict:
     seeds = get_params_dict()['data.split_seed']
     hps_dict = get_hps_dict()
     hps_product_list = _get_params_product_list(hps_dict)
@@ -31,7 +34,7 @@ def create_results_dict():
 
 # neptune
 
-def fetch_results_dict_from_neptune(results_dict, study_name):
+def fetch_grid_results_dict_from_neptune(results_dict: GridResultDict, study_name: str) -> None:
     import neptune
     user_name = gin.query_parameter('neptune.user_name')
     project_name = gin.query_parameter('neptune.project_name')
@@ -47,7 +50,7 @@ def fetch_results_dict_from_neptune(results_dict, study_name):
         results_dict[frozenset(hps.items())][seed] = results
 
 
-def download_dataframe_from_neptune(neptune_project, name: str):
+def download_dataframe_from_neptune(neptune_project, name: str) -> pd.DataFrame:
     df = neptune_project.get_leaderboard(state='succeeded', tag=name)
 
     params_dict = get_params_dict()
@@ -61,20 +64,19 @@ def download_dataframe_from_neptune(neptune_project, name: str):
     return df
 
 
-def download_results_from_neptune(project, id: str, artifact_name: str) -> Any:
+def download_results_from_neptune(neptune_project, id: str, artifact_name: str) -> Dict[str, float]:
     try:
         with tempfile.TemporaryDirectory() as tmp:
-            experiment = project.get_experiments(id=id)[0]
+            experiment = neptune_project.get_experiments(id=id)[0]
             experiment.download_artifact(artifact_name, tmp)
-            output = load_results_from_local(os.path.join(tmp, artifact_name))
+            return load_results_from_local(os.path.join(tmp, artifact_name))
     except Exception as e:
         raise RuntimeError(f'Downloading artifacts failed on {id}. Exception: {e}')
-    return output
 
 
 # local
 
-def fetch_results_dict_from_local(results_dict: Dict[frozenset, Dict[int, dict]], study_name: str):
+def fetch_grid_results_dict_from_local(grid_results_dict: GridResultDict, study_name: str) -> None:
     root_path = gin.query_parameter('optuna.root_path')
     save_path = os.path.join(root_path, study_name)
 
@@ -91,18 +93,18 @@ def fetch_results_dict_from_local(results_dict: Dict[frozenset, Dict[int, dict]]
             hps = {k: v for k, v in gin_dict.items() if k in hps_names}
             seed = gin_dict['data.split_seed']
             results = load_results_from_local(os.path.join(experiment_path, 'results.json'))
-            results_dict[frozenset(hps.items())][seed] = results
+            grid_results_dict[frozenset(hps.items())][seed] = results
 
 
-def load_results_from_local(output_path: str) -> Any:
+def load_results_from_local(output_path: str) -> Dict[str, float]:
     return json.load(open(output_path, 'r'))[0]
 
 
 # results check
 
-def check_grid_results_dict(results_dict: Dict[frozenset, Dict[int, dict]]):
+def check_grid_results_dict(grid_results_dict: GridResultDict) -> None:
     any_missing_result = False
-    for params, results in results_dict.items():
+    for params, results in grid_results_dict.items():
         for seed, result in results.items():
             if result is None:
                 any_missing_result = True
@@ -123,38 +125,38 @@ def get_hps_dict() -> Dict[str, Any]:
     return {k: v for k, v in params_dict.items() if k != 'data.split_seed'}
 
 
-def _get_params_product_list(params_dict) -> List[dict]:
+def _get_params_product_list(params_dict: Dict[str, Any]) -> List[dict]:
     params_dict = {k: list(map(lambda x: (k, x), v)) for k, v in params_dict.items()}
     return [dict(params) for params in itertools.product(*params_dict.values())]
 
 
 # compute results
 
-def compute_result(results_dict):
+def compute_result(grid_results_dict: GridResultDict) -> Tuple[frozenset, Dict[str, float], str]:
     metric_cls = get_metric_cls()
     metric_name = metric_cls.__name__.lower()
     agg_fn = min if metric_cls.direction == 'minimize' else max
     valid_metric = f'valid_{metric_name}'
     test_metric = f'test_{metric_name}'
-    results = [(params, average_dictionary(results)) for params, results in results_dict.items()]
+    results = [(params, average_dictionary(results)) for params, results in grid_results_dict.items()]
     params, result = agg_fn(results, key=lambda x: x[1][valid_metric])
     return params, result, test_metric
 
 
-def average_dictionary(d: Dict[int, Dict[str, float]]):
-    values = list(d.values())[0].keys()
-    agg = {v: [d[seed][v] for seed in d.keys()] for v in values}
+def average_dictionary(dictionary: Dict[int, Dict[str, float]]) -> Dict[str, float]:
+    values = list(dictionary.values())[0].keys()
+    agg = {v: [dictionary[seed][v] for seed in dictionary.keys()] for v in values}
     mean = {k: np.mean(lst) for k, lst in agg.items()}
     std = {f'{k}_std': np.std(lst) for k, lst in agg.items()}
     return {**mean, **std}
 
 
-def print_results(params, result, test_metric):
+def print_result(params: frozenset, result: Dict[str, float], test_metric: str) -> None:
     print(f'Best params: {dict(params)}')
     for key in sorted(key for key in result.keys() if not key.endswith('_std')):
         print(f'\t{key}: {rounded_mean_std(result, key)}')
     print(f'Result: {rounded_mean_std(result, test_metric)}')
 
 
-def rounded_mean_std(result, key):
+def rounded_mean_std(result: Dict[str, float], key: str) -> str:
     return f'{round(result[key], 3)} \u00B1 {round(result[f"{key}_std"], 3)}'

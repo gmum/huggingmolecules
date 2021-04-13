@@ -86,7 +86,7 @@ def parse_gin_config_files(*,
     return args
 
 
-def get_formatted_config_str(excluded: Optional[List[str]] = None):
+def get_formatted_config_str(excluded: Optional[List[str]] = None) -> str:
     config_map = gin.config._CONFIG
     if excluded:
         config_map = {k: v for k, v in config_map.items() if all(x not in k[1] for x in excluded)}
@@ -102,7 +102,7 @@ def parse_gin_str(gin_str: str) -> Dict[str, Any]:
     return gin_dict
 
 
-def bind_parameters_from_dict(values_dict: Dict[str, Any]):
+def bind_parameters_from_dict(values_dict: Dict[str, Any]) -> None:
     with gin.unlock_config():
         for param, value in values_dict.items():
             if not param.startswith('ignore.'):

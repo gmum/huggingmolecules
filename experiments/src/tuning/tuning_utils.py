@@ -36,7 +36,7 @@ class Objective:
         self.optuna_params = optuna_params
         self.metric = metric
 
-    def __call__(self, trial: optuna.trial.Trial):
+    def __call__(self, trial: optuna.trial.Trial) -> float:
         trial_path = os.path.join(self.save_path, f'trial_{trial.number}')
         suggested_values = {p: getattr(trial, v[0])(p, *v[1:]) for p, v in self.optuna_params.items()}
         bind_parameters_from_dict(suggested_values)
@@ -46,7 +46,7 @@ class Objective:
         return trainer.logged_metrics[self.metric]
 
 
-def enqueue_failed_trials(study, retry_not_completed: bool):
+def enqueue_failed_trials(study, retry_not_completed: bool) -> None:
     from optuna.trial import TrialState
     params_set = set(tuple(trial.params) for trial in study.get_trials()
                      if trial.state == TrialState.COMPLETE)
@@ -62,7 +62,7 @@ def enqueue_failed_trials(study, retry_not_completed: bool):
             study.enqueue_trial(trial.params)
 
 
-def print_and_save_search_results(study, metric: str):
+def print_and_save_search_results(study, metric: str, save_path: str) -> None:
     dataframe = study.trials_dataframe(attrs=('number', 'value', 'params', 'state'))
     trial = study.best_trial
 
@@ -73,13 +73,7 @@ def print_and_save_search_results(study, metric: str):
     for key, value in trial.params.items():
         print(f'  {key} = {value}')
 
-
-def save_search_results(study, save_path: str):
-    dataframe = study.trials_dataframe(attrs=('number', 'value', 'params', 'state'))
-    trial = study.best_trial
-
     with open(os.path.join(save_path, 'trials.dataframe.txt'), 'w') as fp:
         fp.write(str(dataframe))
-
     with open(os.path.join(save_path, 'best_trial.json'), 'w') as fp:
         json.dump(trial.params, fp)

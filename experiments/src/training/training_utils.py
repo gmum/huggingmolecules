@@ -208,11 +208,11 @@ def get_data_split(task_name: str,
                    normalize_labels: bool = False,
                    dataset_path: str = None) -> dict:
     if dataset_path is None:
-        split = _get_data_split_tdc(task_name, dataset_name, assay_name,
-                                    split_method, split_frac, split_seed)
+        split = _get_data_split_from_tdc(task_name, dataset_name, assay_name,
+                                         split_method, split_frac, split_seed)
     else:
-        split = _get_data_split_csv(dataset_name, assay_name, dataset_path,
-                                    split_method, split_frac, split_seed)
+        split = _get_data_split_from_csv(dataset_name, assay_name, dataset_path,
+                                         split_method, split_frac, split_seed)
 
     if normalize_labels:
         normalize_labels_inplace(split)
@@ -220,12 +220,12 @@ def get_data_split(task_name: str,
     return split
 
 
-def _get_data_split_tdc(task_name: str,
-                        dataset_name: str,
-                        assay_name: str,
-                        split_method: str,
-                        split_frac: Tuple[float, float, float],
-                        split_seed: Union[int, str]) -> Split:
+def _get_data_split_from_tdc(task_name: str,
+                             dataset_name: str,
+                             assay_name: str,
+                             split_method: str,
+                             split_frac: Tuple[float, float, float],
+                             split_seed: int) -> Split:
     import tdc.single_pred
     task = getattr(tdc.single_pred, task_name)
     data = task(name=dataset_name, label_name=assay_name)
@@ -244,14 +244,12 @@ def _get_data_split_tdc(task_name: str,
     }
 
 
-def _get_data_split_csv(dataset_name: str,
-                        assay_name: str,
-                        dataset_path: str,
-                        split_method: str,
-                        split_frac: Tuple[float, float, float],
-                        split_seed: Union[int, str]) -> Split:
-    split_seed = 1234 if split_seed == "benchmark" else split_seed
-
+def _get_data_split_from_csv(dataset_name: str,
+                             assay_name: str,
+                             dataset_path: str,
+                             split_method: str,
+                             split_frac: Tuple[float, float, float],
+                             split_seed: int) -> Split:
     csv_path = os.path.join(dataset_path, f'{dataset_name.lower()}.csv')
     data = pd.read_csv(csv_path)
     data.insert(0, 'IDs', range(0, len(data)))
@@ -292,7 +290,7 @@ def _split_data_from_file(data, split_path: str):
     return data.iloc[train_split], data.iloc[valid_split], data.iloc[test_split]
 
 
-def normalize_labels_inplace(split: Split):
+def normalize_labels_inplace(split: Split) -> None:
     from sklearn import preprocessing
     scaler = preprocessing.StandardScaler(). \
         fit(np.concatenate([split['train']['Y'], split['valid']['Y']]).reshape(-1, 1))
@@ -344,7 +342,7 @@ def _dump_encodings_to_cache(split: Split) -> None:
 # evaluation
 
 
-def evaluate_and_save_results(trainer: pl.Trainer, test_loader: DataLoader, results_path: str):
+def evaluate_and_save_results(trainer: pl.Trainer, test_loader: DataLoader, results_path: str) -> None:
     results = trainer.test(test_dataloaders=test_loader, ckpt_path=None)
     logging.info(results)
     with open(results_path, "w") as f:
