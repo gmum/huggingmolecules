@@ -87,25 +87,6 @@ class EnhancedNoamLRScheduler(LRSchedulerBase):
             return self.base_lr * (self.exp_gamma ** (step - self.warmup_steps))
 
 
-@gin.configurable
-class LinearLRScheduler(LRSchedulerBase):
-    def __init__(self, warmup_factor: int):
-        super().__init__()
-        self.warmup_factor = warmup_factor
-        self.warmup_steps = None
-
-    def on_train_start(self, trainer, pl_module):
-        super().on_train_start(trainer, pl_module)
-        self.warmup_steps = self.warmup_factor * self.total_steps
-
-    def get_lr(self, step):
-        if step < self.warmup_steps:
-            return self.base_lr * float(step) / float(max(1, self.warmup_steps))
-        return self.base_lr * max(
-            0.0, float(self.total_steps - step) / float(max(1, self.total_steps - self.warmup_steps))
-        )
-
-
 class GinConfigSaver(NeptuneCompatibleCallback):
     def __init__(self, target_name: str = "gin-config-all.txt", excluded_namespaces: List[str] = None):
         super().__init__()
