@@ -319,17 +319,17 @@ We report mean/median ranks of tested models across all datasets (both regressio
 results see [Regression](#Regression) and [Classification](#Classification) sections.
 
 model | mean rank | rank std |
---- | :---: | :---: | :---:
-MAT 200k     |  5.6 |     3.5
-MAT 2M       |  5.3 |     3.4
-MAT 20M      |  4.1 |      2.2
-GROVER Base  | 3.8 |  2.7
-GROVER Large |  **3.6** |   2.4
-ChemBERTa    |  7.4 |      2.8
-MolBERT      |  5.9 |    2.9
-D-MPNN       |  6.3 |    2.3
-D-MPNN 2d    |  6.4 |   2.0
-D-MPNN mc    |  5.3 |    2.1
+--- | :---: | :---:
+MAT 200k     |  5.6 |  3.5 |
+MAT 2M       |  5.3 |  3.4 |
+MAT 20M      |  4.1 |  2.2 |
+GROVER Base  | 3.8 |  2.7 |
+GROVER Large |  **3.6** |  2.4 |
+ChemBERTa    |  7.4 |  2.8 |
+MolBERT      |  5.9 |  2.9 |
+D-MPNN       |  6.3 |  2.3 |
+D-MPNN 2d    |  6.4 |  2.0 |
+D-MPNN mc    |  5.3 |  2.1 |
 
 ### Regression
 
