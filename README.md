@@ -83,7 +83,6 @@ The project consists of two main modules: `src/` and `experiments/` modules:
 Huggingmolecules currently provides the following models architectures:
 
 * [MAT](https://github.com/ardigen/MAT)
-* MAT++ (preprint in preparation)
 * [GROVER](https://github.com/tencent-ailab/grover)
 
 For ease of benchmarking, we also include wrappers in the `experiments/` module for three other models architectures:
