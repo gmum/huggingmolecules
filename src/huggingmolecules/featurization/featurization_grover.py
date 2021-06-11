@@ -5,7 +5,7 @@ import torch
 from rdkit import Chem
 
 from .featurization_api import RecursiveToDeviceMixin, PretrainedFeaturizerMixin
-from .featurization_common_utils import stack_y
+from .featurization_common_utils import stack_y, generate_additional_features
 from .featurization_grover_utils import build_atom_features, build_bond_features_and_mappings
 from ..configuration import GroverConfig
 
@@ -19,6 +19,7 @@ class GroverMoleculeEncoding:
     b2revb: List
     n_atoms: int
     n_bonds: int
+    generated_features: List[float]
     y: Optional[float]
 
 
@@ -32,6 +33,7 @@ class GroverBatchEncoding(RecursiveToDeviceMixin):
     a2a: torch.LongTensor
     a_scope: torch.LongTensor
     b_scope: torch.LongTensor
+    generated_features: torch.FloatTensor
     y: Optional[torch.FloatTensor]
     batch_size: int
 
@@ -51,12 +53,14 @@ class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverB
         super().__init__(config)
         self.atom_fdim = config.d_atom
         self.bond_fdim = config.d_bond + config.d_atom
+        self.features_generators = config.ffn_features_generators
 
     def _encode_smiles(self, smiles: str, y: Optional[float]) -> GroverMoleculeEncoding:
         mol = Chem.MolFromSmiles(smiles)
 
         atom_features = build_atom_features(mol)
         bond_features, a2b, b2a, b2revb = build_bond_features_and_mappings(mol, atom_features)
+        generated_features = generate_additional_features(mol, self.features_generators)
 
         return GroverMoleculeEncoding(f_atoms=atom_features,
                                       f_bonds=bond_features,
@@ -65,6 +69,7 @@ class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverB
                                       b2revb=b2revb,
                                       n_atoms=len(atom_features),
                                       n_bonds=len(bond_features),
+                                      generated_features=generated_features,
                                       y=y)
 
     def _collate_encodings(self, encodings: List[GroverMoleculeEncoding]) -> GroverBatchEncoding:
@@ -109,6 +114,11 @@ class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverB
         a_scope = torch.LongTensor(a_scope)
         b_scope = torch.LongTensor(b_scope)
 
+        if encodings[0].generated_features is not None:
+            generated_features = torch.stack([torch.tensor(mol.generated_features) for mol in encodings]).float()
+        else:
+            generated_features = None
+
         return GroverBatchEncoding(f_atoms=f_atoms,
                                    f_bonds=f_bonds,
                                    a2a=a2a,
@@ -118,4 +128,5 @@ class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverB
                                    a_scope=a_scope,
                                    b_scope=b_scope,
                                    y=stack_y(encodings),
+                                   generated_features=generated_features,
                                    batch_size=len(encodings))

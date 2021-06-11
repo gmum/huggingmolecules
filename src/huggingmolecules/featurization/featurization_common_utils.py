@@ -1,8 +1,11 @@
 from typing import List, Optional, Union
 
+import numpy as np
 import torch
+from rdkit import Chem
 
 from .featurization_api import T_BatchEncoding
+from .featurization_features_generators import get_features_generator
 
 
 def one_hot_vector(value: Union[float, int],
@@ -25,3 +28,17 @@ def stack_y_list(y_list: List[float]) -> Optional[torch.FloatTensor]:
         return None
     else:
         return torch.stack([torch.tensor(y).float() for y in y_list]).unsqueeze(1)
+
+
+def generate_additional_features(mol: Chem.Mol, features_generators: List[str]) -> List[float]:
+    if features_generators is None:
+        return None
+    generated_features = []
+    dummy = Chem.MolFromSmiles('C')
+    for generator_name in features_generators:
+        generator = get_features_generator(generator_name)
+        if mol.GetNumHeavyAtoms() > 0:
+            generated_features.extend(generator(mol))
+        else:
+            generated_features.extend(np.zeros(len(generator(dummy))))
+    return generated_features

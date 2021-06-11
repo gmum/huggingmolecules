@@ -64,15 +64,15 @@ class GroverModel(PretrainedModelBase[GroverBatchEncoding, GroverConfig]):
         """
 
         if config.ffn_features_only:
-            first_linear_dim = config.features_size + config.ffn_d_features
+            first_linear_dim = config.features_size + config.ffn_d_generated_features
         else:
             if config.readout_self_attention:
                 first_linear_dim = config.d_model * config.readout_attn_out
                 # TODO: Ad-hoc!
                 # if args.use_input_features:
-                first_linear_dim += config.ffn_d_features
+                first_linear_dim += config.ffn_d_generated_features
             else:
-                first_linear_dim = config.d_model + config.ffn_d_features
+                first_linear_dim = config.d_model + config.ffn_d_generated_features
 
         dropout = nn.Dropout(config.dropout)
         activation = get_activation_function(config.activation)
@@ -109,19 +109,9 @@ class GroverModel(PretrainedModelBase[GroverBatchEncoding, GroverConfig]):
         mol_atom_from_bond_output = self.readout(output["atom_from_bond"], a_scope)
         mol_atom_from_atom_output = self.readout(output["atom_from_atom"], a_scope)
 
-        # if features_batch[0] is not None:
-        #     features_batch = torch.from_numpy(np.stack(features_batch)).float()
-        #     if self.iscuda:
-        #         features_batch = features_batch.cuda()
-        #     features_batch = features_batch.to(output["atom_from_atom"])
-        #     if len(features_batch.shape) == 1:
-        #         features_batch = features_batch.view([1, features_batch.shape[0]])
-        # else:
-        # features_batch = None
-        #
-        # if features_batch is not None:
-        #     mol_atom_from_atom_output = torch.cat([mol_atom_from_atom_output, features_batch], 1)
-        #     mol_atom_from_bond_output = torch.cat([mol_atom_from_bond_output, features_batch], 1)
+        if batch.generated_features is not None:
+            mol_atom_from_atom_output = torch.cat([mol_atom_from_atom_output, batch.generated_features], 1)
+            mol_atom_from_bond_output = torch.cat([mol_atom_from_bond_output, batch.generated_features], 1)
 
         atom_ffn_output = self.mol_atom_from_atom_ffn(mol_atom_from_atom_output)
         bond_ffn_output = self.mol_atom_from_bond_ffn(mol_atom_from_bond_output)
