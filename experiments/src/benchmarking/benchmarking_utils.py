@@ -139,6 +139,8 @@ def compute_result(grid_results_dict: GridResultDict) -> Tuple[frozenset, Dict[s
     valid_metric = f'valid_{metric_name}'
     test_metric = f'test_{metric_name}'
     results = [(params, average_dictionary(results)) for params, results in grid_results_dict.items()]
+    results = [x for x in results if not np.isnan(x[1][valid_metric])]
+    assert len(results) > 0, "'results' contains only nan!"
     params, result = agg_fn(results, key=lambda x: x[1][valid_metric])
     return params, result, test_metric
 
