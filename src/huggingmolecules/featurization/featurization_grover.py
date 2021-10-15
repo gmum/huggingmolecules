@@ -19,7 +19,7 @@ class GroverMoleculeEncoding:
     b2revb: List
     n_atoms: int
     n_bonds: int
-    generated_features: List[float]
+    generated_features: Optional[List[float]]
     y: Optional[float]
 
 
@@ -33,7 +33,7 @@ class GroverBatchEncoding(RecursiveToDeviceMixin):
     a2a: torch.LongTensor
     a_scope: torch.LongTensor
     b_scope: torch.LongTensor
-    generated_features: torch.FloatTensor
+    generated_features: Optional[torch.FloatTensor]
     y: Optional[torch.FloatTensor]
     batch_size: int
 

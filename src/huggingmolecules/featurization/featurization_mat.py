@@ -17,7 +17,7 @@ class MatMoleculeEncoding:
     node_features: np.ndarray
     adjacency_matrix: np.ndarray
     distance_matrix: np.ndarray
-    generated_features: List[float]
+    generated_features: Optional[List[float]]
     y: Optional[float]
 
 
@@ -26,7 +26,7 @@ class MatBatchEncoding(RecursiveToDeviceMixin):
     node_features: torch.FloatTensor
     adjacency_matrix: torch.FloatTensor
     distance_matrix: torch.FloatTensor
-    generated_features: torch.FloatTensor
+    generated_features: Optional[torch.FloatTensor]
     y: Optional[torch.FloatTensor]
     batch_size: int
 
