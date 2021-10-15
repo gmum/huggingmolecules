@@ -68,6 +68,11 @@ conda activate huggingmolecules
 pip install -e ./src
 ```
 
+Huggingmolecules caches weights and configs of the models. To avoid issues with incompatibility of different package versions, it is recommended to clean up the cache directory after every package update:
+```
+python -m src.clean_cache --all
+```
+
 ## Project Structure
 
 The project consists of two main modules: `src/` and `experiments/` modules:
