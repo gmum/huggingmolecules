@@ -1,11 +1,12 @@
 from dataclasses import dataclass
+from typing import List
 
 from .configuration_api import PretrainedConfigMixin
 
 MAT_CONFIG_ARCH = {
-    'mat_masking_200k': 'https://drive.google.com/uc?id=1XBCOKhZutkDhSgAafnngj_Q096nJ5ncQ',
-    'mat_masking_2M': 'https://drive.google.com/uc?id=1XBCOKhZutkDhSgAafnngj_Q096nJ5ncQ',
-    'mat_masking_20M': 'https://drive.google.com/uc?id=1XBCOKhZutkDhSgAafnngj_Q096nJ5ncQ'
+    'mat_masking_200k': 'https://drive.google.com/uc?id=1OundupS0xJz3c-qvPqTHuAAxLRYHclQF',
+    'mat_masking_2M': 'https://drive.google.com/uc?id=1OundupS0xJz3c-qvPqTHuAAxLRYHclQF',
+    'mat_masking_20M': 'https://drive.google.com/uc?id=1OundupS0xJz3c-qvPqTHuAAxLRYHclQF'
 }
 
 
@@ -29,6 +30,8 @@ class MatConfig(PretrainedConfigMixin):
     generator_aggregation: str = 'mean'
     generator_n_layers: int = 1
     generator_n_outputs: int = 1
+    generator_features_generators: List[str] = None
+    generator_d_generated_features: int = 0
 
     @classmethod
     def _get_archive_dict(cls) -> dict:

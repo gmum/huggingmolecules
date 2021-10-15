@@ -21,3 +21,6 @@ optuna.params = {
     'optimizer.lr': [5e-02, 1e-02, 5e-03, 1e-03, 5e-04, 1e-04, 5e-05, 1e-05, 5e-06, 1e-06],
     'data.split_seed': %seeds
 }
+
+# ==============================================================================
+train.cache_encodings = False

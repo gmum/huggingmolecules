@@ -23,6 +23,13 @@ def stack_y(encodings: List[T_BatchEncoding]) -> Optional[torch.FloatTensor]:
     return stack_y_list([e.y for e in encodings])
 
 
+def stack_generated_features(encodings: List[T_BatchEncoding]) -> Optional[torch.FloatTensor]:
+    if encodings[0].generated_features is not None:
+        return torch.stack([torch.tensor(mol.generated_features) for mol in encodings]).float()
+    else:
+        return None
+
+
 def stack_y_list(y_list: List[float]) -> Optional[torch.FloatTensor]:
     if any(y is None for y in y_list):
         return None

@@ -196,6 +196,7 @@ class Generator(nn.Module):
 
     def __init__(self, *,
                  d_model: int,
+                 d_generated_features: int,
                  aggregation_type: str,
                  d_output: int,
                  n_layers: int,
@@ -211,6 +212,7 @@ class Generator(nn.Module):
             )
             d_model *= attn_out
 
+        d_model += d_generated_features
         if n_layers == 1:
             self.proj = nn.Linear(d_model, d_output)
         else:
@@ -224,7 +226,7 @@ class Generator(nn.Module):
             self.proj = torch.nn.Sequential(*self.proj)
         self.aggregation_type = aggregation_type
 
-    def forward(self, x, mask):
+    def forward(self, x, mask, generated_features):
         mask = mask.unsqueeze(-1).float()
         out_masked = x * mask
         if self.aggregation_type == 'mean':
@@ -239,6 +241,8 @@ class Generator(nn.Module):
             out_avg_pooling = out_avg_pooling.view(out_avg_pooling.size(0), -1)
         elif self.aggregation_type == 'contextual':
             out_avg_pooling = x
+        if generated_features is not None:
+            out_avg_pooling = torch.cat([out_avg_pooling, generated_features], 1)
         projected = self.proj(out_avg_pooling)
         return projected
 
