@@ -137,6 +137,8 @@ try:
         smiles = Chem.MolToSmiles(mol, isomericSmiles=True) if type(mol) != str else mol
         generator = rdNormalizedDescriptors.RDKit2DNormalized()
         features = generator.process(smiles)[1:]
+        features = np.array(features)
+        features[np.isnan(features) == True] = 0
 
         return features
 except ImportError:
