@@ -64,6 +64,7 @@ expected_encoded_smiles = [
         a2b=[[1], [0, 3], [2, 5], [4]],
         b2a=[0, 1, 1, 2, 2, 3],
         b2revb=[1, 0, 3, 2, 5, 4],
+        generated_features=None,
         n_atoms=4, n_bonds=6, y=None),
     GroverMoleculeEncoding(
         f_atoms=[
@@ -93,6 +94,7 @@ expected_encoded_smiles = [
         a2b=[[1], [0]],
         b2a=[0, 1],
         b2revb=[1, 0],
+        generated_features=None,
         n_atoms=2, n_bonds=2, y=None)
 ]
 
@@ -406,4 +408,6 @@ expected_batch = GroverBatchEncoding(
     a_scope=LongTensor([[1, 4],
                         [5, 2]]),
     b_scope=LongTensor([[1, 6],
-                        [7, 2]]), y=None, batch_size=2)
+                        [7, 2]]),
+    generated_features=None,
+    y=None, batch_size=2)

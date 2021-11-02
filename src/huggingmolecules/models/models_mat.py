@@ -63,6 +63,7 @@ class MatModel(PretrainedModelBase[MatBatchEncoding, MatConfig]):
 
         # Generator
         self.generator = Generator(d_model=config.d_model,
+                                   d_generated_features=config.generator_d_generated_features,
                                    aggregation_type=config.generator_aggregation,
                                    d_output=config.generator_n_outputs,
                                    n_layers=config.generator_n_layers,
@@ -77,7 +78,7 @@ class MatModel(PretrainedModelBase[MatBatchEncoding, MatConfig]):
         encoded = self.encoder(embedded, batch_mask,
                                adj_matrix=batch.adjacency_matrix,
                                distance_matrix=batch.distance_matrix)
-        output = self.generator(encoded, batch_mask)
+        output = self.generator(encoded, batch_mask, batch.generated_features)
         return output
 
 

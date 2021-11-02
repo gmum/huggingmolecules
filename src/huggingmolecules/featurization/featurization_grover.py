@@ -5,7 +5,7 @@ import torch
 from rdkit import Chem
 
 from .featurization_api import RecursiveToDeviceMixin, PretrainedFeaturizerMixin
-from .featurization_common_utils import stack_y
+from .featurization_common_utils import stack_y, generate_additional_features, stack_generated_features
 from .featurization_grover_utils import build_atom_features, build_bond_features_and_mappings
 from ..configuration import GroverConfig
 
@@ -19,6 +19,7 @@ class GroverMoleculeEncoding:
     b2revb: List
     n_atoms: int
     n_bonds: int
+    generated_features: Optional[List[float]]
     y: Optional[float]
 
 
@@ -32,6 +33,7 @@ class GroverBatchEncoding(RecursiveToDeviceMixin):
     a2a: torch.LongTensor
     a_scope: torch.LongTensor
     b_scope: torch.LongTensor
+    generated_features: Optional[torch.FloatTensor]
     y: Optional[torch.FloatTensor]
     batch_size: int
 
@@ -57,6 +59,7 @@ class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverB
 
         atom_features = build_atom_features(mol)
         bond_features, a2b, b2a, b2revb = build_bond_features_and_mappings(mol, atom_features)
+        generated_features = generate_additional_features(mol, self.config.ffn_features_generators)
 
         return GroverMoleculeEncoding(f_atoms=atom_features,
                                       f_bonds=bond_features,
@@ -65,6 +68,7 @@ class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverB
                                       b2revb=b2revb,
                                       n_atoms=len(atom_features),
                                       n_bonds=len(bond_features),
+                                      generated_features=generated_features,
                                       y=y)
 
     def _collate_encodings(self, encodings: List[GroverMoleculeEncoding]) -> GroverBatchEncoding:
@@ -118,4 +122,5 @@ class GroverFeaturizer(PretrainedFeaturizerMixin[GroverMoleculeEncoding, GroverB
                                    a_scope=a_scope,
                                    b_scope=b_scope,
                                    y=stack_y(encodings),
+                                   generated_features=stack_generated_features(encodings),
                                    batch_size=len(encodings))
