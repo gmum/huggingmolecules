@@ -4,9 +4,8 @@ from typing import List
 from .configuration_api import PretrainedConfigMixin
 
 RMAT_CONFIG_ARCH = {
-    'rmat_grover_2M': 'https://drive.google.com/uc?id=10QzWQ4CoNhtECDS-qqxUXqR7RIA3SCwR'
+    'rmat_4M': 'https://drive.google.com/uc?id=12J6yE8W92mrdnzpKemdmPDWO52EQf_J6'
 }
-
 
 @dataclass
 class RMatConfig(PretrainedConfigMixin):
@@ -20,7 +19,7 @@ class RMatConfig(PretrainedConfigMixin):
     envelope_cutoff: float = 20.0
     envelope_exponent: float = 5.0
 
-    encoder_n_layers: int = 8
+    encoder_n_layers: int = 10
     encoder_n_attn_heads: int = 12
 
     ffn_activation: str = 'LeakyReLU'

@@ -1,6 +1,6 @@
 # ==============================================================================
 model.cls_name = 'RMatModel'
-model.pretrained_name = 'rmat_grover_2M'
+model.pretrained_name = 'rmat_4M'
 
 # ==============================================================================
 optimizer.name = 'Adam'
