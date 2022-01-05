@@ -123,7 +123,7 @@ try:
         smiles = Chem.MolToSmiles(mol, isomericSmiles=True) if type(mol) != str else mol
         generator = rdDescriptors.RDKit2D()
         features = generator.process(smiles)[1:]
-
+        features = np.nan_to_num(features, 0.0)
         return features
 
     @register_features_generator('rdkit_2d_normalized')
@@ -137,7 +137,7 @@ try:
         smiles = Chem.MolToSmiles(mol, isomericSmiles=True) if type(mol) != str else mol
         generator = rdNormalizedDescriptors.RDKit2DNormalized()
         features = generator.process(smiles)[1:]
-
+        features = np.nan_to_num(features, 0.0)
         return features
 except ImportError:
     pass
