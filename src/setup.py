@@ -21,8 +21,8 @@ setup(
     version=__version__,
     packages=['huggingmolecules'],
     install_requires=[
-        'torch==1.7.0',
-        'scikit-learn==0.23.2',
+        'torch>=1.7.0',
+        'scikit-learn>=0.23.2',
         'filelock>=3.0.12',
         'gdown>=3.12.2'
     ]
