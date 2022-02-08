@@ -9,7 +9,7 @@ from .training_utils import get_custom_callbacks, evaluate_and_save_results, get
 from ..gin.gin_utils import get_default_experiment_name
 
 
-@gin.configurable('train', blacklist=['model', 'featurizer'])
+@gin.configurable('train', denylist=['model', 'featurizer'])
 def train_model(*,
                 model: Optional[PretrainedModelBase] = None,
                 featurizer: Optional[PretrainedFeaturizerMixin] = None,

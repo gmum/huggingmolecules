@@ -34,7 +34,7 @@ HUGGINGMOLECULES_ENCODINGS_CACHE = os.getenv("HUGGINGMOLECULES_ENCODINGS_CACHE",
 Split = Dict[str, Dict[str, Union[List, np.array]]]
 
 
-@gin.configurable('model', blacklist=['task'])
+@gin.configurable('model', denylist=['task'])
 class GinModel:
     def __init__(self,
                  cls_name: str,
@@ -115,7 +115,7 @@ def get_metric_cls(*, name: str, direction: str) -> Type[Metric]:
     return metric_cls
 
 
-@gin.configurable('optimizer', blacklist=['model'])
+@gin.configurable('optimizer', denylist=['model'])
 def get_optimizer(model: nn.Module, *, name: str, **kwargs) -> torch.optim.Optimizer:
     opt_cls = getattr(torch.optim, name)
     return opt_cls(model.parameters(), **kwargs)
@@ -134,7 +134,7 @@ def get_all_hyperparams(model: PretrainedModelBase) -> Dict[str, Any]:
     return params
 
 
-@gin.configurable('neptune', blacklist=['model', 'experiment_name'])
+@gin.configurable('neptune', denylist=['model', 'experiment_name'])
 def get_neptune_logger(model: PretrainedModelBase, *,
                        user_name: str,
                        project_name: str,
