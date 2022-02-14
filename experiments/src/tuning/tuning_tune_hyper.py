@@ -10,7 +10,7 @@ from .tuning_utils import get_sampler, Objective, \
 from ..gin.gin_utils import get_default_experiment_name
 
 
-@gin.configurable('optuna', blacklist=['model', 'featurizer'])
+@gin.configurable('optuna', denylist=['model', 'featurizer'])
 def tune_hyper(*,
                model: Optional[PretrainedModelBase] = None,
                featurizer: Optional[PretrainedFeaturizerMixin] = None,
