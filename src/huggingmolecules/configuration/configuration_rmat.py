@@ -4,7 +4,8 @@ from typing import List
 from .configuration_api import PretrainedConfigMixin
 
 RMAT_CONFIG_ARCH = {
-    'rmat_4M': 'https://drive.google.com/uc?id=12J6yE8W92mrdnzpKemdmPDWO52EQf_J6'
+    'rmat_4M': 'https://drive.google.com/uc?id=1VBou9SzOnLPAC6NdAKB1nYVZ23ninvMY',
+    'rmat_4M_rdkit': 'https://drive.google.com/uc?id=18zVAMupEdSfBGebD5SFOWFVaiFhDOaYd'
 }
 
 @dataclass
@@ -12,7 +13,7 @@ class RMatConfig(PretrainedConfigMixin):
     d_atom: int = 37
     d_edge: int = 46
     d_model: int = 768
-    init_type: str = 'normal'
+    init_type: str = 'uniform'
     dropout: float = 0.0
 
     envelope_num_radial: int = 32
@@ -27,7 +28,7 @@ class RMatConfig(PretrainedConfigMixin):
     ffn_d_hidden: int = 1536
     ffn_d_output: int = 768
 
-    generator_aggregation: str = 'mean'
+    generator_aggregation: str = 'grover'
     generator_n_layers: int = 1
     generator_d_outputs: int = 1
     generator_features_generators: List[str] = None

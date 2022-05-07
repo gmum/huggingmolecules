@@ -17,7 +17,8 @@ from ..configuration import RMatConfig
 from ..featurization.featurization_rmat import RMatBatchEncoding, RMatFeaturizer
 
 RMAT_MODEL_ARCH = {
-    'rmat_4M': 'https://drive.google.com/uc?id=1djmwdYvba3OjBXu_seYe3R-ko8QSkRmV'
+    'rmat_4M': 'https://drive.google.com/uc?id=1djmwdYvba3OjBXu_seYe3R-ko8QSkRmV',
+    'rmat_4M_rdkit': 'https://drive.google.com/uc?id=1djmwdYvba3OjBXu_seYe3R-ko8QSkRmV'
 }
 
 

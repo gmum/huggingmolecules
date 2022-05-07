@@ -9,6 +9,6 @@ from tests.featurization.featurization_base import FeaturizationApiTestBase
 class FeaturizationApiRMatTest(FeaturizationApiTestBase, unittest.TestCase):
     config_cls = RMatConfig
     featurizer_cls = RMatFeaturizer
-    config_arch_dict = RMAT_CONFIG_ARCH
+    config_arch_dict = {k: v for k, v in RMAT_CONFIG_ARCH.items() if 'rdkit' not in k}
     expected_encoded_smiles = {pretrained: expected_encoded_smiles for pretrained in config_arch_dict.keys()}
     expected_batch = {pretrained: expected_batch for pretrained in config_arch_dict.keys()}
