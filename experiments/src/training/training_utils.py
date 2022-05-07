@@ -164,11 +164,12 @@ def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
                      num_workers: int = 0,
                      cache_encodings: bool = False,
                      task_name: str = None,
-                     dataset_name: str = None) -> Tuple[DataLoader, DataLoader, DataLoader]:
+                     dataset_name: str = None,
+                     **kwargs) -> Tuple[DataLoader, DataLoader, DataLoader]:
     if task_name and dataset_name:
-        split = get_data_split(task_name=task_name, dataset_name=dataset_name)
+        split = get_data_split(task_name=task_name, dataset_name=dataset_name, **kwargs)
     elif task_name is None and dataset_name is None:
-        split = get_data_split()
+        split = get_data_split(**kwargs)
     else:
         raise AttributeError(
             'Both `task_name` and `dataset_name` attributes must be set either to None or to str values')
