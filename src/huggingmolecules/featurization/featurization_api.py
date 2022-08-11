@@ -1,4 +1,4 @@
-from typing import *
+from typing import Generic, List, Optional, Type
 from typing import TypeVar
 
 import torch
@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from ..configuration.configuration_api import PretrainedConfigMixin
 
 
-class BatchEncodingProtocol(Protocol):
+class BatchEncodingProtocol:
     @property
     def y(self):
         raise NotImplementedError

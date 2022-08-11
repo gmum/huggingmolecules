@@ -89,6 +89,7 @@ Huggingmolecules currently provides the following models architectures:
 
 * [MAT](https://github.com/ardigen/MAT)
 * [GROVER](https://github.com/tencent-ailab/grover)
+* [R-MAT](https://arxiv.org/abs/2110.05841) (weights were obtained by joint efforts with Nvidia)
 
 For ease of benchmarking, we also include wrappers in the `experiments/` module for three other models architectures:
 
