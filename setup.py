@@ -25,6 +25,8 @@ setup(
         'torch>=1.7.0',
         'scikit-learn>=0.23.2',
         'filelock>=3.0.12',
-        'gdown>=3.12.2'
+        'gdown>=3.12.2',
+        'rdkit',
+        'setuptools',
     ]
 )
