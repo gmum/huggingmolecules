@@ -2,7 +2,7 @@ import io
 import os
 import re
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 # Get the version from src/huggingmolecules/__init__.py
 # Adapted from https://stackoverflow.com/a/39671214
@@ -19,7 +19,7 @@ __version__ = version_matches.group(1)
 setup(
     name='huggingmolecules',
     version=__version__,
-    packages=['huggingmolecules'],
+    packages=find_packages('src', include=['huggingmolecules*']),
     package_dir={'':'src'},
     install_requires=[
         'torch>=1.7.0',
