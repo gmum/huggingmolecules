@@ -1,7 +1,6 @@
 import os
 
 import filelock
-import gdown
 
 default_cache_dir = '~/.cache/torch/huggingmolecules/'
 HUGGINGMOLECULES_CACHE = os.getenv("HUGGINGMOLECULES_CACHE", default_cache_dir)
@@ -14,6 +13,7 @@ def get_cache_filepath(pretrained_name: str, archive_dict: dict, extension: str)
 
 
 def download_file(src: str, target: str) -> None:
+    import gdown
     dirname = os.path.dirname(target)
     os.makedirs(dirname, exist_ok=True)
     lock_path = target + ".lock"

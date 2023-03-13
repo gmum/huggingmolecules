@@ -72,7 +72,8 @@ class RMatModel(PretrainedModelBase[RMatBatchEncoding, RMatConfig]):
                                    aggregation_type=config.generator_aggregation,
                                    d_output=config.generator_d_outputs,
                                    n_layers=config.generator_n_layers,
-                                   dropout=config.dropout)
+                                   dropout=config.dropout,
+                                   return_representations_dict=config.generator_return_representations_dict)
 
         # Initialization
         self.init_weights(config.init_type)
