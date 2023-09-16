@@ -170,6 +170,8 @@ def get_data_loaders(featurizer: PretrainedFeaturizerMixin, *,
         split = get_data_split(task_name=task_name, dataset_name=dataset_name, **kwargs)
     elif task_name is None and dataset_name is None:
         split = get_data_split(**kwargs)
+    elif task_name is None:
+        split = get_data_split(task_name=task_name, dataset_name=dataset_name, **kwargs)
     else:
         raise AttributeError(
             'Both `task_name` and `dataset_name` attributes must be set either to None or to str values')
