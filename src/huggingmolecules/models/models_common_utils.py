@@ -202,7 +202,8 @@ class Generator(nn.Module):
                  n_layers: int,
                  dropout: float,
                  attn_hidden: int = 128,
-                 attn_out: int = 4):
+                 attn_out: int = 4,
+                 return_representations_dict: bool = False):
         super(Generator, self).__init__()
         if aggregation_type == 'grover':
             self.att_net = nn.Sequential(
@@ -225,6 +226,7 @@ class Generator(nn.Module):
             self.proj.append(nn.Linear(attn_hidden, d_output))
             self.proj = torch.nn.Sequential(*self.proj)
         self.aggregation_type = aggregation_type
+        self.return_representations_dict = return_representations_dict
 
     def forward(self, x, mask, generated_features):
         mask = mask.unsqueeze(-1).float()
@@ -244,6 +246,19 @@ class Generator(nn.Module):
         if generated_features is not None:
             out_avg_pooling = torch.cat([out_avg_pooling, generated_features], 1)
         projected = self.proj(out_avg_pooling)
+        if self.return_representations_dict:
+            batch_size, nodes_per_graph, hidden_dim = x.shape
+            node_representations_mask = mask.view(-1).bool()
+            dummy_nodes_indices = torch.arange(0, batch_size * nodes_per_graph, step=nodes_per_graph).to(x.device)
+            node_representations_mask[dummy_nodes_indices] = False
+
+            node_representations = x.view(-1, hidden_dim)
+            node_representations = node_representations[node_representations_mask]
+            return {
+                'predictions': projected,
+                'graph_representations': out_avg_pooling,
+                'node_representations': node_representations
+            }
         return projected
 
 

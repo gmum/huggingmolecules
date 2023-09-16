@@ -27,6 +27,7 @@ class MatConfig(PretrainedConfigMixin):
     ffn_n_layers: int = 1
     ffn_d_hidden: int = 0
 
+    generator_return_representations_dict: bool = False
     generator_aggregation: str = 'mean'
     generator_n_layers: int = 1
     generator_n_outputs: int = 1

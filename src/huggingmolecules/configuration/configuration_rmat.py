@@ -28,6 +28,7 @@ class RMatConfig(PretrainedConfigMixin):
     ffn_d_hidden: int = 1536
     ffn_d_output: int = 768
 
+    generator_return_representations_dict: bool = False
     generator_aggregation: str = 'grover'
     generator_n_layers: int = 1
     generator_d_outputs: int = 1
