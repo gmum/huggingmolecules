@@ -3,7 +3,7 @@ include 'experiments/configs/tasks/regression.gin'
 # ==============================================================================
 data.task_name = 'QM'
 data.dataset_name = 'QM7'
-data.dataset_path = './data/qm7'
+data.dataset_path = './data/qm7-atom'
 metric.name = 'MeanAbsoluteError'
 
 # ==============================================================================
